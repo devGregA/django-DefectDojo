@@ -40,12 +40,12 @@ Log in with username `admin` and password `1Defectdojo@demo#appsec`. Please note
 and regularly reset. Do not put sensitive data in the demo.
 
 ## How to get DefectDojo
-# Pro
+### Pro
 1. Get the best version of DefectDojo with a trial at [cloud.defectdojo.com](https://cloud.defectdojo.com/accounts/login/?next=/)
 2. Buy through [AWS and get instant access](https://aws.amazon.com/marketplace/pp/prodview-stklscizixsra)
 3. Talk to us by emailing hello@defectdojo.com
 
-# Open-Source OWASP Edition
+### Open-Source OWASP Edition
 
 **Quick Start for Compose V2**
 
