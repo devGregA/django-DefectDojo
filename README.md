@@ -32,12 +32,22 @@ deduplication, remediation, and reporting.
 
 ## Demo
 
-Try out DefectDojo on our demo server at [demo.defectdojo.org](https://demo.defectdojo.org)
+Get a free trial of the Pro Edition [here](https://cloud.defectdojo.com/accounts/login/?next=/) or by reaching out to us at hello@defectdojo.com.
+
+Alternatively, try out the open-source OWASP Edition on our demo server at [demo.defectdojo.org](https://demo.defectdojo.org)
 
 Log in with username `admin` and password `1Defectdojo@demo#appsec`. Please note that the demo is publicly accessible
 and regularly reset. Do not put sensitive data in the demo.
 
-## Quick Start for Compose V2
+## How to get DefectDojo
+# Pro
+1. Get the best version of DefectDojo with a trial at [cloud.defectdojo.com](https://cloud.defectdojo.com/accounts/login/?next=/)
+2. Buy through [AWS and get instant access](https://aws.amazon.com/marketplace/pp/prodview-stklscizixsra)
+3. Talk to us by emailing hello@defectdojo.com
+
+# Open-Source OWASP Edition
+
+**Quick Start for Compose V2**
 
 From July 2023 Compose V1 [stopped receiving updates](https://docs.docker.com/compose/reference/).
 
@@ -61,22 +71,6 @@ cd django-DefectDojo
 # Use docker compose logs -f initializer to track its progress.
 docker compose logs initializer | grep "Admin password:"
 ```
-
-## For Docker Compose V1
-
-You can run Compose V1 by editing the files below to add the hyphen (-) between `docker compose`. 
-```sh
-     dc-build.sh
-     dc-down.sh
-     dc-stop.sh
-     dc-unittest.sh
-     dc-up-d.sh
-     dc-up.sh
-     docker/docker-compose-check.sh
-     docker/entrypoint-initializer.sh
-     docker/setEnv.sh
-```
-
 Navigate to `http://localhost:8080` to see your new instance!
 
 ## Documentation
