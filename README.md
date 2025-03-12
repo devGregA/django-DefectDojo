@@ -47,7 +47,7 @@ and regularly reset. Do not put sensitive data in the demo.
 
 ### Open-Source OWASP Edition
 
--**Quick Start via Docker Compose**
+- **Quick Start via Docker Compose**
 
 >From July 2023 Compose V1 [stopped receiving updates](https://docs.docker.com/compose/reference/).
 
