@@ -47,13 +47,13 @@ and regularly reset. Do not put sensitive data in the demo.
 
 ### Open-Source OWASP Edition
 
-**Quick Start via Docker Compose**
+1. **Quick Start via Docker Compose**
 
-<p>From July 2023 Compose V1 [stopped receiving updates](https://docs.docker.com/compose/reference/).
+** From July 2023 Compose V1 [stopped receiving updates](https://docs.docker.com/compose/reference/).
 
-Compose V2 integrates compose functions into the Docker platform, continuing to support most of the previous
-docker-compose features and flags. You can run Compose V2 by replacing the hyphen (-) with a space, using
-`docker compose` instead of `docker-compose`.</p>
+** Compose V2 integrates compose functions into the Docker platform, continuing to support most of the previous
+** docker-compose features and flags. You can run Compose V2 by replacing the hyphen (-) with a space, using
+** `docker compose` instead of `docker-compose`.</p>
 
 ```sh
 # Clone the project
@@ -73,6 +73,8 @@ docker compose logs initializer | grep "Admin password:"
 ```
 Navigate to `http://localhost:8080` to see your new instance!
 
+2. [Other Installation Options](https://github.com/devGregA/django-DefectDojo/blob/master/readme-docs/DOCKER.md)
+
 ## Documentation
 
 * [Official Docs](https://documentation.defectdojo.com/)
@@ -83,12 +85,6 @@ Navigate to `http://localhost:8080` to see your new instance!
     * [OAuth2/SAML2](https://documentation.defectdojo.com/integrations/social-authentication/)
     * [LDAP](https://documentation.defectdojo.com/integrations/ldap-authentication/)
 * [Supported tools](https://documentation.defectdojo.com/integrations/parsers/)
-
-## Supported Installation Options
-
-* [Docker / Docker Compose](readme-docs/DOCKER.md)
-* [SaaS](https://www.defectdojo.com/pricing) - Includes Support & Supports the Project
-* [AWS AMI](https://aws.amazon.com/marketplace/pp/prodview-m2a25gr67xbzk) - Supports the Project
 
 ## Community, Getting Involved, and Updates
 
@@ -104,8 +100,7 @@ our channel there, [#defectdojo](https://owasp.slack.com/channels/defectdojo). F
 
 ## Contributing
 
-:warning: We have instituted a [feature freeze](https://github.com/DefectDojo/django-DefectDojo/discussions/8002) on v2
-of DefectDojo as we begin work on v3. Please see our [contributing guidelines](readme-docs/CONTRIBUTING.md) for more
+Please see our [contributing guidelines](readme-docs/CONTRIBUTING.md) for more
 information. Check out our latest update on v3 [here](https://github.com/DefectDojo/django-DefectDojo/discussions/8974).
 
 ## Pro Edition
