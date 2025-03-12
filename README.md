@@ -73,7 +73,7 @@ docker compose logs initializer | grep "Admin password:"
 ```
 Navigate to `http://localhost:8080` to see your new instance!
 
-2. [Other Installation Options](https://github.com/devGregA/django-DefectDojo/blob/master/readme-docs/DOCKER.md)
+2. [Other Installation Options](https://docs.defectdojo.com/en/open_source/installation/installation/)
 
 ## Documentation
 
