@@ -77,7 +77,7 @@
                                         aria-label="Merge selected findings"
                                         class="btn btn-sm  btn-primary"
                                         data-toggle="tooltip"
-                                        data-placement="bottom"
+                                       
                                         title="Merge Findings">
                                     <a class="white-color merge" href="#" alt="Merge Findings">
                                         <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
@@ -88,7 +88,7 @@
                                 <button type="button"
                                         class="btn btn-sm  btn-primary"
                                         data-toggle="tooltip"
-                                        data-placement="bottom"
+                                       
                                         title="Delete Findings"
                                         aria-label="Delete selected findings">
                                     <a class="white-color delete-bulk" href="#" alt="Delete Findings">
@@ -549,16 +549,11 @@
                                             {% endif %}
                                             {% if finding.file_path %}
                                                 <i class="fa-solid fa-folder has-popover dojo-sup"
-                                                data-trigger="hover"
-                                                data-content="{{ finding.file_path }}{% if finding.line %}:{{finding.line}}{% endif %}"
-                                                data-placement="right"
-                                                data-container="body"
-                                                data-original-title="Files"
-                                                title=""></i>
+                                                data-content="{{ finding.file_path }}{% if finding.line %}:{{finding.line}}{% endif %}"></i>
                                             {% endif %}
                                             {% if V3_FEATURE_LOCATIONS %}
                                                 {% if finding.locations.exists %}
-                                                    <i class="fa-solid fa-sitemap has-popover dojo-sup" data-html="true" data-trigger="hover" data-content="
+                                                    <i class="fa-solid fa-sitemap has-popover dojo-sup" data-html="true" data-content="
                                                     {% for ref in finding.locations.all %}
                                                         {% if ref.status == "Mitigated" %} &#10003; {{ ref.location }}
                                                             <br/>
@@ -567,12 +562,12 @@
                                                                 <br/>
                                                         {% endif %}
                                                     {% endfor %}
-                                                    " data-placement="right" data-container="body" data-original-title="Endpoints ({{ finding.active_endpoint_count }} Active, {{ finding.mitigated_endpoint_count }} Mitigated)" title=""></i>
+                                                    "></i>
                                                 {% endif %}
                                             {% else %}
                                                 {% comment %} TODO: Delete this after the move to Locations {% endcomment %}
                                                 {% if finding.endpoints.exists %}
-                                                    <i class="fa-solid fa-sitemap has-popover dojo-sup" data-html="true" data-trigger="hover" data-content="
+                                                    <i class="fa-solid fa-sitemap has-popover dojo-sup" data-html="true" data-content="
                                                     {% for endpoint_status in finding.status_finding.all %}
                                                         {% if endpoint_status.mitigated %} &#10003; {{ endpoint_status.endpoint }}
                                                             <br/>
@@ -581,26 +576,16 @@
                                                                 <br/>
                                                         {% endif %}
                                                     {% endfor %}
-                                                    " data-placement="right" data-container="body" data-original-title="Endpoints ({{ finding.active_endpoint_count }} Active, {{ finding.mitigated_endpoint_count }} Mitigated)" title=""></i>
+                                                    "></i>
                                                 {% endif %}
                                             {% endif %}
                                             {% if finding.component_name %}
                                                 <i class="fa-solid fa-file has-popover dojo-sup"
-                                                data-trigger="hover"
-                                                data-placement="right"
-                                                data-content="{{ finding.component_name }} - {{ finding.component_version }}"
-                                                data-container="body"
-                                                data-original-title="Component"
-                                                title=""></i>
+                                                data-content="{{ finding.component_name }} - {{ finding.component_version }}"></i>
                                             {% endif %}
                                             {% if finding.notes.all %}
-                                                <i class="glyphicon glyphicon-comment has-popover dojo-sup"
-                                                data-trigger="hover"
-                                                data-content="{{ finding.notes.all.0.author }} at {{ finding.notes.all.0.date }}: {{ finding.notes.all.0 }}"
-                                                data-placement="left"
-                                                data-container="body"
-                                                data-original-title="Most Recent Note ({{ finding.notes.count }} total)"
-                                                title=""></i>
+                                                <i class="fa-solid fa-comment has-popover dojo-sup"
+                                                data-content="{{ finding.notes.all.0.author }} at {{ finding.notes.all.0.date }}: {{ finding.notes.all.0 }}"></i>
                                                 <a href="{% url 'view_finding' finding.id %}#vuln_notes"
                                                     class="dojo-sup"
                                                     alt="{{ finding.notes.count }} note{{ finding.notes.count|pluralize }}">
@@ -671,12 +656,12 @@
                                             {% if finding.found_by %}
                                                 <a target="#"
                                                 data-toggle="tooltip"
-                                                data-placement="bottom"
+                                               
                                                 title="Test: {{ finding.test }}">{{ finding.found_by.all|join:", " }}</a>
                                             {% else %}
                                                 <a target="#"
                                                 data-toggle="tooltip"
-                                                data-placement="bottom"
+                                               
                                                 title="Test: {{ finding.test }}">{{ finding.test.test_type }}</a>
                                             {% endif %}
                                         </td>
@@ -691,14 +676,14 @@
                                                         target="_blank"
                                                         alt="Jira Bug - {{ finding.finding_group | jira_key }} (group)"
                                                         data-toggle="tooltip"
-                                                        data-placement="bottom"
+                                                       
                                                         title="{{ finding.finding_group | jira_key }} (group)">{{ finding.finding_group | jira_key }}</a>
                                                     {% elif finding.has_jira_issue %}
                                                         <a href="{{ finding | jira_issue_url }}"
                                                         target="_blank"
                                                         alt="Jira Bug - {{ finding | jira_key }}"
                                                         data-toggle="tooltip"
-                                                        data-placement="bottom"
+                                                       
                                                         title="{{ finding | jira_key }}">{{ finding | jira_key }}</a>
                                                     {% endif %}
                                                 </td>
@@ -1220,5 +1205,4 @@
 
     </script>
     {% include "dojo/filter_js_snippet.html" %}
-    {% include "dojo/snippets/selectpicker_in_dropdown.html" %}
 {% endblock %}

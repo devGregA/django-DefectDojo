@@ -158,7 +158,7 @@
         {% endif %}
         <hr/>
 
-        <form class="form-horizontal" id="add_notes" action="{{view_link}}"
+        <form class="" id="add_notes" action="{{view_link}}"
               method="post">{% csrf_token %}
             {% include "dojo/form_fields.html" with form=form %}
             <div class="form-group">
@@ -175,7 +175,6 @@
 
 {% block postscript %}
     {{ block.super }}
-    <script type="text/javascript" src="{% static "jquery-highlight/jquery.highlight.js" %}"></script>
     <script type="text/javascript">
         $(function () {
             $('form#bulk_change_form').on('submit', function(e){

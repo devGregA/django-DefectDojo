@@ -234,6 +234,26 @@ def alertcount(request):
     return JsonResponse({"count": 0})
 
 
+def alertcount_text(request):
+    """Return alert count as plain text for htmx polling."""
+    if not settings.DISABLE_ALERT_COUNTER:
+        count = Alerts.objects.filter(user_id=request.user).count()
+    else:
+        count = 0
+    return HttpResponse(str(count), content_type="text/plain")
+
+
+@login_required
+def alerts_partial(request):
+    """Return alert dropdown HTML partial for htmx."""
+    limit = request.GET.get("limit")
+    if limit:
+        alerts = Alerts.objects.filter(user_id=request.user)[:int(limit)]
+    else:
+        alerts = Alerts.objects.filter(user_id=request.user)
+    return render(request, "dojo/partials/alerts_dropdown.html", {"alerts": alerts})
+
+
 def view_profile(request):
     user = get_object_or_404(Dojo_User, pk=request.user.id)
     form = DojoUserForm(instance=user)

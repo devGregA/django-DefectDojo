@@ -6,7 +6,7 @@
     <h3>{% blocktrans with full_name=user.get_full_name %} User Profile - {{ full_name }}{% endblocktrans %}</h3>
     <div class="row">
         <div class="col-md-7">
-            <form class="form-horizontal" method="post">{% csrf_token %}
+            <form class="" method="post">{% csrf_token %}
                 <fieldset>
                     <legend>{% trans "Default Information" %}</legend>
                     {% include "dojo/form_fields.html" with form=form %}

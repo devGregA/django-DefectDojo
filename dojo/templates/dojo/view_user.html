@@ -392,7 +392,7 @@
             <div class="panel-heading">
                 <h3 class="panel-title"><span class="fa-solid fa-lock-open-alt" aria-hidden="true"></span>&nbsp;&nbsp;{% trans "Configuration Permissions" %}</h3>
             </div>
-            <form id="edit_permissions_form" class="form-horizontal" method="post" action="{% url 'edit_user_permissions' user.id %}">{% csrf_token %}
+            <form id="edit_permissions_form" class="" method="post" action="{% url 'edit_user_permissions' user.id %}">{% csrf_token %}
             <div class="table-responsive">
                 <table class="table table-striped">
                     <tr>

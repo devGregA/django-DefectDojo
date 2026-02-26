@@ -20,7 +20,7 @@
         In order to promote a Potential Finding to a Verified Finding you must provide the following information.
     </div>
 
-    <form id="add_finding" class="form-horizontal" action="{% url 'promote_to_finding' stub_finding.id %}"
+    <form id="add_finding" class="" action="{% url 'promote_to_finding' stub_finding.id %}"
           method="post">
         {% csrf_token %}
         {% include "dojo/form_fields.html" with form=form %}

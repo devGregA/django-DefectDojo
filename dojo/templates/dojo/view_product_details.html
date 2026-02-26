@@ -662,10 +662,10 @@
   <div class="panel-heading">
     {% url 'notifications' as notifications_url %}
     <h3 class="panel-title"><span class="fa-solid fa-users fa-fw" aria-hidden="true"></span>{% trans "Notifications" %}
-      <i class="fa-solid fa-circle-question has-popover" data-trigger="hover" data-content="{{ labels.ASSET_NOTIFICATIONS_HELP }}" %}" data-placement="right" data-container="body"></i>
+      <i class="fa-solid fa-circle-question has-popover" data-content="{{ labels.ASSET_NOTIFICATIONS_HELP }}" %}"></i>
     </h3>
   </div>
-  <form id="edit_notifications_form" class="form-horizontal" method="post" action="{% url 'edit_notifications' prod.id %}">{% csrf_token %}
+  <form id="edit_notifications_form" class="" method="post" action="{% url 'edit_notifications' prod.id %}">{% csrf_token %}
     <div class="table-responsive">
       <table class="table table-striped">
         <tbody>
@@ -683,7 +683,7 @@
           <tr>
             <td><strong>{{ field.label }}&nbsp;</strong>
               {% if field.help_text %}
-              <i class="fa-solid fa-circle-question has-popover" data-trigger="hover" data-content="{{ field.help_text }}" data-placement="right" data-container="body"></i>
+              <i class="fa-solid fa-circle-question has-popover" data-content="{{ field.help_text }}"></i>
               {% endif %}
             </td>
             {% for pk,c in field.field.widget.choices %}
@@ -705,15 +705,9 @@
 {% endblock %}
 {% block postscript %}
     {{ block.super }}
-  <script type="text/javascript" src="{% static "jquery-highlight/jquery.highlight.js" %}"></script>
-  <!-- Flot Charts JavaScript -->
-  <script src="{% static "flot/excanvas.min.js" %}"></script>
-  <script src="{% static "flot/jquery.flot.js" %}"></script>
-  <script src="{% static "flot/jquery.flot.pie.js" %}"></script>
-  <script src="{% static "flot/jquery.flot.time.js" %}"></script>
-  <script src="{% static "jquery.flot.tooltip/js/jquery.flot.tooltip.min.js" %}"></script>
-  <script src="{% static "flot/jquery.flot.stack.js" %}"></script>
-  <script src="{% static "flot/jquery.flot.resize.js" %}"></script>
+  <!-- Chart.js (moment.js loaded in base.html) -->
+  <script src="{% static "chart.js/dist/chart.umd.js" %}"></script>
+  <script src="{% static "chartjs-adapter-moment/dist/chartjs-adapter-moment.js" %}"></script>
   {% block metrics %}
       <script src="{% static "dojo/js/metrics.js" %}"></script>
   {% endblock metrics %}

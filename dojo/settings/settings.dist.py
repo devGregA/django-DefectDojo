@@ -978,6 +978,7 @@ INSTALLED_APPS = (
     "pgtrigger",
     "pghistory",
     "single_session",
+    "django_htmx",
 )
 
 # ------------------------------------------------------------------------------
@@ -993,6 +994,7 @@ DJANGO_MIDDLEWARE_CLASSES = [
     "django_permissions_policy.PermissionsPolicyMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "django_htmx.middleware.HtmxMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "dojo.middleware.LoginRequiredMiddleware",
     "dojo.middleware.AdditionalHeaderMiddleware",

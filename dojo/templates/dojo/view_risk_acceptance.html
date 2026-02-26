@@ -36,7 +36,7 @@
                 </div>
             </div>
             <br/>
-            <form id="edit_risk_acceptance" enctype="multipart/form-data"  class="form-horizontal" action="{% url 'edit_risk_acceptance' engagement.id risk_acceptance.id %}" method="post">
+            <form id="edit_risk_acceptance" enctype="multipart/form-data"  class="" action="{% url 'edit_risk_acceptance' engagement.id risk_acceptance.id %}" method="post">
                 {% csrf_token %}
                 {% if return_url %}
                     <input type="hidden" name="return_url" value="{{ return_url }}" />
@@ -82,11 +82,11 @@
                         <th>Findings</th>
                         <th>Proof</th>
                         <th>Reactivate
-                            <i class="fa-solid fa-circle-question has-popover" data-trigger="hover" data-content="Reactivate findings when risk acceptance expires?" data-placement="right" data-container="body" data-original-title="" title="">
+                            <i class="fa-solid fa-circle-question has-popover" data-content="Reactivate findings when risk acceptance expires?">
                             </i>
                         </th>
                         <th>Restart SLA
-                            <i class="fa-solid fa-circle-question has-popover" data-trigger="hover" data-content="Restart SLA for findings when risk acceptance expires?" data-placement="right" data-container="body" data-original-title="" title="">
+                            <i class="fa-solid fa-circle-question has-popover" data-content="Restart SLA for findings when risk acceptance expires?">
                             </i>
                         </th>
                         <th>Owner</th>
@@ -221,7 +221,7 @@
                 <h3>Accept Additional Findings</h3>
             </div>
             <br/>
-            <form method="post" class="form-horizontal">{% csrf_token %}
+            <form method="post" class="">{% csrf_token %}
                 <div class="show_add_findings_form" style="padding: 1em;">
                     <div class="text-left"><b>Add findings as accepted:</b></div>
                     {{ add_findings_form.as_p }}
@@ -328,7 +328,7 @@
             <p class="text-center">No notes saved.</p>
         {% endif %}
         <hr/>
-        <form class="form-horizontal" method="post">{% csrf_token %}
+        <form class="" method="post">{% csrf_token %}
             {% include "dojo/form_fields.html" with form=note_form %}
             <div class="form-group">
                 <div class="col-sm-offset-2 col-sm-10">

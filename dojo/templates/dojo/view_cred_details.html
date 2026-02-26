@@ -180,7 +180,7 @@
                 <p class="text-center">No notes found.</p>
             {% endif %}
             <hr/>
-            <form class="form-horizontal" id="add_notes" action="{% url 'view_cred_details' cred.id %}"
+            <form class="" id="add_notes" action="{% url 'view_cred_details' cred.id %}"
                   method="post">{% csrf_token %}
                 {% include "dojo/form_fields.html" with form=form %}
                 <div class="form-group">
@@ -195,7 +195,6 @@
 
 {% block postscript %}
     {{ block.super }}
-    <script type="text/javascript" src="{% static "jquery-highlight/jquery.highlight.js" %}"></script>
     <script type="text/javascript">
         $(function () {
             $('form#bulk_change_form').on('submit', function(e){

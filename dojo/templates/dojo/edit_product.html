@@ -20,7 +20,7 @@
 {% block content %}
     {{ block.super }}
     <h3> Edit {{ product.name }}</h3>
-    <form class="form-horizontal" method="post">{% csrf_token %}
+    <form class="" method="post">{% csrf_token %}
         {% include "dojo/form_fields.html" with form=form %}
         {%  if jform %}
                 <h4> JIRA </h4>
