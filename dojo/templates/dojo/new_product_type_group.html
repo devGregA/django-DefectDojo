@@ -1,10 +1,5 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block add_styles %}
-.chosen-container.chosen-container-multi {
-width: 70% !important;
-}
-{% endblock %}
 {% block content %}
 <h3>{{ name }}</h3>
 <form class="" action="{%  url 'add_product_type_group' pt.id %}" method="post">{% csrf_token %}

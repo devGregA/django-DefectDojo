@@ -494,6 +494,7 @@ form ul#id_accepted_findings input {
 
 .severity {
     font-size: 80%;
+    color: #fff;
 }
 
 .severity-Info {
@@ -501,7 +502,7 @@ form ul#id_accepted_findings input {
 }
 
 .severity-Low {
-    background-color: var(--color-severity-low);
+    background-color: #546474;
 }
 
 .severity-Medium {
@@ -1309,16 +1310,16 @@ span.endpoint_product {
     border-color: var(--color-border);
 }
 
-.panel-default > .panel-heading a,
+.panel-default > .panel-heading a:not(.btn),
 .panel-default > .panel-heading small{
 	color: var(--color-dd-primary-500);
 }
 
-.panel-default > .panel-heading a{
+.panel-default > .panel-heading a:not(.btn) {
 	text-decoration: none;
 }
 
-.panel-default > .panel-heading a:hover{
+.panel-default > .panel-heading a:not(.btn):hover{
 	color: var(--color-dd-primary-700);
 	text-decoration: underline;
 }
@@ -1741,6 +1742,17 @@ mark{
   font-size:18px;
   font-weight: 700;
 }
+.vuln-count small,
+.vuln-count .small {
+  /* Tailwind's base layer makes <small> use --color-text-muted (gray);
+     inside the severity counter boxes the label sits on a colored bg
+     and must stay white to match the count number above it. */
+  color: #fff;
+}
+.metrics-severity-counts {
+  table-layout: fixed;
+  width: 100%;
+}
 small {
   font-size:12px;
   font-weight:400;
@@ -1835,6 +1847,20 @@ small {
 
 .EasyMDEContainer .table {
     width: unset!important;
+}
+
+/* Form widget widths — keep EasyMDE markdown editor, Select2 (incl. tag inputs)
+   and the legacy Chosen widget the same width as plain .form-control inputs
+   inside .form-group cells (col-sm-10). !important on .select2-container is
+   needed because Tagulous sets style="width:70%" inline. */
+.form-group .EasyMDEContainer,
+.form-group .CodeMirror,
+.form-group .editor-toolbar,
+.form-group .editor-statusbar,
+.form-group .editor-preview-side,
+.form-group .chosen-container,
+.form-group .select2-container {
+    width: 100% !important;
 }
 
 /* remove spinners (up & down arrow) for integer / number fields

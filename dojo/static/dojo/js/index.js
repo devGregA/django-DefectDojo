@@ -49,6 +49,12 @@
             return;
         }
 
+        // Clicks inside an open dropdown menu (e.g. selecting options in the
+        // bulk edit form) must not collapse the menu. Only clicks outside any
+        // open dropdown — or on a submit button, which navigates anyway —
+        // should close it.
+        if (e.target.closest('.open > .dropdown-menu')) return;
+
         // Click outside any dropdown → close all
         closeAllDropdowns(null);
     });

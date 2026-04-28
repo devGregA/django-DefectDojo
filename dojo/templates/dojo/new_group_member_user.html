@@ -1,10 +1,5 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block add_styles %}
-.chosen-container.chosen-container-multi {
-width: 70% !important;
-}
-{% endblock %}
 {% block content %}
 <h3>{% trans "Add Group Members" %}</h3>
 <form class="" action="{%  url 'add_group_member_user' user.id %}" method="post">{% csrf_token %}
