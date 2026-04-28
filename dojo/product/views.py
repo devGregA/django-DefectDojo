@@ -26,7 +26,6 @@ from django.views import View
 from github import Github
 
 import dojo.finding.helper as finding_helper
-import dojo.jira_link.helper as jira_helper
 from dojo.authorization.authorization import user_has_permission, user_has_permission_or_403
 from dojo.authorization.authorization_decorators import user_is_authorized
 from dojo.authorization.roles_permissions import Permissions
@@ -70,6 +69,7 @@ from dojo.forms import (
     ProductNotificationsForm,
     SLA_Configuration,
 )
+from dojo.jira import services as jira_services
 from dojo.labels import get_labels
 from dojo.models import (
     App_Analysis,
@@ -445,8 +445,10 @@ def finding_queries(request, prod):
     filters["new_verified"] = findings_qs.filter(finding_helper.VERIFIED_FINDINGS_QUERY).filter(date__range=[start_date, end_date]).order_by("date")
     filters["open"] = findings_qs.filter(finding_helper.OPEN_FINDINGS_QUERY).filter(date__range=[start_date, end_date]).order_by("date")
     filters["inactive"] = findings_qs.filter(finding_helper.INACTIVE_FINDINGS_QUERY).filter(date__range=[start_date, end_date]).order_by("date")
-    # Filter closed findings by mitigated date (not discovery date) to show findings closed within the date range
-    filters["closed"] = findings_qs.filter(finding_helper.CLOSED_FINDINGS_QUERY).filter(mitigated__range=[start_date, end_date], mitigated__isnull=False).order_by("mitigated")
+    # Filter closed findings by mitigated date (not discovery date).
+    # Use timezone.now() as the upper bound so findings closed after the latest
+    # discovery date are not excluded from the counter.
+    filters["closed"] = findings_qs.filter(finding_helper.CLOSED_FINDINGS_QUERY).filter(mitigated__range=[start_date, timezone.now()], mitigated__isnull=False).order_by("mitigated")
     filters["false_positive"] = findings_qs.filter(finding_helper.FALSE_POSITIVE_FINDINGS_QUERY).filter(date__range=[start_date, end_date]).order_by("date")
     filters["out_of_scope"] = findings_qs.filter(finding_helper.OUT_OF_SCOPE_FINDINGS_QUERY).filter(date__range=[start_date, end_date]).order_by("date")
     filters["all"] = findings_qs.order_by("date")
@@ -954,7 +956,7 @@ def new_product(request, ptid=None):
                                  messages.SUCCESS,
                                  labels.ASSET_CREATE_SUCCESS_MESSAGE,
                                  extra_tags="alert-success")
-            success, jira_project_form = jira_helper.process_jira_project_form(request, product=product)
+            success, jira_project_form = jira_services.process_project_form(request, product=product)
             error = not success
 
             if get_system_setting("enable_github"):
@@ -1025,7 +1027,7 @@ def edit_product(request, pid):
 
     if request.method == "POST":
         form = ProductForm(request.POST, instance=product)
-        jira_project = jira_helper.get_jira_project(product)
+        jira_project = jira_services.get_project(product)
         if form.is_valid():
             initial_sla_config = Product.objects.get(pk=form.instance.id).sla_configuration
             form.save()
@@ -1038,7 +1040,7 @@ def edit_product(request, pid):
                                  msg,
                                  extra_tags="alert-success")
 
-            success, jform = jira_helper.process_jira_project_form(request, instance=jira_project, product=product)
+            success, jform = jira_services.process_project_form(request, instance=jira_project, product=product)
             error = not success
 
             if get_system_setting("enable_github") and github_inst:
@@ -1062,7 +1064,7 @@ def edit_product(request, pid):
         form = ProductForm(instance=product)
 
         if jira_enabled:
-            jira_project = jira_helper.get_jira_project(product)
+            jira_project = jira_services.get_project(product)
             jform = JIRAProjectForm(instance=jira_project)
         else:
             jform = None
@@ -1166,13 +1168,13 @@ def new_eng_for_app(request, pid, *, cicd=False):
             logger.debug("new_eng_for_app: process jira coming")
 
             # new engagement, so do not provide jira_project
-            success, jira_project_form = jira_helper.process_jira_project_form(request, instance=None,
+            success, jira_project_form = jira_services.process_project_form(request, instance=None,
                                                                                engagement=engagement)
             error = not success
 
             logger.debug("new_eng_for_app: process jira epic coming")
 
-            success, jira_epic_form = jira_helper.process_jira_epic_form(request, engagement=engagement)
+            success, jira_epic_form = jira_services.process_epic_form(request, engagement=engagement)
             error = error or not success
 
             messages.add_message(request,
@@ -1373,12 +1375,12 @@ class AdHocFindingView(View):
 
     def get_jira_form(self, request: HttpRequest, test: Test, finding_form: AdHocFindingForm = None):
         # Determine if jira should be used
-        if (jira_project := jira_helper.get_jira_project(test)) is not None:
+        if (jira_project := jira_services.get_project(test)) is not None:
             # Set up the args for the form
             args = [request.POST] if request.method == "POST" else []
             # Set the initial form args
             kwargs = {
-                "push_all": jira_helper.is_push_all_issues(test),
+                "push_all": jira_services.is_push_all_issues(test),
                 "prefix": "jiraform",
                 "jira_project": jira_project,
                 "finding_form": finding_form,
@@ -1397,7 +1399,7 @@ class AdHocFindingView(View):
                 args = [request.POST] if request.method == "POST" else []
                 # Set the initial form args
                 kwargs = {
-                    "enabled": jira_helper.is_push_all_issues(test),
+                    "enabled": jira_services.is_push_all_issues(test),
                     "prefix": "githubform",
                 }
 
@@ -1460,7 +1462,7 @@ class AdHocFindingView(View):
         if context["jform"] and context["jform"].is_valid():
             # Push to Jira?
             logger.debug("jira form valid")
-            push_to_jira = jira_helper.is_push_all_issues(finding) or context["jform"].cleaned_data.get("push_to_jira")
+            push_to_jira = jira_services.is_push_all_issues(finding) or context["jform"].cleaned_data.get("push_to_jira")
             jira_message = None
             # if the jira issue key was changed, update database
             new_jira_issue_key = context["jform"].cleaned_data.get("jira_issue")
@@ -1470,19 +1472,19 @@ class AdHocFindingView(View):
                 # I have no idea why, but it means we have to retrieve the issue from JIRA to get the internal JIRA id.
                 # we can assume the issue exist, which is already checked in the validation of the jform
                 if not new_jira_issue_key:
-                    jira_helper.finding_unlink_jira(request, finding)
+                    jira_services.unlink_finding(request, finding)
                     jira_message = "Link to JIRA issue removed successfully."
 
                 elif new_jira_issue_key != finding.jira_issue.jira_key:
-                    jira_helper.finding_unlink_jira(request, finding)
-                    jira_helper.finding_link_jira(request, finding, new_jira_issue_key)
+                    jira_services.unlink_finding(request, finding)
+                    jira_services.link_finding(request, finding, new_jira_issue_key)
                     jira_message = "Changed JIRA link successfully."
             else:
                 logger.debug("finding has no jira issue yet")
                 if new_jira_issue_key:
                     logger.debug(
                         "finding has no jira issue yet, but jira issue specified in request. trying to link.")
-                    jira_helper.finding_link_jira(request, finding, new_jira_issue_key)
+                    jira_services.link_finding(request, finding, new_jira_issue_key)
                     jira_message = "Linked a JIRA issue successfully."
             # Determine if a message should be added
             if jira_message:
@@ -1597,7 +1599,7 @@ def engagement_presets(request, pid):
 @user_is_authorized(Product, Permissions.Product_Edit, "pid")
 def edit_engagement_presets(request, pid, eid):
     prod = get_object_or_404(Product, id=pid)
-    preset = get_object_or_404(Engagement_Presets, id=eid)
+    preset = get_object_or_404(Engagement_Presets.objects.filter(product=prod), id=eid)
 
     product_tab = Product_Tab(prod, title=_("Edit Engagement Preset"), tab="settings")
 
@@ -1646,7 +1648,7 @@ def add_engagement_presets(request, pid):
 @user_is_authorized(Product, Permissions.Product_Edit, "pid")
 def delete_engagement_presets(request, pid, eid):
     prod = get_object_or_404(Product, id=pid)
-    preset = get_object_or_404(Engagement_Presets, id=eid)
+    preset = get_object_or_404(Engagement_Presets.objects.filter(product=prod), id=eid)
     form = DeleteEngagementPresetsForm(instance=preset)
 
     if request.method == "POST":

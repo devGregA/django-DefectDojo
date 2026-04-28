@@ -1,9 +1,11 @@
 import logging
 from contextlib import suppress
 from datetime import datetime
+from itertools import batched
 from time import strftime
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models.query_utils import Q
 from django.db.models.signals import post_delete, pre_delete
 from django.db.utils import IntegrityError
@@ -13,7 +15,6 @@ from django.utils import timezone
 from django.utils.timezone import is_naive, make_aware, now
 from fieldsignals import pre_save_changed
 
-import dojo.jira_link.helper as jira_helper
 import dojo.risk_acceptance.helper as ra_helper
 from dojo.celery import app
 from dojo.endpoint.utils import endpoint_get_or_create, save_endpoints_to_add
@@ -21,9 +22,11 @@ from dojo.file_uploads.helper import delete_related_files
 from dojo.finding.deduplication import (
     dedupe_batch_of_findings,
     do_dedupe_finding_task_internal,
+    do_false_positive_history,
+    do_false_positive_history_batch,
     get_finding_models_for_deduplication,
 )
-from dojo.jira_link.helper import is_keep_in_sync_with_jira
+from dojo.jira import services as jira_services
 from dojo.location.models import Location
 from dojo.location.status import FindingLocationStatus
 from dojo.location.utils import save_locations_to_add
@@ -31,6 +34,7 @@ from dojo.models import (
     Endpoint,
     Endpoint_Status,
     Engagement,
+    FileUpload,
     Finding,
     Finding_Group,
     JIRA_Instance,
@@ -46,10 +50,8 @@ from dojo.url.models import URL
 from dojo.utils import (
     calculate_grade,
     close_external_issue,
-    do_false_positive_history,
     get_current_user,
     get_object_or_none,
-    mass_model_updater,
     to_str_typed,
 )
 
@@ -160,9 +162,6 @@ def update_finding_status(new_state_finding, user, changed_fields=None):
             # finding is being deactivated
             pass
 
-    if is_new_finding or "verified" in changed_fields:
-        pass
-
     if is_new_finding or "false_p" in changed_fields or "out_of_scope" in changed_fields:
         # existing behaviour is that false_p or out_of_scope implies mitigated
         if new_state_finding.false_p or new_state_finding.out_of_scope:
@@ -214,14 +213,14 @@ def create_finding_group(finds, finding_group_name):
     finding_group.creator = get_current_user()
 
     if finding_group_name:
-        finding_group.name = finding_group_name
+        finding_group.name = finding_group_name[:255]
     elif finding_group.components:
-        finding_group.name = finding_group.components
+        finding_group.name = finding_group.components[:255]
     try:
         finding_group.save()
     except IntegrityError as ie:
         if "already exists" in str(ie):
-            finding_group.name = finding_group_name + finding_group_name_dummy
+            finding_group.name = finding_group_name[:255 - len(finding_group_name_dummy)] + finding_group_name_dummy
             finding_group.save()
         else:
             raise
@@ -241,10 +240,10 @@ def add_to_finding_group(finding_group, finds):
     finding_group.findings.add(*available_findings)
 
     # Now update the JIRA to add the finding to the finding group
-    jira_instance = jira_helper.get_jira_instance(finding_group)
+    jira_instance = jira_services.get_instance(finding_group)
     if finding_group.has_jira_issue and jira_instance and jira_instance.finding_jira_sync:
         logger.debug("pushing to jira from finding.finding_bulk_update_all()")
-        jira_helper.push_to_jira(finding_group)
+        jira_services.push(finding_group)
 
     added = len(available_findings)
     skipped = len(finds) - added
@@ -269,10 +268,10 @@ def remove_from_finding_group(finds):
 
     # Now update the JIRA to remove the finding from the finding group
     for group in affected_groups:
-        jira_instance = jira_helper.get_jira_instance(group)
+        jira_instance = jira_services.get_instance(group)
         if group.has_jira_issue and jira_instance and jira_instance.finding_jira_sync:
             logger.debug("pushing to jira from finding.finding_bulk_update_all()")
-            jira_helper.push_to_jira(group)
+            jira_services.push(group)
 
     return affected_groups, removed, skipped
 
@@ -347,10 +346,10 @@ def group_findings_by(finds, finding_group_by_option):
 
     # Now update the JIRA to add the finding to the finding group
     for group in affected_groups:
-        jira_instance = jira_helper.get_jira_instance(group)
+        jira_instance = jira_services.get_instance(group)
         if group.has_jira_issue and jira_instance and jira_instance.finding_jira_sync:
             logger.debug("pushing to jira from finding.finding_bulk_update_all()")
-            jira_helper.push_to_jira(group)
+            jira_services.push(group)
 
     return affected_groups, grouped, skipped, groups_created
 
@@ -362,7 +361,7 @@ def add_findings_to_auto_group(name, findings, group_by, *, create_finding_group
 
         if create_finding_groups_for_all_findings or len(findings) > 1:
             # Only create a finding group if we have more than one finding for a given finding group, unless configured otherwise
-            finding_group, created = Finding_Group.objects.get_or_create(test=test, creator=creator, name=name)
+            finding_group, created = Finding_Group.objects.get_or_create(test=test, creator=creator, name=name[:255])
             if created:
                 logger.debug("Created Finding Group %d:%s for test %d:%s", finding_group.id, finding_group, test.id, test)
                 # See if we have old findings in the same test that were created without a finding group
@@ -388,7 +387,7 @@ def add_findings_to_auto_group(name, findings, group_by, *, create_finding_group
                 for f in old_findings:
                     f_group_name = get_group_by_group_name(f, group_by)
                     if f_group_name == name and f not in findings:
-                        finding_group, created = Finding_Group.objects.get_or_create(test=test, creator=creator, name=name)
+                        finding_group, created = Finding_Group.objects.get_or_create(test=test, creator=creator, name=name[:255])
                         finding_group.findings.add(f)
                 if created:
                     finding_group.findings.add(*findings)
@@ -452,9 +451,9 @@ def post_process_finding_save_internal(finding, dedupe_option=True, rules_option
         # based on feedback we could introduct another push_group_to_jira boolean everywhere
         # but what about the push_all boolean? Let's see how this works for now and get some feedback.
         if finding.has_jira_issue or not finding.finding_group:
-            jira_helper.push_to_jira(finding)
+            jira_services.push(finding)
         elif finding.finding_group:
-            jira_helper.push_to_jira(finding.finding_group)
+            jira_services.push(finding.finding_group)
 
 
 @app.task
@@ -501,8 +500,7 @@ def post_process_findings_batch(
         if system_settings.enable_deduplication:
             deduplicationLogger.warning("skipping false positive history because deduplication is also enabled")
         else:
-            for finding in findings:
-                do_false_positive_history(finding, *args, **kwargs)
+            do_false_positive_history_batch(findings)
 
     # Non-status changing tasks
     if issue_updater_option:
@@ -525,8 +523,8 @@ def post_process_findings_batch(
         for finding in findings:
             object_to_push = finding if finding.has_jira_issue or not finding.finding_group else finding.finding_group
             # Check the push_to_jira flag again to potentially shorty circuit without checking for existing findings
-            if push_to_jira or is_keep_in_sync_with_jira(object_to_push, prefetched_jira_instance=jira_instance):
-                jira_helper.push_to_jira(object_to_push)
+            if push_to_jira or jira_services.is_keep_in_sync(object_to_push, prefetched_jira_instance=jira_instance):
+                jira_services.push(object_to_push)
     else:
         logger.debug("push_to_jira is False, not pushing to JIRA")
 
@@ -561,7 +559,10 @@ def finding_delete(instance, **kwargs):
 
     duplicate_cluster = instance.original_finding.all()
     if duplicate_cluster:
-        reconfigure_duplicate_cluster(instance, duplicate_cluster)
+        if settings.DUPLICATE_CLUSTER_CASCADE_DELETE:
+            duplicate_cluster.order_by("-id").delete()
+        else:
+            reconfigure_duplicate_cluster(instance, duplicate_cluster)
     else:
         logger.debug("no duplicate cluster found for finding: %d, so no need to reconfigure", instance.id)
 
@@ -578,20 +579,6 @@ def finding_post_delete(sender, instance, **kwargs):
         logger.debug("finding post_delete, sender: %s instance: %s", to_str_typed(sender), to_str_typed(instance))
 
 
-def reset_duplicate_before_delete(dupe):
-    dupe.duplicate_finding = None
-    dupe.duplicate = False
-
-
-def reset_duplicates_before_delete(qs):
-    mass_model_updater(Finding, qs, reset_duplicate_before_delete, fields=["duplicate", "duplicate_finding"])
-
-
-def set_new_original(finding, new_original):
-    if finding.duplicate:
-        finding.duplicate_finding = new_original
-
-
 # can't use model to id here due to the queryset
 # @dojo_async_task
 # @app.task
@@ -602,85 +589,89 @@ def reconfigure_duplicate_cluster(original, cluster_outside):
         return
 
     if settings.DUPLICATE_CLUSTER_CASCADE_DELETE:
-        cluster_outside.order_by("-id").delete()
-    else:
-        logger.debug("reconfigure_duplicate_cluster: cluster_outside: %s", cluster_outside)
-        # set new original to first finding in cluster (ordered by id)
-        new_original = cluster_outside.order_by("id").first()
-        if new_original:
-            logger.debug("changing original of duplicate cluster %d to: %s:%s", original.id, new_original.id, new_original.title)
+        # Don't delete here — the caller (async_delete_crawl_task or finding_delete)
+        # handles deletion of outside-scope duplicates efficiently via bulk_delete_findings.
+        return
+    logger.debug("reconfigure_duplicate_cluster: cluster_outside: %s", cluster_outside)
+    # set new original to first finding in cluster (ordered by id)
+    new_original = cluster_outside.order_by("id").first()
+    if new_original:
+        logger.debug("changing original of duplicate cluster %d to: %s:%s", original.id, new_original.id, new_original.title)
 
-            new_original.duplicate = False
-            new_original.duplicate_finding = None
-            new_original.active = original.active
-            new_original.is_mitigated = original.is_mitigated
-            new_original.save_no_options()
-            new_original.found_by.set(original.found_by.all())
+        # Use .update() to avoid triggering Finding.save() signals
+        Finding.objects.filter(id=new_original.id).update(
+            duplicate=False,
+            duplicate_finding=None,
+            active=original.active,
+            is_mitigated=original.is_mitigated,
+        )
+        new_original.found_by.set(original.found_by.all())
 
-        # if the cluster is size 1, there's only the new original left
-        if new_original and len(cluster_outside) > 1:
-            # for find in cluster_outside:
-            #     if find != new_original:
-            #         find.duplicate_finding = new_original
-            #         find.save_no_options()
-
-            mass_model_updater(Finding, cluster_outside, lambda f: set_new_original(f, new_original), fields=["duplicate_finding"])
+        # Re-point remaining duplicates to the new original in a single query
+        cluster_outside.exclude(id=new_original.id).update(duplicate_finding=new_original)
 
 
-def prepare_duplicates_for_delete(test=None, engagement=None):
-    logger.debug("prepare duplicates for delete, test: %s, engagement: %s", test.id if test else None, engagement.id if engagement else None)
-    if test is None and engagement is None:
-        logger.warning("nothing to prepare as test and engagement are None")
+def prepare_duplicates_for_delete(obj):
+    """
+    Prepare duplicate clusters before deleting a Test, Engagement, Product, or Product_Type.
 
-    fix_loop_duplicates()
+    Resets inside-scope duplicate FKs and reconfigures outside-scope clusters
+    so that cascade_delete won't hit FK violations on the self-referential
+    duplicate_finding field.
+    """
+    from dojo.utils import FINDING_SCOPE_FILTERS  # noqa: PLC0415 circular import
 
-    # get all originals in the test/engagement
-    originals = Finding.objects.filter(original_finding__isnull=False)
-    if engagement:
-        originals = originals.filter(test__engagement=engagement)
-    if test:
-        originals = originals.filter(test=test)
-
-    # use distinct to flatten the join result
-    originals = originals.distinct()
-
-    if len(originals) == 0:
-        logger.debug("no originals found, so no duplicates to prepare for deletion of original")
+    scope_field = FINDING_SCOPE_FILTERS.get(type(obj))
+    if scope_field is None:
+        logger.warning("prepare_duplicates_for_delete: unsupported object type %s", type(obj).__name__)
         return
 
-    # remove the link to the original from the duplicates inside the cluster so they can be safely deleted by the django framework
-    total = len(originals)
-    # logger.debug('originals: %s', [original.id for original in originals])
-    for i, original in enumerate(originals):
-        logger.debug("%d/%d: preparing duplicate cluster for deletion of original: %d", i + 1, total, original.id)
-        cluster_inside = original.original_finding.all()
-        if engagement:
-            cluster_inside = cluster_inside.filter(test__engagement=engagement)
+    logger.debug("prepare_duplicates_for_delete: %s %d", type(obj).__name__, obj.id)
 
-        if test:
-            cluster_inside = cluster_inside.filter(test=test)
+    # Build scope as a subquery — never materialized into Python memory
+    scope_ids_subquery = Finding.objects.filter(**{scope_field: obj}).values_list("id", flat=True)
 
-        if len(cluster_inside) > 0:
-            reset_duplicates_before_delete(cluster_inside)
+    # Fix any transitive duplicate loops within scope before reconfiguring clusters.
+    # Scoped to the deletion set to avoid a full-table self-join on large instances.
+    fix_loop_duplicates(scope_qs=Finding.objects.filter(**{scope_field: obj}))
 
-        # reconfigure duplicates outside test/engagement
-        cluster_outside = original.original_finding.all()
-        if engagement:
-            cluster_outside = cluster_outside.exclude(test__engagement=engagement)
+    if not scope_ids_subquery.exists():
+        logger.debug("no findings in scope, nothing to prepare")
+        return
 
-        if test:
-            cluster_outside = cluster_outside.exclude(test=test)
+    # Bulk-reset inside-scope duplicates: single UPDATE instead of per-original mass_model_updater.
+    # Clears the duplicate_finding FK so cascade_delete won't trip over dangling self-references.
+    inside_reset_count = Finding.objects.filter(
+        duplicate=True,
+        duplicate_finding_id__in=scope_ids_subquery,
+        id__in=scope_ids_subquery,
+    ).update(duplicate_finding=None, duplicate=False)
+    logger.debug("bulk-reset %d inside-scope duplicates", inside_reset_count)
 
-        if len(cluster_outside) > 0:
-            reconfigure_duplicate_cluster(original, cluster_outside)
+    # Reconfigure outside-scope duplicates: still per-original because each cluster
+    # needs a new original chosen, status copied, and found_by updated.
+    # Chunked with prefetch_related to bound memory while avoiding N+1 queries.
+    originals_ids = (
+        Finding.objects.filter(
+            id__in=scope_ids_subquery,
+            original_finding__in=Finding.objects.exclude(id__in=scope_ids_subquery),
+        )
+        .distinct()
+        .values_list("id", flat=True)
+        .iterator(chunk_size=500)
+    )
 
-        logger.debug("done preparing duplicate cluster for deletion of original: %d", original.id)
+    for chunk_ids in batched(originals_ids, 500, strict=False):
+        for original in Finding.objects.filter(id__in=chunk_ids).prefetch_related("original_finding"):
+            # Inside-scope duplicates were already unlinked by the bulk UPDATE above,
+            # so original_finding.all() now only contains outside-scope duplicates.
+            reconfigure_duplicate_cluster(original, original.original_finding.all())
 
 
 @receiver(pre_delete, sender=Test)
 def test_pre_delete(sender, instance, **kwargs):
     logger.debug("test pre_delete, sender: %s instance: %s", to_str_typed(sender), to_str_typed(instance))
-    prepare_duplicates_for_delete(test=instance)
+    prepare_duplicates_for_delete(instance)
 
 
 @receiver(post_delete, sender=Test)
@@ -691,7 +682,7 @@ def test_post_delete(sender, instance, **kwargs):
 @receiver(pre_delete, sender=Engagement)
 def engagement_pre_delete(sender, instance, **kwargs):
     logger.debug("engagement pre_delete, sender: %s instance: %s", to_str_typed(sender), to_str_typed(instance))
-    prepare_duplicates_for_delete(engagement=instance)
+    prepare_duplicates_for_delete(instance)
 
 
 @receiver(post_delete, sender=Engagement)
@@ -699,33 +690,153 @@ def engagement_post_delete(sender, instance, **kwargs):
     logger.debug("engagement post_delete, sender: %s instance: %s", to_str_typed(sender), to_str_typed(instance))
 
 
-def fix_loop_duplicates():
+def bulk_clear_finding_m2m(finding_qs):
+    """
+    Bulk-clear M2M through tables for a queryset of findings.
+
+    Must be called BEFORE cascade_delete since M2M through tables
+    are not discovered by _meta.related_objects.
+
+    Special handling for FileUpload: deletes via ORM so the custom
+    FileUpload.delete() fires and removes files from disk storage.
+    Tags are handled via bulk_remove_all_tags to maintain tag counts.
+    """
+    from dojo.tag_utils import bulk_remove_all_tags  # noqa: PLC0415 circular import
+
+    finding_ids = finding_qs.values_list("id", flat=True)
+
+    # Collect FileUpload IDs before deleting through table entries
+    file_ids = list(
+        Finding.files.through.objects.filter(
+            finding_id__in=finding_ids,
+        ).values_list("fileupload_id", flat=True),
+    )
+
+    # Collect Note IDs before deleting through table entries
+    note_ids = list(
+        Finding.notes.through.objects.filter(
+            finding_id__in=finding_ids,
+        ).values_list("notes_id", flat=True),
+    )
+
+    # Remove tags with proper count maintenance
+    bulk_remove_all_tags(Finding, finding_ids)
+
+    # Auto-discover and delete M2M through tables — both forward (Finding._meta.many_to_many)
+    # and reverse (other models with ManyToManyField pointing to Finding, e.g. Finding_Group.findings).
+    # Forward M2M fields use field.remote_field.through, reverse use field.through.
+    m2m_through_models = set()
+    for field_info in Finding._meta.get_fields():
+        if hasattr(field_info, "tag_options"):
+            continue
+        through = getattr(field_info, "through", None) or getattr(getattr(field_info, "remote_field", None), "through", None)
+        if through is not None:
+            m2m_through_models.add(through)
+
+    for through_model in m2m_through_models:
+        # Find the FK column that points to Finding
+        fk_column = None
+        for field in through_model._meta.get_fields():
+            if hasattr(field, "related_model") and field.related_model is Finding:
+                fk_column = field.column
+                break
+        if fk_column:
+            count, _ = through_model.objects.filter(
+                **{f"{fk_column}__in": finding_ids},
+            ).delete()
+            if count:
+                logger.debug(
+                    "bulk_clear_finding_m2m: deleted %d rows from %s",
+                    count, through_model._meta.db_table,
+                )
+
+    # Delete FileUpload objects via ORM one-by-one so the custom
+    # FileUpload.delete() method fires and removes files from disk storage.
+    # Bulk deletion would orphan files on disk. File attachments are uncommon
+    # so the per-object overhead is negligible in practice.
+    if file_ids:
+        for file_upload in FileUpload.objects.filter(id__in=file_ids).iterator():
+            file_upload.delete()
+
+    # Delete orphaned Notes
+    if note_ids:
+        Notes.objects.filter(id__in=note_ids).delete()
+
+
+def bulk_delete_findings(finding_qs, chunk_size=1000):
+    """
+    Delete findings and all related objects efficiently. Including any related object in Dojo-Pro
+
+    Sends the pre_bulk_delete signal, clears M2M through tables (not
+    discovered by _meta.related_objects), then uses cascade_delete for
+    all FK relations via raw SQL.
+    Chunked with per-chunk transaction.atomic() for crash safety.
+    """
+    from dojo.signals import pre_bulk_delete_findings  # noqa: PLC0415 circular import
+    from dojo.utils_cascade_delete import (  # noqa: PLC0415 circular import
+        cascade_delete_related_objects,
+        execute_delete_sql,
+    )
+
+    pre_bulk_delete_findings.send(sender=Finding, finding_qs=finding_qs)
+    bulk_clear_finding_m2m(finding_qs)
+    for chunk_num, chunk_ids in enumerate(
+        batched(
+            finding_qs.values_list("id", flat=True).order_by("id").iterator(chunk_size=chunk_size),
+            chunk_size,
+            strict=False,
+        ),
+        start=1,
+    ):
+        chunk_qs = Finding.objects.filter(id__in=chunk_ids)
+        with transaction.atomic():
+            cascade_delete_related_objects(Finding, chunk_qs, skip_relations={Finding}, skip_m2m_for={Finding})
+            execute_delete_sql(chunk_qs)
+        logger.info(
+            "bulk_delete_findings: deleted chunk %d (%d findings)",
+            chunk_num, len(chunk_ids),
+        )
+
+
+def fix_loop_duplicates(scope_qs=None):
     """Due to bugs in the past and even currently when under high parallel load, there can be transitive duplicates."""
     """ i.e. A -> B -> C. This can lead to problems when deleting findingns, performing deduplication, etc """
     # Build base queryset without selecting full rows to minimize memory
-    loop_qs = Finding.objects.filter(duplicate_finding__isnull=False, original_finding__isnull=False)
+    base_qs = Finding.objects.filter(duplicate_finding__isnull=False, original_finding__isnull=False)
+    if scope_qs is not None:
+        base_qs = base_qs.filter(id__in=scope_qs.values_list("id", flat=True))
 
     # Use COUNT(*) at the DB instead of materializing the queryset
-    loop_count = loop_qs.count()
+    loop_count = base_qs.count()
 
     if loop_count > 0:
-        deduplicationLogger.info(f"Identified {loop_count} Findings with Loops")
+        deduplicationLogger.warning("fix_loop_duplicates: found %d findings with duplicate loops", loop_count)
         # Stream IDs only in descending order to avoid loading full Finding rows
-        for find_id in loop_qs.order_by("-id").values_list("id", flat=True).iterator(chunk_size=1000):
+        for find_id in base_qs.order_by("-id").values_list("id", flat=True).iterator(chunk_size=1000):
+            deduplicationLogger.warning("fix_loop_duplicates: fixing loop for finding %d", find_id)
             removeLoop(find_id, 50)
 
-        new_originals = Finding.objects.filter(duplicate_finding__isnull=True, duplicate=True)
-        for f in new_originals:
+        new_originals_qs = Finding.objects.filter(duplicate_finding__isnull=True, duplicate=True)
+        if scope_qs is not None:
+            new_originals_qs = new_originals_qs.filter(id__in=scope_qs.values_list("id", flat=True))
+        for f in new_originals_qs:
             deduplicationLogger.info(f"New Original: {f.id}")
             f.duplicate = False
             super(Finding, f).save(skip_validation=True)
 
-        loop_count = Finding.objects.filter(duplicate_finding__isnull=False, original_finding__isnull=False).count()
+        recheck_qs = Finding.objects.filter(duplicate_finding__isnull=False, original_finding__isnull=False)
+        if scope_qs is not None:
+            recheck_qs = recheck_qs.filter(id__in=scope_qs.values_list("id", flat=True))
+        loop_count = recheck_qs.count()
         deduplicationLogger.info(f"{loop_count} Finding found which still has Loops, please run fix loop duplicates again")
     return loop_count
 
 
 def removeLoop(finding_id, counter):
+    # NOTE: This function is recursive and does per-finding DB queries without prefetching.
+    # It could be optimized to load the duplicate graph as ID pairs in memory and process
+    # in bulk, but loops are rare (only from past bugs or high parallel load) so the
+    # current implementation is acceptable.
     # get latest status
     finding = Finding.objects.get(id=finding_id)
     real_original = finding.duplicate_finding
@@ -765,16 +876,18 @@ def removeLoop(finding_id, counter):
         removeLoop(f.id, counter - 1)
 
 
-def add_locations(finding, form):
+def add_locations(finding, form, *, replace=False):
     # TODO: Delete this after the move to Locations
     if not settings.V3_FEATURE_LOCATIONS:
         added_endpoints = save_endpoints_to_add(form.endpoints_to_add_list, finding.test.engagement.product)
         endpoint_ids = [endpoint.id for endpoint in added_endpoints]
 
-        # Merge form endpoints with existing endpoints (don't replace)
         form_endpoints = form.cleaned_data.get("endpoints", Endpoint.objects.none())
         new_endpoints = Endpoint.objects.filter(id__in=endpoint_ids)
-        finding.endpoints.set(form_endpoints | new_endpoints | finding.endpoints.all())
+        if replace:
+            finding.endpoints.set(form_endpoints | new_endpoints)
+        else:
+            finding.endpoints.set(form_endpoints | new_endpoints | finding.endpoints.all())
 
         for endpoint in finding.endpoints.all():
             _eps, _created = Endpoint_Status.objects.get_or_create(
@@ -1012,6 +1125,54 @@ def normalize_datetime(value):
     return value
 
 
+def _create_note_if_provided(
+    finding,
+    note_entry,
+    *,
+    user=None,
+    note_type=None,
+    note_date=None,
+):
+    """
+    Create a note for the finding when content is provided. Returns the note or None.
+    Note author defaults to finding.last_reviewed_by
+    """
+    if not note_entry:
+        return None
+
+    new_note = Notes.objects.create(
+        entry=note_entry,
+        author=user or finding.last_reviewed_by,
+        note_type=note_type,
+        date=note_date,
+    )
+    finding.notes.add(new_note)
+    return new_note
+
+
+def _save_finding_with_jira_sync(finding, *, new_note=None):
+    """Persist finding and apply JIRA sync behavior used by finding status actions."""
+    push_to_jira = False
+    finding_in_group = finding.has_finding_group
+    jira_issue_exists = finding.has_jira_issue or (
+        finding.finding_group and finding.finding_group.has_jira_issue
+    )
+    jira_instance = jira_services.get_instance(finding)
+    jira_project = jira_services.get_project(finding)
+
+    if jira_issue_exists:
+        push_to_jira = (
+            jira_services.is_push_all_issues(finding)
+            or (jira_instance and jira_instance.finding_jira_sync)
+        )
+        if new_note and (getattr(jira_project, "push_notes", False) or push_to_jira) and not finding_in_group:
+            jira_services.add_comment(finding, new_note, force_push=True)
+
+    finding.save(push_to_jira=(push_to_jira and not finding_in_group))
+    if push_to_jira and finding_in_group:
+        jira_services.push(finding.finding_group)
+
+
 def close_finding(
     *,
     finding,
@@ -1046,15 +1207,12 @@ def close_finding(
     finding.last_reviewed_by = user
 
     # Create note if provided
-    new_note = None
-    if note_entry:
-        new_note = Notes.objects.create(
-            entry=note_entry,
-            author=user,
-            note_type=note_type,
-            date=mitigated_date,
-        )
-        finding.notes.add(new_note)
+    new_note = _create_note_if_provided(
+        finding,
+        note_entry,
+        note_type=note_type,
+        note_date=mitigated_date,
+    )
 
     if settings.V3_FEATURE_LOCATIONS:
         # Related locations
@@ -1076,26 +1234,7 @@ def close_finding(
     # External issues (best effort)
     close_external_issue(finding.id, "Closed by defectdojo", "github")
 
-    # JIRA sync
-    push_to_jira = False
-    finding_in_group = finding.has_finding_group
-    jira_issue_exists = finding.has_jira_issue or (
-        finding.finding_group and finding.finding_group.has_jira_issue
-    )
-    jira_instance = jira_helper.get_jira_instance(finding)
-    jira_project = jira_helper.get_jira_project(finding)
-    if jira_issue_exists:
-        push_to_jira = (
-            jira_helper.is_push_all_issues(finding)
-            or (jira_instance and jira_instance.finding_jira_sync)
-        )
-        if new_note and (getattr(jira_project, "push_notes", False) or push_to_jira) and not finding_in_group:
-            jira_helper.add_comment(finding, new_note, force_push=True)
-
-    # Persist and push JIRA if applicable
-    finding.save(push_to_jira=(push_to_jira and not finding_in_group))
-    if push_to_jira and finding_in_group:
-        jira_helper.push_to_jira(finding.finding_group)
+    _save_finding_with_jira_sync(finding, new_note=new_note)
 
     # Notification
     create_notification(
@@ -1105,3 +1244,28 @@ def close_finding(
         description=f'The finding "{finding.title}" was closed by {user}',
         url=reverse("view_finding", args=(finding.id,)),
     )
+
+
+def verify_finding(
+    *,
+    finding,
+    user,
+    note_entry=None,
+    note_type=None,
+) -> None:
+    """Shared verify logic used by UI and API."""
+    verification_time = now()
+
+    finding.verified = True
+    finding.last_reviewed = verification_time
+    finding.last_reviewed_by = user
+    finding.last_status_update = verification_time
+
+    new_note = _create_note_if_provided(
+        finding,
+        note_entry,
+        note_type=note_type,
+        note_date=verification_time,
+    )
+
+    _save_finding_with_jira_sync(finding, new_note=new_note)

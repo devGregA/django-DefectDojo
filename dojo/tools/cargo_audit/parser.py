@@ -1,7 +1,10 @@
 import hashlib
 import json
 
+from django.conf import settings
+
 from dojo.models import Finding
+from dojo.tools.locations import LocationData
 
 
 class CargoAuditParser:
@@ -77,24 +80,13 @@ class CargoAuditParser:
                 vuln_id = advisory.get("id")
                 vulnerability_ids = [advisory.get("id")]
                 categories = f"**Categories:** {', '.join(advisory['categories'])}" if "categories" in advisory else ""
-                description = (
-                    categories
-                    + f"\n**Description:** `{advisory.get('description')}`"
-                )
+                description = categories + f"\n**Description:** `{advisory.get('description')}`"
 
-                if (
-                    item["affected"] is not None
-                    and "functions" in item["affected"]
-                ):
+                if item["affected"] is not None and "functions" in item["affected"]:
                     affected_func = [
-                        f'{func}: {", ".join(versions)}'
-                        for func, versions in item["affected"][
-                            "functions"
-                        ].items()
+                        f"{func}: {', '.join(versions)}" for func, versions in item["affected"]["functions"].items()
                     ]
-                    description += (
-                        f"\n**Affected functions**: {', '.join(affected_func)}"
-                    )
+                    description += f"\n**Affected functions**: {', '.join(affected_func)}"
 
                 references = f"{advisory.get('url')}\n" + "\n".join(
                     advisory["references"],
@@ -127,7 +119,6 @@ class CargoAuditParser:
                         title=title,
                         test=test,
                         severity=severity,
-                        tags=tags,
                         description=description,
                         component_name=package_name,
                         component_version=package_version,
@@ -137,6 +128,11 @@ class CargoAuditParser:
                         references=references,
                         mitigation=mitigation,
                     )
+                    finding.unsaved_tags = tags
                     finding.unsaved_vulnerability_ids = vulnerability_ids
+                    if settings.V3_FEATURE_LOCATIONS and package_name:
+                        finding.unsaved_locations.append(
+                            LocationData.dependency(purl_type="cargo", name=package_name, version=package_version),
+                        )
                     dupes[dupe_key] = finding
         return list(dupes.values())
