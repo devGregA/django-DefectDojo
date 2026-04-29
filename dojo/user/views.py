@@ -236,10 +236,7 @@ def alertcount(request):
 
 def alertcount_text(request):
     """Return alert count as plain text for htmx polling."""
-    if not settings.DISABLE_ALERT_COUNTER:
-        count = Alerts.objects.filter(user_id=request.user).count()
-    else:
-        count = 0
+    count = Alerts.objects.filter(user_id=request.user).count() if not settings.DISABLE_ALERT_COUNTER else 0
     return HttpResponse(str(count), content_type="text/plain")
 
 
