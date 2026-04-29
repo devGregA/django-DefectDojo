@@ -50,8 +50,9 @@
     "tailwindcss": "^4.1"
   },
   "scripts": {
-    "build:css": "npx @tailwindcss/cli -i tailwind.css -o ../dojo/static/dojo/css/tailwind-out.css --minify",
-    "watch:css": "npx @tailwindcss/cli -i tailwind.css -o ../dojo/static/dojo/css/tailwind-out.css --watch"
+    "copy:fonts": "mkdir -p ../dojo/static/dojo/css/files && cp node_modules/@fontsource-variable/work-sans/files/work-sans-*-wght-normal.woff2 ../dojo/static/dojo/css/files/",
+    "build:css": "npm run copy:fonts && npx @tailwindcss/cli -i tailwind.css -o ../dojo/static/dojo/css/tailwind-out.css --minify",
+    "watch:css": "npm run copy:fonts && npx @tailwindcss/cli -i tailwind.css -o ../dojo/static/dojo/css/tailwind-out.css --watch"
   },
   "engines": {
     "yarn": ">= 1.0.0"
