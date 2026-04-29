@@ -6,9 +6,11 @@ import re
 import dateutil
 from cpe import CPE
 from defusedxml import ElementTree
+from django.conf import settings
 from packageurl import PackageURL
 
 from dojo.models import Finding
+from dojo.tools.locations import LocationData
 from dojo.utils import parse_cvss_data
 
 logger = logging.getLogger(__name__)
@@ -85,7 +87,10 @@ class DependencyCheckParser:
             dupes[key] = finding
 
     def get_filename_and_path_from_dependency(
-        self, dependency, related_dependency, namespace,
+        self,
+        dependency,
+        related_dependency,
+        namespace,
     ):
         if related_dependency is None:
             return dependency.findtext(
@@ -102,34 +107,30 @@ class DependencyCheckParser:
         return None, None
 
     def get_component_name_and_version_from_dependency(
-        self, dependency, related_dependency, namespace,
+        self,
+        dependency,
+        related_dependency,
+        namespace,
     ):
         identifiers_node = dependency.find(namespace + "identifiers")
         if identifiers_node is not None:
             # analyzing identifier from the more generic to
             package_node = identifiers_node.find(".//" + namespace + "package")
             if package_node is not None:
-                pck_id = package_node.findtext(f"{namespace}id")
+                pck_id = package_node.findtext(f"{namespace}id").strip()
                 purl = PackageURL.from_string(pck_id)
                 purl_parts = purl.to_dict()
                 component_name = (
                     purl_parts["namespace"] + ":"
-                    if purl_parts["namespace"]
-                    and len(purl_parts["namespace"]) > 0
+                    if purl_parts["namespace"] and len(purl_parts["namespace"]) > 0
                     else ""
                 )
-                component_name += (
-                    purl_parts["name"]
-                    if purl_parts["name"] and len(purl_parts["name"]) > 0
-                    else ""
-                )
+                component_name += purl_parts["name"] if purl_parts["name"] and len(purl_parts["name"]) > 0 else ""
                 component_name = component_name or None
                 component_version = (
-                    purl_parts["version"]
-                    if purl_parts["version"] and len(purl_parts["version"]) > 0
-                    else ""
+                    purl_parts["version"] if purl_parts["version"] and len(purl_parts["version"]) > 0 else ""
                 )
-                return component_name, component_version
+                return component_name, component_version, pck_id
 
             # vulnerabilityIds_node = identifiers_node.find('.//' + namespace + 'vulnerabilityIds')
             # if vulnerabilityIds_node:
@@ -147,21 +148,11 @@ class DependencyCheckParser:
             if cpe_node:
                 cpe_id = cpe_node.findtext(f"{namespace}name")
                 cpe = CPE(cpe_id)
-                component_name = (
-                    cpe.get_vendor()[0] + ":"
-                    if len(cpe.get_vendor()) > 0
-                    else ""
-                )
-                component_name += (
-                    cpe.get_product()[0] if len(cpe.get_product()) > 0 else ""
-                )
+                component_name = cpe.get_vendor()[0] + ":" if len(cpe.get_vendor()) > 0 else ""
+                component_name += cpe.get_product()[0] if len(cpe.get_product()) > 0 else ""
                 component_name = component_name or None
-                component_version = (
-                    cpe.get_version()[0]
-                    if len(cpe.get_version()) > 0
-                    else None
-                )
-                return component_name, component_version
+                component_version = cpe.get_version()[0] if len(cpe.get_version()) > 0 else None
+                return component_name, component_version, None
 
             maven_node = identifiers_node.find(
                 ".//" + namespace + 'identifier[@type="maven"]',
@@ -174,7 +165,7 @@ class DependencyCheckParser:
                 if len(maven_parts) == 3:
                     component_name = maven_parts[0] + ":" + maven_parts[1]
                     component_version = maven_parts[2]
-                    return component_name, component_version
+                    return component_name, component_version, None
 
         # TODO: what happens when there multiple evidencecollectednodes with
         # product or version as type?
@@ -201,6 +192,7 @@ class DependencyCheckParser:
             )
             if product_node is not None:
                 component_name = product_node.findtext(f"{namespace}value")
+                component_version = None
                 version_node = evidence_collected_node.find(
                     ".//" + namespace + 'evidence[@type="version"]',
                 )
@@ -209,9 +201,9 @@ class DependencyCheckParser:
                         f"{namespace}value",
                     )
 
-                return component_name, component_version
+                return component_name, component_version, None
 
-        return None, None
+        return None, None, None
 
     def get_severity_and_cvss_meta(self, vulnerability, namespace) -> dict:
         # Get the base severity from the report
@@ -248,7 +240,8 @@ class DependencyCheckParser:
         if severity:
             if severity.strip().lower() not in self.SEVERITY_MAPPING:
                 logger.warning(
-                    "Warning: Unknow severity value detected '%s'. Bypass to 'Medium' value", severity,
+                    "Warning: Unknow severity value detected '%s'. Bypass to 'Medium' value",
+                    severity,
                 )
                 severity = "Medium"
             else:
@@ -263,13 +256,20 @@ class DependencyCheckParser:
         }
 
     def get_finding_from_vulnerability(
-        self, dependency, related_dependency, vulnerability, test, namespace,
+        self,
+        dependency,
+        related_dependency,
+        vulnerability,
+        test,
+        namespace,
     ):
         (
             dependency_filename,
             dependency_filepath,
         ) = self.get_filename_and_path_from_dependency(
-            dependency, related_dependency, namespace,
+            dependency,
+            related_dependency,
+            namespace,
         )
         # logger.debug('dependency_filename: %s', dependency_filename)
 
@@ -313,14 +313,19 @@ class DependencyCheckParser:
         (
             component_name,
             component_version,
+            component_purl,
         ) = self.get_component_name_and_version_from_dependency(
-            dependency, related_dependency, namespace,
+            dependency,
+            related_dependency,
+            namespace,
         )
 
         stripped_name = name
         # startswith CVE-XXX-YYY
         stripped_name = re.sub(
-            r"^CVE-\d{4}-\d{4,7}", "", stripped_name,
+            r"^CVE-\d{4}-\d{4,7}",
+            "",
+            stripped_name,
         ).strip()
         # startswith CWE-XXX:
         stripped_name = re.sub(r"^CWE-\d+\:", "", stripped_name).strip()
@@ -329,7 +334,8 @@ class DependencyCheckParser:
 
         if component_name is None:
             logger.warning(
-                "component_name was None for File: %s, using dependency file name instead.", dependency_filename,
+                "component_name was None for File: %s, using dependency file name instead.",
+                dependency_filename,
             )
             component_name = dependency_filename
 
@@ -348,15 +354,9 @@ class DependencyCheckParser:
                 ref_url = reference_node.findtext(f"{namespace}url")
                 ref_name = reference_node.findtext(f"{namespace}name")
                 if ref_url == ref_name:
-                    reference_detail += (
-                        f"**Source:** {ref_source}\n**URL:** {ref_url}\n\n"
-                    )
+                    reference_detail += f"**Source:** {ref_source}\n**URL:** {ref_url}\n\n"
                 else:
-                    reference_detail += (
-                        f"**Source:** {ref_source}\n"
-                        f"**URL:** {ref_url}\n"
-                        f"**Name:** {ref_name}\n\n"
-                    )
+                    reference_detail += f"**Source:** {ref_source}\n**URL:** {ref_url}\n**Name:** {ref_name}\n\n"
 
         if related_dependency is not None:
             tags.append("related")
@@ -366,14 +366,18 @@ class DependencyCheckParser:
                 notes = "Document on why we are suppressing this vulnerability is missing!"
                 tags.append("no_suppression_document")
             mitigation = f"**This vulnerability is mitigated and/or suppressed:** {notes}\n"
-            mitigation += f"Update {component_name}:{component_version} to at least the version recommended in the description"
+            mitigation += (
+                f"Update {component_name}:{component_version} to at least the version recommended in the description"
+            )
             mitigated = datetime.datetime.now(datetime.UTC)
             is_Mitigated = True
             active = False
             tags.append("suppressed")
 
         else:
-            mitigation = f"Update {component_name}:{component_version} to at least the version recommended in the description"
+            mitigation = (
+                f"Update {component_name}:{component_version} to at least the version recommended in the description"
+            )
             description += "\n**Filepath:** " + str(dependency_filepath)
             active = True
 
@@ -386,7 +390,6 @@ class DependencyCheckParser:
             mitigation=mitigation,
             mitigated=mitigated,
             is_mitigated=is_Mitigated,
-            tags=tags,
             active=active,
             dynamic_finding=False,
             static_finding=True,
@@ -395,6 +398,13 @@ class DependencyCheckParser:
             component_version=component_version,
             **self.get_severity_and_cvss_meta(vulnerability, namespace),
         )
+
+        finding.unsaved_tags = tags
+
+        if settings.V3_FEATURE_LOCATIONS and component_purl:
+            finding.unsaved_locations.append(
+                LocationData.dependency(purl=component_purl, file_path=dependency_filename),
+            )
 
         if vulnerability_id:
             finding.unsaved_vulnerability_ids = [vulnerability_id]
@@ -457,19 +467,15 @@ class DependencyCheckParser:
                                 namespace + "relatedDependencies",
                             )
                             if relatedDependencies is not None:
-                                for (
-                                    relatedDependency
-                                ) in relatedDependencies.findall(
+                                for relatedDependency in relatedDependencies.findall(
                                     namespace + "relatedDependency",
                                 ):
-                                    finding = (
-                                        self.get_finding_from_vulnerability(
-                                            dependency,
-                                            relatedDependency,
-                                            vulnerability,
-                                            test,
-                                            namespace,
-                                        )
+                                    finding = self.get_finding_from_vulnerability(
+                                        dependency,
+                                        relatedDependency,
+                                        vulnerability,
+                                        test,
+                                        namespace,
                                     )
                                     if finding:  # could be None
                                         if scan_date:
@@ -490,5 +496,16 @@ class DependencyCheckParser:
                             if scan_date:
                                 finding.date = scan_date
                             self.add_finding(finding, dupes)
+                elif settings.V3_FEATURE_LOCATIONS:
+                    # Collect product-level dependency locations
+                    _, _, component_purl = self.get_component_name_and_version_from_dependency(
+                        dependency,
+                        None,
+                        namespace,
+                    )
+                    if component_purl:
+                        test.unsaved_metadata.append(
+                            LocationData.dependency(purl=component_purl),
+                        )
 
         return list(dupes.values())

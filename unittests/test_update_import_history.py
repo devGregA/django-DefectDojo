@@ -1,4 +1,6 @@
+import json
 import logging
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 from django.contrib.auth.models import User as DjangoUser
@@ -149,3 +151,52 @@ class UpdateImportHistoryTests(TransactionTestCase):
         expected = (len(new_findings) - 1) + (len(closed_findings) - 1)
         created = Test_Import_Finding_Action.objects.filter(test_import=test_import).count()
         self.assertEqual(created, expected)
+
+    def test_import_settings_scan_date_when_user_supplies_scan_date(self):
+        """When the user supplies a scan_date, import_settings should contain the ISO-formatted date."""
+        user_scan_date = datetime(2025, 6, 15, 12, 0, 0, tzinfo=UTC)
+        self.importer.scan_date = user_scan_date
+        self.importer.scan_date_override = True
+
+        new_findings = self._create_findings(1)
+        test_import = self.importer.update_import_history(new_findings=new_findings)
+
+        settings = test_import.import_settings
+        # Verify import_settings is JSON-serializable (the original bug)
+        json.dumps(settings)
+        self.assertEqual(settings["scan_date"], user_scan_date.isoformat())
+
+    def test_import_settings_scan_date_when_no_scan_date_supplied(self):
+        """When no scan_date override is provided, import_settings should have scan_date as None."""
+        self.importer.scan_date_override = False
+
+        new_findings = self._create_findings(1)
+        test_import = self.importer.update_import_history(new_findings=new_findings)
+
+        settings = test_import.import_settings
+        # Verify import_settings is JSON-serializable
+        json.dumps(settings)
+        self.assertIsNone(settings["scan_date"])
+
+    def test_import_settings_contains_scope_and_group_fields(self):
+        """import_settings should persist the seven scope/tag/group-by importer options."""
+        self.importer.service = "my-service"
+        self.importer.close_old_findings_product_scope = True
+        self.importer.do_not_reactivate = True
+        self.importer.apply_tags_to_findings = True
+        self.importer.apply_tags_to_endpoints = True
+        self.importer.group_by = "component_name"
+        self.importer.create_finding_groups_for_all_findings = True
+
+        new_findings = self._create_findings(1)
+        test_import = self.importer.update_import_history(new_findings=new_findings)
+
+        s = test_import.import_settings
+        json.dumps(s)
+        self.assertEqual(s["service"], "my-service")
+        self.assertTrue(s["close_old_findings_product_scope"])
+        self.assertTrue(s["do_not_reactivate"])
+        self.assertTrue(s["apply_tags_to_findings"])
+        self.assertTrue(s["apply_tags_to_endpoints"])
+        self.assertEqual(s["group_by"], "component_name")
+        self.assertTrue(s["create_finding_groups_for_all_findings"])

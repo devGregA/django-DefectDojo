@@ -391,6 +391,7 @@
                             {% endif %}
                             {% if request.user.is_superuser %}
                                 <a href="{% url 'system_settings' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "System Settings" %}</a>
+                                <a href="{% url 'celery_status' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "Celery Status" %}</a>
                             {% endif %}
                             {% if "dojo.view_tool_configuration"|has_configuration_permission:request %}
                                 <a href="{% url 'tool_config' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "Tool Configuration" %}</a>
@@ -523,7 +524,7 @@
                                         <i class="fa-solid fa-right-from-bracket fa-fw"></i> {% trans "SAML Logout" %}
                                     </a>
                                 {% endif %}
-                                {% if CREATE_CLOUD_BANNER %}
+                                {% if SHOW_PLG_LINK %}
                                     <a href="https://cloud.defectdojo.com/accounts/onboarding/plg_step_1" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         <i class="fa-solid fa-level-up fa-fw"></i> {% trans "Try Pro for Free!" %}
                                     </a>
@@ -550,6 +551,24 @@
                     {{ announcement.message|bleach_with_a_tags }}
                     </div>
                 {% endif %}
+                {% for banner in additional_banners %}
+                    <div role="alert" class="announcement-banner alert alert-{{ banner.style }} show"
+                         data-source="{{ banner.source }}">
+                        {{ banner.message|safe }}{% if banner.url %} <a href="{{ banner.url }}">{{ banner.link_text }}</a>{% endif %}
+                        {% if banner.expanded_html %}
+                            <button type="button" class="banner-toggle collapsed"
+                                    data-toggle="collapse"
+                                    data-target="#banner-expanded-{{ forloop.counter }}"
+                                    aria-expanded="false"
+                                    aria-controls="banner-expanded-{{ forloop.counter }}">
+                                <i class="fa-solid fa-caret-down"></i>
+                            </button>
+                            <div id="banner-expanded-{{ forloop.counter }}" class="collapse banner-expanded">
+                                {{ banner.expanded_html|safe }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
                 <div class="container-fluid">
                     <!-- start of tabs -->
                     {% block tab_bar %}

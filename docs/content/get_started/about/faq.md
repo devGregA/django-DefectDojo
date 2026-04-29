@@ -21,7 +21,7 @@ DefectDojo is meant to be the central source of truth for your organization's se
 
 - Allowing users to identify duplicate findings across scans and tools, minimizing alert fatigue.
 - Enforcing SLAs on vulnerabilities, ensuring that your organization handles each Finding within an appropriate timeframe.
-- Sending tickets to [Jira](/issue_tracking/jira/jira_guide/), ServiceNow or other Project Tracking software, allowing your development team to integrate issue remediation into their standard release process without requiring them to learn another project management tool.
+- [Sending tickets](/issue_tracking/intro/intro/) to Jira, ServiceNow or other Project Tracking software, allowing your development team to integrate issue remediation into their standard release process without requiring them to learn another project management tool.
 - Integrating into automated [CI/CD pipelines](/import_data/import_scan_files/api_pipeline_modelling/) to automatically ingest report data from repositories, even down to the branch level.
 - Creating [reports](/metrics_reports/reports/using_the_report_builder/) on any set of vulnerabilities or software context, to quickly share scan results or status updates with stakeholders.
 - Establishing acceptance and mitigation workflows, supporting formal risk-management tracking.
@@ -69,7 +69,7 @@ If you're looking to add a new tool to your suite, we have a list of recommended
 There are two different methods to import a single report from a security tool:
 
 - **Import** handles the report as a single point-in-time record. Importing a report creates a Test containing the resulting Findings.
-- **[Reimport](/import_data/import_intro/import_vs_reimport/)** is used to update an existing Test with a new set of results. If you have a more open-ended approach to your testing process, you can continuously Reimport the latest version of your report to an existing Test. DefectDojo will compare the results of the incoming report to your existing data, record any changes, and then adjust the Findings in the Test to match the latest report.
+- **[Reimport](/import_data/import_intro/reimport/)** is used to update an existing Test with a new set of results. If you have a more open-ended approach to your testing process, you can continuously Reimport the latest version of your report to an existing Test. DefectDojo will compare the results of the incoming report to your existing data, record any changes, and then adjust the Findings in the Test to match the latest report.
 
 To understand the difference, it’s helpful to think of Import as recording a single instance of a scan event, and Reimport as updating a continual record of scanning.
 
@@ -85,7 +85,7 @@ DefectDojo supports a wide variety of tools. If you’re seeing inconsistent beh
 
 DefectDojo Pro has a Universal Parser import method which allows you to handle any JSON, CSV or XML file. DefectDojo OS users can write custom parsers for the same purpose.
 
-Finally, third-party report formats have been known to change without warning: Our OS community greatly appreciates [PRs and contributions](/open_source/contributing/how-to-write-a-parser/) to keep our parsers up to date.
+Finally, third-party report formats have been known to change without warning: Our OS community greatly appreciates [PRs and contributions](/get_started/contributing/how-to-write-a-parser/) to keep our parsers up to date.
 
 ### How should I handle large scan files?
 
@@ -129,6 +129,6 @@ DefectDojo Pro users also have access to [executive-level Metrics dashboards](/g
 
 ### How can I integrate a project management tool with DefectDojo?
 
-In both Pro and Open-Source editions of DefectDojo, Findings in DefectDojo can be pushed to Jira as Issues, which allows you to integrate issue remediation with your development team.  We have a [complete guide to Jira](/issue_tracking/jira/jira_guide/) written which describes the process in detail.
+In both Pro and Open-Source editions of DefectDojo, Findings in DefectDojo can be pushed to Jira as Issues, which allows you to integrate issue remediation with your development team.
 
 DefectDojo Pro adds support for [Additional Project Tracking Integrations](/issue_tracking/intro/intro/)**: ServiceNow, Azure DevOps, GitHub and GitLab.

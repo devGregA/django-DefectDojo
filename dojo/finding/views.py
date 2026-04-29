@@ -30,15 +30,15 @@ from imagekit import ImageSpec
 from imagekit.processors import ResizeToFill
 
 import dojo.finding.helper as finding_helper
-import dojo.jira_link.helper as jira_helper
 import dojo.risk_acceptance.helper as ra_helper
-from dojo.authorization.authorization import user_has_permission_or_403
+from dojo.authorization.authorization import user_has_global_permission_or_403, user_has_permission_or_403
 from dojo.authorization.authorization_decorators import (
     user_has_global_permission,
     user_is_authorized,
 )
 from dojo.authorization.roles_permissions import Permissions
 from dojo.celery_dispatch import dojo_dispatch_task
+from dojo.decorators import deprecated_view
 from dojo.filters import (
     AcceptedFindingFilter,
     AcceptedFindingFilterWithoutObjectLookups,
@@ -49,6 +49,11 @@ from dojo.filters import (
     TemplateFindingFilter,
     TestImportFilter,
     TestImportFindingActionFilter,
+)
+from dojo.finding.deduplication import (
+    _fetch_fp_candidates_for_batch,
+    do_false_positive_history_batch,
+    match_finding_to_existing_findings,
 )
 from dojo.finding.queries import get_authorized_findings, get_authorized_findings_for_queryset, prefetch_for_findings
 from dojo.forms import (
@@ -73,6 +78,7 @@ from dojo.forms import (
     StubFindingForm,
     TypedNoteForm,
 )
+from dojo.jira import services as jira_services
 from dojo.location.status import FindingLocationStatus
 from dojo.models import (
     IMPORT_UNTOUCHED_FINDING,
@@ -112,14 +118,12 @@ from dojo.utils import (
     add_field_errors_to_response,
     add_success_message_to_response,
     calculate_grade,
-    do_false_positive_history,
     get_page_items,
     get_page_items_and_count,
     get_return_url,
     get_system_setting,
     get_visible_scan_types,
     get_words_for_field,
-    match_finding_to_existing_findings,
     process_tag_notifications,
     redirect,
     redirect_to_return_url_or_else,
@@ -325,7 +329,7 @@ class ListFindings(View, BaseListFindings):
             user_has_permission_or_403(request.user, product, Permissions.Product_View)
             context["show_product_column"] = False
             context["product_tab"] = Product_Tab(product, title="Findings", tab="findings")
-            context["jira_project"] = jira_helper.get_jira_project(product)
+            context["jira_project"] = jira_services.get_project(product)
             if github_config := GITHUB_PKey.objects.filter(product=product).first():
                 context["github_config"] = github_config.git_conf_id
         elif engagement_id := self.get_engagement_id():
@@ -333,7 +337,7 @@ class ListFindings(View, BaseListFindings):
             user_has_permission_or_403(request.user, engagement, Permissions.Engagement_View)
             context["show_product_column"] = False
             context["product_tab"] = Product_Tab(engagement.product, title=engagement.name, tab="engagements")
-            context["jira_project"] = jira_helper.get_jira_project(engagement)
+            context["jira_project"] = jira_services.get_project(engagement)
             if github_config := GITHUB_PKey.objects.filter(product__engagement=engagement).first():
                 context["github_config"] = github_config.git_conf_id
 
@@ -588,7 +592,7 @@ class ViewFinding(View):
             can_be_pushed_to_jira,
             can_be_pushed_to_jira_error,
             error_code,
-        ) = jira_helper.can_be_pushed_to_jira(finding)
+        ) = jira_services.can_be_pushed(finding)
         # Check the error code
         if error_code:
             logger.debug(error_code)
@@ -643,9 +647,9 @@ class ViewFinding(View):
             finding.save()
             # Determine if the note should be sent to jira
             if finding.has_jira_issue:
-                jira_helper.add_comment(finding, new_note)
+                jira_services.add_comment(finding, new_note)
             elif finding.has_jira_group_issue:
-                jira_helper.add_comment(finding.finding_group, new_note)
+                jira_services.add_comment(finding.finding_group, new_note)
             # Send the notification of the note being added
             url = request.build_absolute_uri(
                 reverse("view_finding", args=(finding.id,)),
@@ -761,9 +765,9 @@ class EditFinding(View):
 
     def get_jira_form(self, request: HttpRequest, finding: Finding, finding_form: FindingForm = None):
         # Determine if jira should be used
-        if (jira_project := jira_helper.get_jira_project(finding)) is not None:
+        if (jira_project := jira_services.get_project(finding)) is not None:
             # Determine if push all findings is enabled
-            push_all_findings = jira_helper.is_push_all_issues(finding)
+            push_all_findings = jira_services.is_push_all_issues(finding)
             # Set up the args for the form
             args = [request.POST] if request.method == "POST" else []
             # Set the initial form args
@@ -880,26 +884,27 @@ class EditFinding(View):
                     status.last_modified = timezone.now()
                     status.save()
 
-    def process_false_positive_history(self, finding: Finding):
+    def process_false_positive_history(self, finding: Finding, *, old_false_p: bool = False):
         if get_system_setting("false_positive_history", False):
             # If the finding is being marked as a false positive we dont need to call the
-            # fp history function because it will be called by the save function
-            # If finding was a false positive and is being reactivated: retroactively reactivates all equal findings
-            if finding.false_p and not finding.false_p and get_system_setting("retroactive_false_positive_history"):
+            # fp history function because it will be called by the save function.
+            # If finding was a false positive and is being reactivated: retroactively reactivates all equal findings.
+            # old_false_p must be captured before form.save(commit=False) mutates the finding in place.
+            if old_false_p and not finding.false_p and get_system_setting("retroactive_false_positive_history"):
                 logger.debug("FALSE_POSITIVE_HISTORY: Reactivating existing findings based on: %s", finding)
-
-                existing_fp_findings = match_finding_to_existing_findings(
+                # QuerySet.update() bypasses Django signals, which is intentional here — it mirrors
+                # the previous save_no_options() calls that also disabled all post-save processing.
+                # match_finding_to_existing_findings returns a lazy QS with no .only() applied,
+                # so any field can be added here without needing a corresponding .only() change in deduplication.py#_fetch_fp_candidates_for_batch.
+                match_finding_to_existing_findings(
                     finding, product=finding.test.engagement.product,
-                ).filter(false_p=True)
-
-                for fp in existing_fp_findings:
-                    logger.debug("FALSE_POSITIVE_HISTORY: Reactivating false positive %i: %s", fp.id, fp)
-                    fp.active = finding.active
-                    fp.verified = finding.verified
-                    fp.false_p = False
-                    fp.out_of_scope = finding.out_of_scope
-                    fp.is_mitigated = finding.is_mitigated
-                    fp.save_no_options()
+                ).filter(false_p=True).update(
+                    false_p=False,
+                    active=finding.active,
+                    verified=finding.verified,
+                    out_of_scope=finding.out_of_scope,
+                    is_mitigated=finding.is_mitigated,
+                )
 
     def process_burp_request_response(self, finding: Finding, context: dict):
         if "request" in context["form"].cleaned_data or "response" in context["form"].cleaned_data:
@@ -919,6 +924,9 @@ class EditFinding(View):
     def process_finding_form(self, request: HttpRequest, finding: Finding, context: dict):
         if context["form"].is_valid():
             # process some of the easy stuff first
+            # Capture false_p before form.save(commit=False) mutates the finding in place,
+            # so process_false_positive_history can detect a false-positive → active transition.
+            old_false_p = finding.false_p
             new_finding = context["form"].save(commit=False)
             new_finding.test = finding.test
             new_finding.numerical_severity = Finding.get_numerical_severity(new_finding.severity)
@@ -935,8 +943,8 @@ class EditFinding(View):
                     ra_helper.simple_risk_accept(request.user, new_finding, perform_save=False)
             elif new_finding.risk_accepted:
                 ra_helper.risk_unaccept(request.user, new_finding, perform_save=False)
-            # Save and add new locations
-            associated_locations = finding_helper.add_locations(new_finding, context["form"])
+            # Save and add new locations; replace=True so deselected endpoints are removed
+            associated_locations = finding_helper.add_locations(new_finding, context["form"], replace=True)
             # Remove unrelated endpoints
             if settings.V3_FEATURE_LOCATIONS:
                 for ref in new_finding.locations.all():
@@ -950,7 +958,7 @@ class EditFinding(View):
                         endpoint_status.delete()
             # Handle some of the other steps
             self.process_mitigated_data(request, new_finding, context)
-            self.process_false_positive_history(new_finding)
+            self.process_false_positive_history(new_finding, old_false_p=old_false_p)
             self.process_burp_request_response(new_finding, context)
             # Save the vulnerability IDs
             finding_helper.save_vulnerability_ids(new_finding, context["form"].cleaned_data["vulnerability_ids"].split())
@@ -979,8 +987,8 @@ class EditFinding(View):
             logger.debug(JFORM_PUSH_TO_JIRA_MESSAGE, context["jform"].cleaned_data.get("push_to_jira"))
             # can't use helper as when push_all_jira_issues is True, the checkbox gets disabled and is always false
             push_to_jira_checkbox = context["jform"].cleaned_data.get("push_to_jira")
-            push_all_jira_issues = jira_helper.is_push_all_issues(finding)
-            push_to_jira = push_all_jira_issues or push_to_jira_checkbox or jira_helper.is_keep_in_sync_with_jira(finding)
+            push_all_jira_issues = jira_services.is_push_all_issues(finding)
+            push_to_jira = push_all_jira_issues or push_to_jira_checkbox or jira_services.is_keep_in_sync(finding)
             logger.debug("push_to_jira: %s", push_to_jira)
             logger.debug("push_all_jira_issues: %s", push_all_jira_issues)
             logger.debug("has_jira_group_issue: %s", finding.has_jira_group_issue)
@@ -997,14 +1005,14 @@ class EditFinding(View):
                     which is already checked in the validation of the form
                     """
                     if not new_jira_issue_key:
-                        jira_helper.finding_unlink_jira(request, finding)
+                        jira_services.unlink_finding(request, finding)
                         jira_message = "Link to JIRA issue removed successfully."
                     elif new_jira_issue_key != finding.jira_issue.jira_key:
-                        jira_helper.finding_unlink_jira(request, finding)
-                        jira_helper.finding_link_jira(request, finding, new_jira_issue_key)
+                        jira_services.unlink_finding(request, finding)
+                        jira_services.link_finding(request, finding, new_jira_issue_key)
                         jira_message = "Changed JIRA link successfully."
                 elif new_jira_issue_key:
-                    jira_helper.finding_link_jira(request, finding, new_jira_issue_key)
+                    jira_services.link_finding(request, finding, new_jira_issue_key)
                     jira_message = "Linked a JIRA issue successfully."
             # any existing finding should be updated
             # Determine if a message should be added
@@ -1061,7 +1069,7 @@ class EditFinding(View):
             # we only push the group after storing the finding to make sure
             # the updated data of the finding is pushed as part of the group
             if push_to_jira and finding.finding_group:
-                jira_helper.push_to_jira(finding.finding_group)
+                jira_services.push(finding.finding_group)
 
         return request, all_forms_valid
 
@@ -1227,6 +1235,65 @@ def close_finding(request, fid):
 
 
 @user_is_authorized(Finding, Permissions.Finding_Edit, "fid")
+def verify_finding(request, fid):
+    finding = get_object_or_404(Finding, id=fid)
+
+    if finding.verified:
+        messages.add_message(
+            request,
+            messages.INFO,
+            "Finding already verified.",
+            extra_tags="alert-info",
+        )
+        return redirect_to_return_url_or_else(
+            request,
+            reverse("view_finding", args=(finding.id,)),
+        )
+
+    form = NoteForm(data=request.POST or None)
+    form.fields["entry"].required = False
+    form.fields["entry"].label = _("Comment (optional)")
+
+    if request.method == "POST" and form.is_valid():
+        entry = form.cleaned_data.get("entry", "")
+        finding_helper.verify_finding(
+            finding=finding,
+            user=request.user,
+            note_entry=entry,
+        )
+
+        messages.add_message(
+            request,
+            messages.SUCCESS,
+            "Finding verified.",
+            extra_tags="alert-success",
+        )
+
+        return redirect_to_return_url_or_else(
+            request,
+            reverse("view_finding", args=(finding.id,)),
+        )
+
+    product_tab = Product_Tab(
+        finding.test.engagement.product,
+        title="Verify Finding",
+        tab="findings",
+    )
+
+    return render(
+        request,
+        "dojo/verify_finding.html",
+        {
+            "finding": finding,
+            "product_tab": product_tab,
+            "user": request.user,
+            "form": form,
+            "active_tab": "findings",
+        },
+    )
+
+
+@user_is_authorized(Finding, Permissions.Finding_Edit, "fid")
 def defect_finding_review(request, fid):
     finding = get_object_or_404(Finding, id=fid)
     # in order to close a finding, we need to capture why it was closed
@@ -1270,8 +1337,8 @@ def defect_finding_review(request, fid):
             # Only push if the finding is not in a group
             if jira_issue_exists:
                 # Determine if any automatic sync should occur
-                jira_instance = jira_helper.get_jira_instance(finding)
-                push_to_jira = jira_helper.is_push_all_issues(finding) \
+                jira_instance = jira_services.get_instance(finding)
+                push_to_jira = jira_services.is_push_all_issues(finding) \
                     or (jira_instance and jira_instance.finding_jira_sync)
             # Add the closing note
             if push_to_jira and not finding_in_group:
@@ -1279,14 +1346,14 @@ def defect_finding_review(request, fid):
                     new_note.entry += "\nJira issue set to resolved."
                 else:
                     new_note.entry += "\nJira issue re-opened."
-                jira_helper.add_comment(finding, new_note, force_push=True)
+                jira_services.add_comment(finding, new_note, force_push=True)
             # Save the finding
             finding.save(push_to_jira=(push_to_jira and not finding_in_group))
 
             # we only push the group after saving the finding to make sure
             # the updated data of the finding is pushed as part of the group
             if push_to_jira and finding_in_group:
-                jira_helper.push_to_jira(finding.finding_group)
+                jira_services.push(finding.finding_group)
 
             messages.add_message(
                 request, messages.SUCCESS, "Defect Reviewed", extra_tags="alert-success",
@@ -1340,8 +1407,8 @@ def reopen_finding(request, fid):
     # Clear the risk acceptance, if present
     ra_helper.risk_unaccept(request.user, finding)
     finding.save(dedupe_option=False, push_to_jira=False)
-    if jira_helper.is_push_all_issues(finding) or jira_helper.is_keep_in_sync_with_jira(finding):
-        jira_helper.push_to_jira(finding)
+    if jira_services.is_push_all_issues(finding) or jira_services.is_keep_in_sync(finding):
+        jira_services.push(finding)
 
     reopen_external_issue(finding.id, "re-opened by defectdojo", "github")
 
@@ -1542,19 +1609,19 @@ def request_finding_review(request, fid):
             # Only push if the finding is not in a group
             if jira_issue_exists:
                 # Determine if any automatic sync should occur
-                jira_instance = jira_helper.get_jira_instance(finding)
-                push_to_jira = jira_helper.is_push_all_issues(finding) \
+                jira_instance = jira_services.get_instance(finding)
+                push_to_jira = jira_services.is_push_all_issues(finding) \
                     or (jira_instance and jira_instance.finding_jira_sync)
             # Add the closing note
             if push_to_jira and not finding_in_group:
-                jira_helper.add_comment(finding, new_note, force_push=True)
+                jira_services.add_comment(finding, new_note, force_push=True)
             # Save the finding
             finding.save(push_to_jira=(push_to_jira and not finding_in_group))
 
             # we only push the group after saving the finding to make sure
             # the updated data of the finding is pushed as part of the group
             if push_to_jira and finding_in_group:
-                jira_helper.push_to_jira(finding.finding_group)
+                jira_services.push(finding.finding_group)
 
             reviewers = Dojo_User.objects.filter(id__in=form.cleaned_data["reviewers"])
             reviewers_string = ", ".join([f"{user} ({user.id})" for user in reviewers])
@@ -1637,19 +1704,19 @@ def clear_finding_review(request, fid):
             # Only push if the finding is not in a group
             if jira_issue_exists:
                 # Determine if any automatic sync should occur
-                jira_instance = jira_helper.get_jira_instance(finding)
-                push_to_jira = jira_helper.is_push_all_issues(finding) \
+                jira_instance = jira_services.get_instance(finding)
+                push_to_jira = jira_services.is_push_all_issues(finding) \
                     or (jira_instance and jira_instance.finding_jira_sync)
             # Add the closing note
             if push_to_jira and not finding_in_group:
-                jira_helper.add_comment(finding, new_note, force_push=True)
+                jira_services.add_comment(finding, new_note, force_push=True)
             # Save the finding
             finding.save(push_to_jira=(push_to_jira and not finding_in_group))
 
             # we only push the group after saving the finding to make sure
             # the updated data of the finding is pushed as part of the group
             if push_to_jira and finding_in_group:
-                jira_helper.push_to_jira(finding.finding_group)
+                jira_services.push(finding.finding_group)
 
             messages.add_message(
                 request,
@@ -1735,6 +1802,9 @@ def mktemplate(request, fid):
 
 @user_is_authorized(Finding, Permissions.Finding_Edit, "fid")
 def find_template_to_apply(request, fid):
+    # Templates may contain sensitive data from any product; require global permission
+    # to match the authorization level of the /template list view
+    user_has_global_permission_or_403(request.user, Permissions.Finding_Edit)
     finding = get_object_or_404(Finding, id=fid)
     test = get_object_or_404(Test, id=finding.test.id)
     templates_by_cve = (
@@ -1997,6 +2067,7 @@ def add_stub_finding(request, tid):
 
 
 @user_is_authorized(Stub_Finding, Permissions.Finding_Delete, "fid")
+@deprecated_view("Stub Findings", removal_version="2.59.0", removal_date="June 1, 2026")
 def delete_stub_finding(request, fid):
     finding = get_object_or_404(Stub_Finding, id=fid)
 
@@ -2023,13 +2094,14 @@ def delete_stub_finding(request, fid):
 
 
 @user_is_authorized(Stub_Finding, Permissions.Finding_Edit, "fid")
+@deprecated_view("Stub Findings", removal_version="2.59.0", removal_date="June 1, 2026")
 def promote_to_finding(request, fid):
     finding = get_object_or_404(Stub_Finding, id=fid)
     test = finding.test
     form_error = False
-    push_all_jira_issues = jira_helper.is_push_all_issues(finding)
+    push_all_jira_issues = jira_services.is_push_all_issues(finding)
     jform = None
-    use_jira = jira_helper.get_jira_project(finding) is not None
+    use_jira = jira_services.get_project(finding) is not None
     product_tab = Product_Tab(
         finding.test.engagement.product, title="Promote Finding", tab="findings",
     )
@@ -2042,7 +2114,7 @@ def promote_to_finding(request, fid):
                 instance=finding,
                 prefix="jiraform",
                 push_all=push_all_jira_issues,
-                jira_project=jira_helper.get_jira_project(finding),
+                jira_project=jira_services.get_project(finding),
             )
 
         if form.is_valid() and (jform is None or jform.is_valid()):
@@ -2094,11 +2166,11 @@ def promote_to_finding(request, fid):
                     """
 
                     if not new_jira_issue_key:
-                        jira_helper.finding_unlink_jira(request, new_finding)
+                        jira_services.unlink_finding(request, new_finding)
 
                     elif new_jira_issue_key != new_finding.jira_issue.jira_key:
-                        jira_helper.finding_unlink_jira(request, new_finding)
-                        jira_helper.finding_link_jira(
+                        jira_services.unlink_finding(request, new_finding)
+                        jira_services.link_finding(
                             request, new_finding, new_jira_issue_key,
                         )
                 else:
@@ -2106,7 +2178,7 @@ def promote_to_finding(request, fid):
                     if new_jira_issue_key:
                         logger.debug(
                             "finding has no jira issue yet, but jira issue specified in request. trying to link.")
-                        jira_helper.finding_link_jira(
+                        jira_services.link_finding(
                             request, new_finding, new_jira_issue_key,
                         )
 
@@ -2159,8 +2231,8 @@ def promote_to_finding(request, fid):
         if use_jira:
             jform = JIRAFindingForm(
                 prefix="jiraform",
-                push_all=jira_helper.is_push_all_issues(test),
-                jira_project=jira_helper.get_jira_project(test),
+                push_all=jira_services.is_push_all_issues(test),
+                jira_project=jira_services.get_project(test),
             )
 
     return render(
@@ -2696,6 +2768,10 @@ def _bulk_update_finding_status_and_severity(finds, form, request, system_settin
     actually_updated_count = 0
 
     if form.cleaned_data["severity"] or form.cleaned_data["status"]:
+        # Accumulate findings for batched FP-history processing after the per-finding loop
+        fp_findings = []            # findings being marked as FP
+        reactivation_findings = []  # findings being un-FP'd (retroactive reactivation)
+
         for find in finds:
             old_find = copy.deepcopy(find)
 
@@ -2735,27 +2811,70 @@ def _bulk_update_finding_status_and_severity(finds, form, request, system_settin
             actually_updated_count += 1
 
             if system_settings.false_positive_history:
-                # If finding is being marked as false positive
                 if find.false_p:
-                    do_false_positive_history(find)
-
-                # If finding was a false positive and is being reactivated: retroactively reactivates all equal findings
+                    fp_findings.append(find)
                 elif old_find.false_p and not find.false_p:
-                    if system_settings.retroactive_false_positive_history:
-                        logger.debug("FALSE_POSITIVE_HISTORY: Reactivating existing findings based on: %s", find)
+                    reactivation_findings.append(find)
 
-                        existing_fp_findings = match_finding_to_existing_findings(
-                            find, product=find.test.engagement.product,
-                        ).filter(false_p=True)
+        # --- Batch FP history: one DB query per (product, algorithm) group instead of one per finding ---
+        if system_settings.false_positive_history and fp_findings:
+            groups: dict = defaultdict(list)
+            for find in fp_findings:
+                groups[find.test.engagement.product_id, find.test.deduplication_algorithm].append(find)
+            for group_findings in groups.values():
+                do_false_positive_history_batch(group_findings)
 
-                        for fp in existing_fp_findings:
-                            logger.debug("FALSE_POSITIVE_HISTORY: Reactivating false positive %i: %s", fp.id, fp)
-                            fp.active = find.active
-                            fp.verified = find.verified
-                            fp.false_p = False
-                            fp.out_of_scope = find.out_of_scope
-                            fp.is_mitigated = find.is_mitigated
-                            fp.save_no_options()
+        # --- Batch retroactive reactivation ---
+        if (
+            system_settings.false_positive_history
+            and system_settings.retroactive_false_positive_history
+            and reactivation_findings
+        ):
+            all_fp_ids_to_reactivate: set = set()
+            groups = defaultdict(list)
+            for find in reactivation_findings:
+                groups[find.test.engagement.product_id, find.test.deduplication_algorithm].append(find)
+            for (_, dedup_alg), group_findings in groups.items():
+                product = group_findings[0].test.engagement.product
+                candidates = _fetch_fp_candidates_for_batch(group_findings, product, dedup_alg)
+                for find in group_findings:
+                    if dedup_alg == "unique_id_from_tool_or_hash_code":
+                        by_uid, by_hash = candidates
+                        uid_matches = by_uid.get(find.unique_id_from_tool, []) if find.unique_id_from_tool else []
+                        hash_matches = by_hash.get(find.hash_code, []) if find.hash_code else []
+                        seen: dict = {}
+                        for ef in uid_matches + hash_matches:
+                            seen.setdefault(ef.id, ef)
+                        existing = list(seen.values())
+                    elif dedup_alg == "hash_code":
+                        existing = candidates.get(find.hash_code, []) if find.hash_code else []
+                    elif dedup_alg == "unique_id_from_tool":
+                        existing = candidates.get(find.unique_id_from_tool, []) if find.unique_id_from_tool else []
+                    elif dedup_alg == "legacy":
+                        lookup_key = (find.title.lower(), find.severity) if find.title else None
+                        existing = candidates.get(lookup_key, []) if lookup_key else []
+                    else:
+                        existing = []
+                    for ef in existing:
+                        if ef.false_p:
+                            all_fp_ids_to_reactivate.add(ef.id)
+
+            if all_fp_ids_to_reactivate:
+                logger.debug(
+                    "FALSE_POSITIVE_HISTORY: Reactivating %i finding(s): %s",
+                    len(all_fp_ids_to_reactivate),
+                    sorted(all_fp_ids_to_reactivate),
+                )
+                # All reactivation findings received the same form values, so a single bulk update covers all.
+                # QuerySet.update() bypasses Django signals, which is intentional here — it mirrors
+                # the previous save_no_options() calls that also disabled all post-save processing.
+                Finding.objects.filter(id__in=all_fp_ids_to_reactivate).update(
+                    false_p=False,
+                    active=form.cleaned_data["active"],
+                    verified=form.cleaned_data["verified"],
+                    out_of_scope=form.cleaned_data["out_of_scope"],
+                    is_mitigated=form.cleaned_data["is_mitigated"],
+                )
 
         for prod in prods:
             calculate_grade(prod.id)
@@ -2947,8 +3066,8 @@ def _bulk_push_to_jira(finds, form, note):
         for finding in finds
         if finding.has_finding_group
         and (
-            jira_helper.is_push_all_issues(finding)
-            or jira_helper.is_keep_in_sync_with_jira(finding)
+            jira_services.is_push_all_issues(finding)
+            or jira_services.is_keep_in_sync(finding)
             or form.cleaned_data.get("push_to_jira")
         )
     )
@@ -2956,22 +3075,22 @@ def _bulk_push_to_jira(finds, form, note):
     for group in finding_groups:
         if (
             form.cleaned_data.get("push_to_jira")
-            or jira_helper.is_push_all_issues(group)
-            or jira_helper.is_keep_in_sync_with_jira(group)
+            or jira_services.is_push_all_issues(group)
+            or jira_services.is_keep_in_sync(group)
         ):
             (
                 can_be_pushed_to_jira,
                 error_message,
                 _error_code,
-            ) = jira_helper.can_be_pushed_to_jira(group)
+            ) = jira_services.can_be_pushed(group)
             if not can_be_pushed_to_jira:
                 error_counts[error_message] += 1
-                jira_helper.log_jira_cannot_be_pushed_reason(error_message, group)
+                jira_services.log_cannot_be_pushed_reason(error_message, group)
             else:
                 logger.debug(
                     "pushing to jira from finding.finding_bulk_update_all()",
                 )
-                jira_helper.push_to_jira(group)
+                jira_services.push(group)
                 success_count += 1
 
     for error_message, error_count in error_counts.items():
@@ -2991,40 +3110,40 @@ def _bulk_push_to_jira(finds, form, note):
         # not sure yet if we want to support bulk unlink, so leave as commented out for now
         # if form.cleaned_data['unlink_from_jira']:
         #     if finding.has_jira_issue:
-        #         jira_helper.finding_unlink_jira(request, finding)
+        #         jira_services.unlink_finding(request, finding)
 
         # Because we never call finding.save() in a bulk update, we need to actually
         # push the JIRA stuff here, rather than in finding.save()
         # can't use helper as when push_all_jira_issues is True,
         # the checkbox gets disabled and is always false
-        # push_to_jira = jira_helper.is_push_to_jira(new_finding,
+        # push_to_jira = jira_services.is_push_to_jira(new_finding,
         # form.cleaned_data.get('push_to_jira'))
         if (
             form.cleaned_data.get("push_to_jira")
-            or jira_helper.is_push_all_issues(finding)
-            or jira_helper.is_keep_in_sync_with_jira(finding)
+            or jira_services.is_push_all_issues(finding)
+            or jira_services.is_keep_in_sync(finding)
         ) and not finding.has_finding_group:
             (
                 can_be_pushed_to_jira,
                 error_message,
                 _error_code,
-            ) = jira_helper.can_be_pushed_to_jira(finding)
+            ) = jira_services.can_be_pushed(finding)
             if finding.has_jira_group_issue and not finding.has_jira_issue:
                 error_message = (
                     "finding already pushed as part of Finding Group"
                 )
                 error_counts[error_message] += 1
-                jira_helper.log_jira_cannot_be_pushed_reason(error_message, finding)
+                jira_services.log_cannot_be_pushed_reason(error_message, finding)
             elif not can_be_pushed_to_jira:
                 error_counts[error_message] += 1
-                jira_helper.log_jira_cannot_be_pushed_reason(error_message, finding)
+                jira_services.log_cannot_be_pushed_reason(error_message, finding)
             else:
                 logger.debug(
                     "pushing to jira from finding.finding_bulk_update_all()",
                 )
-                jira_helper.push_to_jira(finding)
+                jira_services.push(finding)
                 if note is not None and isinstance(note, Notes):
-                    jira_helper.add_comment(finding, note)
+                    jira_services.add_comment(finding, note)
                 success_count += 1
 
     for error_message, error_count in error_counts.items():
@@ -3381,7 +3500,7 @@ def unlink_jira(request, fid):
     )
     if finding.has_jira_issue:
         try:
-            jira_helper.finding_unlink_jira(request, finding)
+            jira_services.unlink_finding(request, finding)
 
             messages.add_message(
                 request,
@@ -3424,7 +3543,7 @@ def push_to_jira(request, fid):
         # but cant't change too much now without having a test suite,
         # so leave as is for now with the addition warning message
         # to check alerts for background errors.
-        if jira_helper.push_to_jira(finding):
+        if jira_services.push(finding):
             messages.add_message(
                 request,
                 messages.SUCCESS,

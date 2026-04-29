@@ -15,6 +15,7 @@ from dojo.api_v2.views import (
     AnnouncementViewSet,
     AppAnalysisViewSet,
     BurpRawRequestResponseViewSet,
+    CeleryViewSet,
     ConfigurationPermissionViewSet,
     CredentialsMappingViewSet,
     CredentialsViewSet,
@@ -88,7 +89,7 @@ from dojo.finding_group.urls import urlpatterns as finding_group_urls
 from dojo.github_issue_link.urls import urlpatterns as github_urls
 from dojo.group.urls import urlpatterns as group_urls
 from dojo.home.urls import urlpatterns as home_urls
-from dojo.jira_link.urls import urlpatterns as jira_urls
+from dojo.jira.urls import urlpatterns as jira_urls
 from dojo.location.api.endpoint_compat import V3EndpointCompatibleViewSet, V3EndpointStatusCompatibleViewSet
 from dojo.location.api.urls import add_locations_urls
 from dojo.metrics.urls import urlpatterns as metrics_urls
@@ -194,6 +195,7 @@ if settings.V3_FEATURE_LOCATIONS:
 else:
     v2_api.register(r"endpoints", EndPointViewSet, basename="endpoint")
     v2_api.register(r"endpoint_status", EndpointStatusViewSet, basename="endpoint_status")
+v2_api.register(r"celery", CeleryViewSet, basename="celery")
 # V3
 add_asset_urls(v2_api)
 add_organization_urls(v2_api)
