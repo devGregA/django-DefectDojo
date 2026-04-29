@@ -72,18 +72,17 @@
         <link rel="stylesheet" href="{% static "chosen-bootstrap/chosen.bootstrap.min.css" %}">
         <link rel="stylesheet" href="{% static "fullcalendar/dist/fullcalendar.min.css" %}">
         {% block dojo_css %}
-            <link rel="stylesheet" href="{% static "dojo/css/dojo.css" %}">
+            <link rel="stylesheet" href="{% static "dojo/css/dojo.css" %}?v={% static_v "dojo/css/dojo.css" %}">
         {% endblock %}
-        <link rel="stylesheet" href="{% static "dojo/css/datatables-dd.css" %}">
+        <link rel="stylesheet" href="{% static "dojo/css/datatables-dd.css" %}?v={% static_v "dojo/css/datatables-dd.css" %}">
 
         <!-- Tailwind CSS (compiled output — loaded last to override) -->
-        <link rel="stylesheet" href="{% static "dojo/css/tailwind-out.css" %}">
+        <link rel="stylesheet" href="{% static "dojo/css/tailwind-out.css" %}?v={% static_v "dojo/css/tailwind-out.css" %}">
 
         <style>
             /* Layout shell — not in Tailwind because these are structural, not component styles */
             :root {
                 --dd-sidebar-width: 14rem;
-                --dd-sidebar-collapsed: 4rem;
                 --dd-topbar-height: 3.5rem;
             }
             #dd-sidebar {
@@ -128,11 +127,7 @@
         </style>
     </head>
 
-    <body x-data="{
-            sidebarWide: localStorage.getItem('dd-sidebar') !== 'closed',
-            mobileMenu: false
-          }"
-          x-effect="localStorage.setItem('dd-sidebar', sidebarWide ? 'open' : 'closed')"
+    <body x-data="{ mobileMenu: false }"
           hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
           class="bg-gray-50 antialiased">
 
@@ -141,26 +136,16 @@
 
         {% block navigation %}
         {% if request.user.is_authenticated %}
-            <!-- Mobile sidebar overlay -->
-            <div x-show="mobileMenu" x-transition.opacity
-                 @click="mobileMenu = false"
-                 class="fixed inset-0 bg-black/50 z-40 lg:hidden"
-                 x-cloak></div>
-
             <!-- ===== Sidebar ===== -->
             <aside id="dd-sidebar"
-                   :class="[
-                       sidebarWide ? 'lg:w-[var(--dd-sidebar-width)]' : 'lg:w-[var(--dd-sidebar-collapsed)]',
-                       mobileMenu ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-                   ]"
-                   class="fixed inset-y-0 left-0 z-50 w-[var(--dd-sidebar-width)] bg-dd-primary-800 text-white overflow-y-auto transition-all duration-200 flex flex-col">
+                   class="fixed inset-y-0 left-0 z-50 w-[var(--dd-sidebar-width)] bg-dd-primary-800 text-white overflow-y-auto flex flex-col">
 
                 <!-- Logo -->
                 <div class="flex items-center h-[var(--dd-topbar-height)] px-4 bg-dd-primary-900 flex-shrink-0">
                     {% block header_logo %}
                         <a href="{% url 'home' %}" class="flex items-center gap-2 min-w-0">
                             <img src="{% static "dojo/img/favicon.png" %}" alt="DefectDojo" class="w-8 h-8 flex-shrink-0">
-                            <span x-show="sidebarWide" x-cloak class="text-lg font-semibold text-white truncate">DefectDojo</span>
+                            <span class="text-lg font-semibold text-white truncate">DefectDojo</span>
                         </a>
                     {% endblock %}
                 </div>
@@ -171,18 +156,18 @@
                     <!-- Dashboard -->
                     <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-colors">
                         <i class="fa-solid fa-gauge w-5 text-center flex-shrink-0"></i>
-                        <span x-show="sidebarWide" x-cloak class="truncate">{% trans "Dashboard" %}</span>
+                        <span class="truncate">{% trans "Dashboard" %}</span>
                     </a>
 
                     <!-- Products -->
                     <div x-data="{ open: false }">
-                        <a href="{% url 'product' %}" @click.prevent="sidebarWide ? (open = !open) : (window.location.href = '{% url 'product' %}')"
+                        <a href="{% url 'product' %}" @click.prevent="open = !open"
                            class="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
                             <i class="fa-solid fa-list-ul w-5 text-center flex-shrink-0"></i>
-                            <span x-show="sidebarWide" x-cloak class="flex-1 truncate">{{ labels.ASSET_PLURAL_LABEL }}</span>
-                            <i x-show="sidebarWide" x-cloak :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
+                            <span class="flex-1 truncate">{{ labels.ASSET_PLURAL_LABEL }}</span>
+                            <i :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
                         </a>
-                        <div x-show="sidebarWide && open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
+                        <div x-show="open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
                             <a href="{% url 'product' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{{ labels.ASSET_ALL_LABEL }}</a>
                             {% if request.user|can_add_product %}
                                 <a href="{% url 'new_product' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{{ labels.ASSET_CREATE_LABEL }}</a>
@@ -196,13 +181,13 @@
 
                     <!-- Engagements -->
                     <div x-data="{ open: false }">
-                        <a href="{% url 'engagement' %}" @click.prevent="sidebarWide ? (open = !open) : (window.location.href = '{% url 'engagement' %}')"
+                        <a href="{% url 'engagement' %}" @click.prevent="open = !open"
                            class="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
                             <i class="fa-solid fa-inbox w-5 text-center flex-shrink-0"></i>
-                            <span x-show="sidebarWide" x-cloak class="flex-1 truncate">{% trans "Engagements" %}</span>
-                            <i x-show="sidebarWide" x-cloak :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
+                            <span class="flex-1 truncate">{% trans "Engagements" %}</span>
+                            <i :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
                         </a>
-                        <div x-show="sidebarWide && open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
+                        <div x-show="open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
                             <a href="{% url 'active_engagements' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "Active Engagements" %}</a>
                             <a href="{% url 'all_engagements' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "All Engagements" %}</a>
                             <a href="{% url 'engagements_all' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{{ labels.ASSET_ENGAGEMENTS_BY_LABEL }}</a>
@@ -213,13 +198,13 @@
 
                     <!-- Findings -->
                     <div x-data="{ open: false }">
-                        <a href="{% url 'open_findings' %}" @click.prevent="sidebarWide ? (open = !open) : (window.location.href = '{% url 'open_findings' %}')"
+                        <a href="{% url 'open_findings' %}" @click.prevent="open = !open"
                            class="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
                             <i class="fa-solid fa-bug w-5 text-center flex-shrink-0"></i>
-                            <span x-show="sidebarWide" x-cloak class="flex-1 truncate">{% trans "Findings" %}</span>
-                            <i x-show="sidebarWide" x-cloak :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
+                            <span class="flex-1 truncate">{% trans "Findings" %}</span>
+                            <i :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
                         </a>
-                        <div x-show="sidebarWide && open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
+                        <div x-show="open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
                             <a href="{% url 'open_findings' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "Open Findings" %}</a>
                             <a href="{% url 'all_findings' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "All Findings" %}</a>
                             <a href="{% url 'closed_findings' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "Closed Findings" %}</a>
@@ -232,13 +217,13 @@
 
                     <!-- Finding Groups -->
                     <div x-data="{ open: false }">
-                        <a href="{% url 'all_finding_groups' %}" @click.prevent="sidebarWide ? (open = !open) : (window.location.href = '{% url 'all_finding_groups' %}')"
+                        <a href="{% url 'all_finding_groups' %}" @click.prevent="open = !open"
                            class="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
                             <i class="fa-solid fa-triangle-exclamation w-5 text-center flex-shrink-0"></i>
-                            <span x-show="sidebarWide" x-cloak class="flex-1 truncate">{% trans "Finding Groups" %}</span>
-                            <i x-show="sidebarWide" x-cloak :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
+                            <span class="flex-1 truncate">{% trans "Finding Groups" %}</span>
+                            <i :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
                         </a>
-                        <div x-show="sidebarWide && open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
+                        <div x-show="open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
                             <a href="{% url 'open_finding_groups' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "Open Findings Groups" %}</a>
                             <a href="{% url 'all_finding_groups' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "All Findings Groups" %}</a>
                             <a href="{% url 'closed_finding_groups' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "Closed Findings Groups" %}</a>
@@ -248,18 +233,18 @@
                     <!-- Components -->
                     <a href="{% url 'components' %}" class="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-colors">
                         <i class="fa-solid fa-table-cells-large w-5 text-center flex-shrink-0"></i>
-                        <span x-show="sidebarWide" x-cloak class="truncate">{% trans "Components" %}</span>
+                        <span class="truncate">{% trans "Components" %}</span>
                     </a>
 
                     <!-- Endpoints -->
                     <div x-data="{ open: false }">
-                        <a href="{% url 'endpoint' %}" @click.prevent="sidebarWide ? (open = !open) : (window.location.href = '{% url 'endpoint' %}')"
+                        <a href="{% url 'endpoint' %}" @click.prevent="open = !open"
                            class="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
                             <i class="fa-solid fa-sitemap w-5 text-center flex-shrink-0"></i>
-                            <span x-show="sidebarWide" x-cloak class="flex-1 truncate">{% trans "Endpoints" %}</span>
-                            <i x-show="sidebarWide" x-cloak :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
+                            <span class="flex-1 truncate">{% trans "Endpoints" %}</span>
+                            <i :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
                         </a>
-                        <div x-show="sidebarWide && open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
+                        <div x-show="open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
                             <a href="{% url 'endpoint' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "All Endpoints" %}</a>
                             <a href="{% url 'endpoint_host' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "All Hosts" %}</a>
                             <a href="{% url 'vulnerable_endpoints' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "Vulnerable Endpoints" %}</a>
@@ -273,13 +258,13 @@
                     <!-- Reports -->
                     {% block reports_tab %}
                     <div x-data="{ open: false }">
-                        <a href="{% url 'report_builder' %}" @click.prevent="sidebarWide ? (open = !open) : (window.location.href = '{% url 'report_builder' %}')"
+                        <a href="{% url 'report_builder' %}" @click.prevent="open = !open"
                            class="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
                             <i class="fa-solid fa-file-lines w-5 text-center flex-shrink-0"></i>
-                            <span x-show="sidebarWide" x-cloak class="flex-1 truncate">{% trans "Reports" %}</span>
-                            <i x-show="sidebarWide" x-cloak :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
+                            <span class="flex-1 truncate">{% trans "Reports" %}</span>
+                            <i :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
                         </a>
-                        <div x-show="sidebarWide && open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
+                        <div x-show="open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
                             <a href="{% url 'report_builder' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "Report Builder" %}</a>
                         </div>
                     </div>
@@ -287,13 +272,13 @@
 
                     <!-- Metrics -->
                     <div x-data="{ open: false }">
-                        <a href="{% url 'metrics' %}?date=5&view=dashboard" @click.prevent="sidebarWide ? (open = !open) : (window.location.href = '{% url 'metrics' %}?date=5&view=dashboard')"
+                        <a href="{% url 'metrics' %}?date=5&view=dashboard" @click.prevent="open = !open"
                            class="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
                             <i class="fa-solid fa-chart-column w-5 text-center flex-shrink-0"></i>
-                            <span x-show="sidebarWide" x-cloak class="flex-1 truncate">{% trans "Metrics" %}</span>
-                            <i x-show="sidebarWide" x-cloak :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
+                            <span class="flex-1 truncate">{% trans "Metrics" %}</span>
+                            <i :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
                         </a>
-                        <div x-show="sidebarWide && open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
+                        <div x-show="open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
                             <a href="{% url 'metrics' %}?date=5&view=dashboard" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "Metrics Dashboard" %}</a>
                             <a href="{% url 'critical_product_metrics' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{{ labels.ASSET_METRICS_CRITICAL_LABEL }}</a>
                             <a href="{% url 'metrics_product_type' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{{ labels.ORG_METRICS_LABEL }}</a>
@@ -307,13 +292,13 @@
                     <!-- Users -->
                     {% if "auth.view_user"|has_configuration_permission:request or "auth.view_group"|has_configuration_permission:request %}
                     <div x-data="{ open: false }">
-                        <a href="{% url 'users' %}" @click.prevent="sidebarWide ? (open = !open) : (window.location.href = '{% url 'users' %}')"
+                        <a href="{% url 'users' %}" @click.prevent="open = !open"
                            class="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
                             <i class="fa-solid fa-user w-5 text-center flex-shrink-0"></i>
-                            <span x-show="sidebarWide" x-cloak class="flex-1 truncate">{% trans "Users" %}</span>
-                            <i x-show="sidebarWide" x-cloak :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
+                            <span class="flex-1 truncate">{% trans "Users" %}</span>
+                            <i :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
                         </a>
-                        <div x-show="sidebarWide && open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
+                        <div x-show="open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
                             {% if "auth.view_user"|has_configuration_permission:request %}
                                 <a href="{% url 'users' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "Users" %}</a>
                             {% endif %}
@@ -328,7 +313,7 @@
                     {% if system_settings.enable_calendar %}
                     <a href="{% url 'engagement_calendar' %}" class="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-colors">
                         <i class="fa-solid fa-calendar-days w-5 text-center flex-shrink-0"></i>
-                        <span x-show="sidebarWide" x-cloak class="truncate">{% trans "Calendar" %}</span>
+                        <span class="truncate">{% trans "Calendar" %}</span>
                     </a>
                     {% endif %}
 
@@ -336,13 +321,13 @@
                     {% if system_settings.enable_questionnaires %}
                         {% if "dojo.view_engagement_survey"|has_configuration_permission:request or "dojo.view_question"|has_configuration_permission:request %}
                         <div x-data="{ open: false }">
-                            <a href="#" @click.prevent="sidebarWide && (open = !open)"
+                            <a href="#" @click.prevent="open = !open"
                                class="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
                                 <i class="fa-solid fa-house-medical-flag w-5 text-center flex-shrink-0"></i>
-                                <span x-show="sidebarWide" x-cloak class="flex-1 truncate">{% trans "Questionnaires" %}</span>
-                                <i x-show="sidebarWide" x-cloak :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
+                                <span class="flex-1 truncate">{% trans "Questionnaires" %}</span>
+                                <i :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
                             </a>
-                            <div x-show="sidebarWide && open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
+                            <div x-show="open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
                                 {% if "dojo.view_engagement_survey"|has_configuration_permission:request %}
                                     <a href="{% url 'questionnaire' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "All Questionnaires" %}</a>
                                 {% endif %}
@@ -356,13 +341,13 @@
 
                     <!-- Configuration -->
                     <div x-data="{ open: false }">
-                        <a href="#" @click.prevent="sidebarWide && (open = !open)"
+                        <a href="#" @click.prevent="open = !open"
                            class="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
                             <i class="fa-solid fa-gear w-5 text-center flex-shrink-0"></i>
-                            <span x-show="sidebarWide" x-cloak class="flex-1 truncate">{% trans "Configuration" %}</span>
-                            <i x-show="sidebarWide" x-cloak :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
+                            <span class="flex-1 truncate">{% trans "Configuration" %}</span>
+                            <i :class="open && 'rotate-90'" class="fa-solid fa-chevron-right text-xs transition-transform duration-200"></i>
                         </a>
-                        <div x-show="sidebarWide && open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
+                        <div x-show="open" x-transition.duration.200ms x-cloak class="overflow-hidden bg-black/10">
                             {% if "dojo.change_announcement"|has_configuration_permission:request %}
                                 <a href="{% url 'configure_announcement' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "Announcement" %}</a>
                             {% endif %}
@@ -407,20 +392,10 @@
                     {% block support-tab %}
                     <a href="{% url 'support' %}" class="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-colors">
                         <i class="fa-solid fa-level-up w-5 text-center flex-shrink-0"></i>
-                        <span x-show="sidebarWide" x-cloak class="truncate">{% trans "Upgrade" %}</span>
+                        <span class="truncate">{% trans "Upgrade" %}</span>
                     </a>
                     {% endblock %}
                 </nav>
-
-                <!-- Collapse toggle -->
-                <div class="flex-shrink-0 border-t border-white/10 p-2 hidden lg:block">
-                    <button @click="sidebarWide = !sidebarWide"
-                            class="flex items-center gap-3 w-full px-2 py-2 text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors"
-                            :title="sidebarWide ? '{% trans "Collapse Menu" %}' : '{% trans "Expand Menu" %}'">
-                        <i :class="sidebarWide ? 'fa-solid fa-circle-left' : 'fa-solid fa-circle-right'" class="w-5 text-center"></i>
-                        <span x-show="sidebarWide" x-cloak class="text-sm truncate">{% trans "Collapse Menu" %}</span>
-                    </button>
-                </div>
             </aside>
         {% endif %}
         {% endblock navigation %}
@@ -428,8 +403,7 @@
         <!-- ===== Main wrapper ===== -->
         <div id="wrapper"
              {% if request.user.is_authenticated %}
-             :class="sidebarWide ? 'lg:pl-[var(--dd-sidebar-width)]' : 'lg:pl-[var(--dd-sidebar-collapsed)]'"
-             class="min-h-screen flex flex-col transition-all duration-200"
+             class="min-h-screen flex flex-col pl-[var(--dd-sidebar-width)]"
              {% else %}
              class="min-h-screen flex flex-col"
              {% endif %}>
@@ -437,13 +411,8 @@
             {% if request.user.is_authenticated %}
             <!-- ===== Topbar ===== -->
             <header class="sticky top-0 z-30 bg-white border-b border-gray-200 h-[var(--dd-topbar-height)] flex items-center px-4 gap-4 flex-shrink-0">
-                <!-- Mobile hamburger -->
-                <button @click="mobileMenu = !mobileMenu" :aria-expanded="mobileMenu" aria-controls="dd-sidebar" class="lg:hidden p-2 -ml-2 text-gray-500 hover:text-gray-700" aria-label="Toggle menu">
-                    <i class="fa-solid fa-bars text-lg"></i>
-                </button>
-
                 <!-- Search -->
-                <form id="custom_search_form" method="get" action="{% url 'simple_search' %}" class="flex-1 max-w-md">
+                <form id="custom_search_form" method="get" action="{% url 'simple_search' %}" class="ml-auto w-full max-w-md">
                     <div class="flex">
                         <input id="simple_search" type="text" name="query" value="{{ clean_query }}"
                                class="flex-1 rounded-l-md border border-r-0 border-gray-300 px-3 py-1.5 text-sm focus:border-dd-primary-400 focus:ring-dd-primary-400"
@@ -454,7 +423,7 @@
                     </div>
                 </form>
 
-                <div class="flex items-center gap-2 ml-auto">
+                <div class="flex items-center gap-2">
                     <!-- Alerts dropdown -->
                     {% if not 'DISABLE_ALERT_COUNTER'|setting_enabled %}
                     <div x-data="{ alertsOpen: false }" class="relative">

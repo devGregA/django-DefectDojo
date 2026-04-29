@@ -144,6 +144,25 @@ def dojo_version():
 
 
 @register.simple_tag
+def static_v(static_path):
+    """Cache-busting query value for a static asset.
+
+    Returns the integer mtime of the file under STATIC_ROOT (or
+    STATICFILES_DIRS) so any local edit forces a fresh fetch. Falls
+    back to the dojo version string when the file isn't found, which
+    is enough granularity for release deploys.
+    """
+    try:
+        from django.contrib.staticfiles import finders
+        path = finders.find(static_path)
+        if path:
+            return str(int(Path(path).stat().st_mtime))
+    except Exception:
+        pass
+    return __version__.replace(".", "")
+
+
+@register.simple_tag
 def dojo_current_hash():
     """
     Display git commit hash in footer if .git directory exists.

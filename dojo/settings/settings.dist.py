@@ -943,12 +943,28 @@ if not env("DD_DEFAULT_SWAGGER_UI"):
 # TEMPLATES
 # ------------------------------------------------------------------------------
 
+# Two parallel template trees coexist on this branch: the new Tailwind v4 UI at
+# dojo/templates/ (the default Django app dir) and the classic Bootstrap 3 / SB
+# Admin 2 UI at dojo/templates_classic/. Per-user resolution is handled by
+# UIPreferenceLoader; see dojo/template_loaders.py.
+_DOJO_TAILWIND_TEMPLATES_DIR = root("dojo/templates")
+_DOJO_CLASSIC_TEMPLATES_DIR = root("dojo/templates_classic")
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "APP_DIRS": True,
+        # APP_DIRS is False because dojo's templates are loaded explicitly via
+        # UIPreferenceLoader; other apps' templates are loaded via the second
+        # entry below.
+        "APP_DIRS": False,
         "OPTIONS": {
             "debug": env("DD_DEBUG"),
+            "loaders": [
+                ("dojo.template_loaders.UIPreferenceLoader",
+                 _DOJO_TAILWIND_TEMPLATES_DIR,
+                 _DOJO_CLASSIC_TEMPLATES_DIR),
+                "django.template.loaders.app_directories.Loader",
+            ],
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",

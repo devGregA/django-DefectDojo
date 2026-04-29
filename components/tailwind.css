@@ -214,16 +214,48 @@
     @apply text-lg text-text-muted font-light;
   }
 
+  /* ---- Inline code & code blocks ----
+     Inline <code>: pink/red on a tinted background like GitHub-flavored
+     markdown. Block <pre>: light gray surface, padded, with horizontal
+     scroll inside the box so long single-line commands (e.g. curl) do
+     NOT overflow the page wrapper and push content under the sidebar. */
+  code {
+    @apply px-1.5 py-0.5 rounded bg-red-50 text-red-600 text-[0.85em];
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco,
+                 Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+  pre {
+    @apply block bg-surface-3 border border-border rounded-md
+           px-4 py-3 my-3 text-sm leading-relaxed overflow-x-auto;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco,
+                 Consolas, "Liberation Mono", "Courier New", monospace;
+    /* `<pre>` inside should stay raw; clear the inline-code styling so
+       a <code> nested inside a <pre> doesn't get the pink background. */
+  }
+  pre code {
+    @apply p-0 bg-transparent text-inherit text-sm;
+  }
+
   /* ---- Tables ---- */
   .table {
     @apply w-full text-sm text-left border-collapse;
   }
   .table th {
+    /* Title-case headers (no uppercase / letter-spacing) keep column widths
+       compact so wide tables fit in the viewport — matches the classic UI's
+       responsive flow at common laptop widths. */
     @apply px-3 py-2.5 bg-surface-2 font-semibold text-text-muted border-b-2 border-border
-           text-left text-xs uppercase tracking-wide sticky top-0 z-10;
+           text-left text-xs sticky top-0 z-10;
   }
   .table td {
     @apply px-3 py-2.5 border-b border-border/50;
+    /* Allow long values (e.g. URLs, finding titles) to wrap inside their
+       cell so columns can shrink with the viewport instead of forcing the
+       table to overflow horizontally. Use `break-word` (not `anywhere`)
+       so the browser only breaks inside a word when that word is too long
+       to fit on its own line — preventing mid-word splits when normal
+       space-wrap opportunities are available. */
+    overflow-wrap: break-word;
   }
   .table tbody tr {
     @apply transition-colors duration-100;
@@ -238,7 +270,27 @@
     @apply px-2 py-1;
   }
   .table-responsive {
-    @apply overflow-x-auto;
+    /* `overflow-x: scroll` keeps the horizontal scrollbar slot reserved at
+       all times so users on macOS / iOS — where overlay scrollbars hide
+       until interaction — can see the scroll affordance for wide tables.
+       Combined with thin webkit styling to keep it unobtrusive. */
+    overflow-x: scroll;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(203 213 225) transparent;
+  }
+  .table-responsive::-webkit-scrollbar {
+    height: 10px;
+    width: 10px;
+  }
+  .table-responsive::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .table-responsive::-webkit-scrollbar-thumb {
+    background: rgb(203 213 225);
+    border-radius: 6px;
+  }
+  .table-responsive::-webkit-scrollbar-thumb:hover {
+    background: rgb(148 163 184);
   }
   /* Sort indicators for tablesorter-bootstrap (non-DataTables tables) */
   .tablesorter-bootstrap thead th {
@@ -275,15 +327,16 @@
       font-size: 0.65rem;
     }
   }
-  @media (max-width: 768px) {
-    .table-responsive {
-      background:
-        linear-gradient(to right, white 30%, rgba(255,255,255,0)) left,
-        linear-gradient(to left, white 30%, rgba(255,255,255,0)) right;
-      background-size: 40px 100%;
-      background-repeat: no-repeat;
-      background-attachment: local, local;
-    }
+  /* Visual fade hint at the right edge so users always see that there is
+     more content to scroll, regardless of viewport width or whether the
+     OS is rendering an overlay scrollbar. */
+  .table-responsive {
+    background:
+      linear-gradient(to right, white 30%, rgba(255,255,255,0)) left,
+      linear-gradient(to left, white 30%, rgba(255,255,255,0)) right;
+    background-size: 40px 100%;
+    background-repeat: no-repeat;
+    background-attachment: local, local;
   }
 
   /* ---- Forms ---- */
@@ -512,6 +565,16 @@
   }
   .nav-tabs::-webkit-scrollbar {
     display: none;
+  }
+  /* The horizontal-bar variant (product / engagement / test tab strips)
+     hosts dropdown menus inside its tab items. Per CSS spec a single
+     overflow-x: auto forces overflow-y to clip too, which would hide the
+     dropdown menus that pop down below the bar. Switch to flex-wrap so
+     tabs wrap onto a second row on narrow viewports while dropdowns can
+     still escape the tab strip vertically. */
+  .nav-tabs.horizontal-bar {
+    @apply flex-wrap;
+    overflow: visible;
   }
   .nav-tabs > li {
     @apply -mb-px flex-shrink-0;
@@ -801,7 +864,10 @@
     @apply text-3xl font-bold text-text leading-none;
   }
   .stat-card .stat-card-label {
-    @apply text-sm text-text-muted mt-1 truncate;
+    /* Allow long labels (e.g. "Risk Accepted In Last Seven Days") to wrap
+       inside the card instead of truncating with an ellipsis — matches the
+       classic UI's behavior at 1200-1400 widths. */
+    @apply text-sm text-text-muted mt-1 leading-tight;
   }
   .stat-card .stat-card-link {
     @apply flex items-center justify-between px-5 py-2.5 text-sm
@@ -1069,6 +1135,10 @@
   font-size: 0.75rem;
   line-height: 1.4;
   border-radius: 4px;
+  /* width: max-content lets the popover expand beyond its tiny icon parent
+     (which is `position: relative` and otherwise constrains the absolute
+     child to ~icon width, forcing text to wrap one char per line). */
+  width: max-content;
   max-width: 320px;
   white-space: normal;
   z-index: 9999;
@@ -1160,30 +1230,16 @@ input[type="radio"] {
   flex-shrink: 0;
 }
 
-/* ============================================================
-   Bootstrap col-* standalone fallback — percentage widths for
-   col-* classes used OUTSIDE a .row (grid) context.  Inside
-   .row the grid-column property takes over; outside, these
-   percentage widths replicate Bootstrap 3 float behaviour.
-   ============================================================ */
-:not(.row) > .col-xs-1, :not(.row) > .col-sm-1, :not(.row) > .col-md-1, :not(.row) > .col-lg-1 { width: 8.333%; }
-:not(.row) > .col-xs-2, :not(.row) > .col-sm-2, :not(.row) > .col-md-2, :not(.row) > .col-lg-2 { width: 16.667%; }
-:not(.row) > .col-xs-3, :not(.row) > .col-sm-3, :not(.row) > .col-md-3, :not(.row) > .col-lg-3 { width: 25%; }
-:not(.row) > .col-xs-4, :not(.row) > .col-sm-4, :not(.row) > .col-md-4, :not(.row) > .col-lg-4 { width: 33.333%; }
-:not(.row) > .col-xs-5, :not(.row) > .col-sm-5, :not(.row) > .col-md-5, :not(.row) > .col-lg-5 { width: 41.667%; }
-:not(.row) > .col-xs-6, :not(.row) > .col-sm-6, :not(.row) > .col-md-6, :not(.row) > .col-lg-6 { width: 50%; }
-:not(.row) > .col-xs-7, :not(.row) > .col-sm-7, :not(.row) > .col-md-7, :not(.row) > .col-lg-7 { width: 58.333%; }
-:not(.row) > .col-xs-8, :not(.row) > .col-sm-8, :not(.row) > .col-md-8, :not(.row) > .col-lg-8 { width: 66.667%; }
-:not(.row) > .col-xs-9, :not(.row) > .col-sm-9, :not(.row) > .col-md-9, :not(.row) > .col-lg-9 { width: 75%; }
-:not(.row) > .col-xs-10, :not(.row) > .col-sm-10, :not(.row) > .col-md-10, :not(.row) > .col-lg-10 { width: 83.333%; }
-:not(.row) > .col-xs-11, :not(.row) > .col-sm-11, :not(.row) > .col-md-11, :not(.row) > .col-lg-11 { width: 91.667%; }
-:not(.row) > .col-xs-12, :not(.row) > .col-sm-12, :not(.row) > .col-md-12, :not(.row) > .col-lg-12 { width: 100%; }
+/* The Bootstrap 3 standalone-column width fallback used to live here. The new
+   Tailwind UI uses a vertical-label form layout where the form-group children
+   should fill the available column width and adapt to viewport size. Fixed
+   percentage widths on standalone col-* classes prevented inputs from
+   stretching on wide screens and forced labels to wrap on narrow ones, so the
+   fallback was removed. The in-grid behaviour (.row > .col-*) is unaffected
+   and continues to be applied via grid-column above. */
 
-/* Standalone offset fallback — margin-left for col-*-offset-* outside .row */
-:not(.row) > .col-xs-offset-1, :not(.row) > .col-sm-offset-1, :not(.row) > .col-md-offset-1, :not(.row) > .col-lg-offset-1 { margin-left: 8.333%; }
-:not(.row) > .col-xs-offset-2, :not(.row) > .col-sm-offset-2, :not(.row) > .col-md-offset-2, :not(.row) > .col-lg-offset-2 { margin-left: 16.667%; }
-:not(.row) > .col-xs-offset-3, :not(.row) > .col-sm-offset-3, :not(.row) > .col-md-offset-3, :not(.row) > .col-lg-offset-3 { margin-left: 25%; }
-:not(.row) > .col-xs-offset-4, :not(.row) > .col-sm-offset-4, :not(.row) > .col-md-offset-4, :not(.row) > .col-lg-offset-4 { margin-left: 33.333%; }
-:not(.row) > .col-xs-offset-5, :not(.row) > .col-sm-offset-5, :not(.row) > .col-md-offset-5, :not(.row) > .col-lg-offset-5 { margin-left: 41.667%; }
-:not(.row) > .col-xs-offset-6, :not(.row) > .col-sm-offset-6, :not(.row) > .col-md-offset-6, :not(.row) > .col-lg-offset-6 { margin-left: 50%; }
-:not(.row) > .col-xs-offset-10, :not(.row) > .col-sm-offset-10, :not(.row) > .col-md-offset-10, :not(.row) > .col-lg-offset-10 { margin-left: 83.333%; }
+/* The Bootstrap 3 horizontal-form offset fallback (margin-left: N% on standalone
+   col-*-offset-*) used to be applied here. The new Tailwind UI stacks labels on
+   top of inputs (vertical layout), so the offset would push checkboxes, submit
+   buttons and other action rows out of alignment with the form fields. The
+   in-grid behaviour (.row > .col-*-offset-*) defined above is unaffected. */
