@@ -1,4 +1,5 @@
-"""Template loader that selects between the classic and Tailwind UI trees per request.
+"""
+Template loader that selects between the classic and Tailwind UI trees per request.
 
 Two parallel template directories are maintained on this branch:
 
@@ -17,6 +18,7 @@ The current request is read via `crum.get_current_request()` — `crum`'s
 """
 
 from crum import get_current_request
+from django.template import TemplateDoesNotExist
 from django.template.loaders.base import Loader as BaseLoader
 from django.template.loaders.cached import Loader as CachedLoader
 from django.template.loaders.filesystem import Loader as FilesystemLoader
@@ -53,7 +55,6 @@ class UIPreferenceLoader(BaseLoader):
         return (self._classic_loader, self._tailwind_loader)
 
     def get_template(self, template_name, skip=None):
-        from django.template import TemplateDoesNotExist
         tried = []
         for loader in self._ordered_loaders():
             try:
