@@ -10,6 +10,12 @@ Here are the release notes for **DefectDojo Pro (Cloud Version)**. These release
 
 For Open Source release notes, please see the [Releases page on GitHub](https://github.com/DefectDojo/django-DefectDojo/releases), or alternatively consult the Open Source [upgrade notes](/releases/os_upgrading/upgrading_guide/).
 
+## May 2026: v2.58
+
+### May 4, 2026: v2.58.0
+
+* **(Authorization)** Pro deployments are **not impacted** by the OS UI rework that replaces the Product/Product Type Members/Groups panels with an Authorized Users panel. Pro retains full RBAC: the Members and Groups management panels and the Groups left-nav link continue to render unchanged, driven by Pro's RBAC tables via Pro template overrides.
+
 ## Apr 2026: v2.57
 
 ### Apr 20, 2026: v2.57.2
