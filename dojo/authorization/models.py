@@ -1,3 +1,18 @@
+"""
+Legacy backward-compat shells for the seven RBAC model classes.
+
+The canonical owner of these tables is now ``pro.authorization.models``.
+After the paired ``SeparateDatabaseAndState`` migrations land
+(``dojo.0268_release_rbac_state`` + ``pro.000X_adopt_rbac_tables``),
+Pro's state owns the seven RBAC tables and OS's app state no longer
+references them.
+
+The class definitions remain here as ``managed=False`` shells purely so
+the existing OS code that imports / isinstance-checks ``dojo.authorization
+.models.X`` keeps compiling. Track B step #13 simplifies the callers and
+deletes these shells entirely; until that lands, the shells let OS-only
+deployments stay functional with the legacy authorization model.
+"""
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -8,6 +23,8 @@ class Role(models.Model):
 
     class Meta:
         app_label = "dojo"
+        db_table = "dojo_role"
+        managed = False
         ordering = ("name",)
 
     def __str__(self):
@@ -15,54 +32,80 @@ class Role(models.Model):
 
 
 class Dojo_Group_Member(models.Model):
-    group = models.ForeignKey("dojo.Dojo_Group", on_delete=models.CASCADE)
-    user = models.ForeignKey("dojo.Dojo_User", on_delete=models.CASCADE)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE, help_text=_("This role determines the permissions of the user to manage the group."), verbose_name=_("Group role"))
+    group = models.ForeignKey("dojo.Dojo_Group", on_delete=models.CASCADE, related_name="+")
+    user = models.ForeignKey("dojo.Dojo_User", on_delete=models.CASCADE, related_name="+")
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.CASCADE,
+        related_name="+",
+        help_text=_("This role determines the permissions of the user to manage the group."),
+        verbose_name=_("Group role"),
+    )
 
     class Meta:
         app_label = "dojo"
+        db_table = "dojo_dojo_group_member"
+        managed = False
 
 
 class Global_Role(models.Model):
-    user = models.OneToOneField("dojo.Dojo_User", null=True, blank=True, on_delete=models.CASCADE)
-    group = models.OneToOneField("dojo.Dojo_Group", null=True, blank=True, on_delete=models.CASCADE)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE, null=True, blank=True, help_text=_("The global role will be applied to all product types and products."), verbose_name=_("Global role"))
+    user = models.OneToOneField("dojo.Dojo_User", null=True, blank=True, on_delete=models.CASCADE, related_name="+")
+    group = models.OneToOneField("dojo.Dojo_Group", null=True, blank=True, on_delete=models.CASCADE, related_name="+")
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text=_("The global role will be applied to all product types and products."),
+        verbose_name=_("Global role"),
+    )
 
     class Meta:
         app_label = "dojo"
+        db_table = "dojo_global_role"
+        managed = False
 
 
 class Product_Member(models.Model):
-    product = models.ForeignKey("dojo.Product", on_delete=models.CASCADE)
-    user = models.ForeignKey("dojo.Dojo_User", on_delete=models.CASCADE)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE)
+    product = models.ForeignKey("dojo.Product", on_delete=models.CASCADE, related_name="+")
+    user = models.ForeignKey("dojo.Dojo_User", on_delete=models.CASCADE, related_name="+")
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="+")
 
     class Meta:
         app_label = "dojo"
+        db_table = "dojo_product_member"
+        managed = False
 
 
 class Product_Group(models.Model):
-    product = models.ForeignKey("dojo.Product", on_delete=models.CASCADE)
-    group = models.ForeignKey("dojo.Dojo_Group", on_delete=models.CASCADE)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE)
+    product = models.ForeignKey("dojo.Product", on_delete=models.CASCADE, related_name="+")
+    group = models.ForeignKey("dojo.Dojo_Group", on_delete=models.CASCADE, related_name="+")
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="+")
 
     class Meta:
         app_label = "dojo"
+        db_table = "dojo_product_group"
+        managed = False
 
 
 class Product_Type_Member(models.Model):
-    product_type = models.ForeignKey("dojo.Product_Type", on_delete=models.CASCADE)
-    user = models.ForeignKey("dojo.Dojo_User", on_delete=models.CASCADE)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE)
+    product_type = models.ForeignKey("dojo.Product_Type", on_delete=models.CASCADE, related_name="+")
+    user = models.ForeignKey("dojo.Dojo_User", on_delete=models.CASCADE, related_name="+")
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="+")
 
     class Meta:
         app_label = "dojo"
+        db_table = "dojo_product_type_member"
+        managed = False
 
 
 class Product_Type_Group(models.Model):
-    product_type = models.ForeignKey("dojo.Product_Type", on_delete=models.CASCADE)
-    group = models.ForeignKey("dojo.Dojo_Group", on_delete=models.CASCADE)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE)
+    product_type = models.ForeignKey("dojo.Product_Type", on_delete=models.CASCADE, related_name="+")
+    group = models.ForeignKey("dojo.Dojo_Group", on_delete=models.CASCADE, related_name="+")
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="+")
 
     class Meta:
         app_label = "dojo"
+        db_table = "dojo_product_type_group"
+        managed = False
