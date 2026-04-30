@@ -536,6 +536,7 @@ class UserSerializer(serializers.ModelSerializer):
             "date_joined",
             "last_login",
             "is_active",
+            "is_staff",
             "is_superuser",
             "token_last_reset",
             "password_last_reset",

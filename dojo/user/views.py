@@ -362,6 +362,11 @@ def add_user(request):
                                     messages.ERROR,
                                     _("Only superusers are allowed to add superusers. User was not saved."),
                                     extra_tags="alert-danger")
+            elif not request.user.is_superuser and form.cleaned_data["is_staff"]:
+                messages.add_message(request,
+                                    messages.ERROR,
+                                    _("Only superusers are allowed to grant staff status. User was not saved."),
+                                    extra_tags="alert-danger")
             elif not request.user.is_superuser and global_role_form.cleaned_data["role"]:
                 messages.add_message(request,
                                     messages.ERROR,
@@ -447,6 +452,11 @@ def edit_user(request, uid):
                 messages.add_message(request,
                                     messages.ERROR,
                                     _("Only superusers are allowed to edit superusers. User was not saved."),
+                                    extra_tags="alert-danger")
+            elif not request.user.is_superuser and form.cleaned_data["is_staff"] != user.is_staff:
+                messages.add_message(request,
+                                    messages.ERROR,
+                                    _("Only superusers are allowed to change staff status. User was not saved."),
                                     extra_tags="alert-danger")
             elif not request.user.is_superuser and global_role_form.cleaned_data["role"]:
                 messages.add_message(request,

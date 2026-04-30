@@ -2630,12 +2630,13 @@ class AddDojoUserForm(forms.ModelForm):
 
     class Meta:
         model = Dojo_User
-        fields = ["username", "password", "first_name", "last_name", "email", "is_active", "is_superuser"]
+        fields = ["username", "password", "first_name", "last_name", "email", "is_active", "is_staff", "is_superuser"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         current_user = get_current_user()
         if not current_user.is_superuser:
+            self.fields["is_staff"].disabled = True
             self.fields["is_superuser"].disabled = True
         self.fields["password"].help_text = get_password_requirements_string()
 
@@ -2645,12 +2646,13 @@ class EditDojoUserForm(forms.ModelForm):
 
     class Meta:
         model = Dojo_User
-        fields = ["username", "first_name", "last_name", "email", "is_active", "is_superuser"]
+        fields = ["username", "first_name", "last_name", "email", "is_active", "is_staff", "is_superuser"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         current_user = get_current_user()
         if not current_user.is_superuser:
+            self.fields["is_staff"].disabled = True
             self.fields["is_superuser"].disabled = True
 
 
