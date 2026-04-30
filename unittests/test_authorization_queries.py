@@ -169,6 +169,15 @@ class AuthorizationQueriesTestBase(DojoTestCase):
             defaults={"role": cls.reader_role},
         )
 
+        # Legacy authorization: the RBAC member tables above are inert under
+        # the post-Track-B authorization layer. Mirror the per-user grants
+        # into authorized_users so the legacy queryset filters return the
+        # same set of products/findings/etc. for the directly-named users.
+        # Group memberships and Global_Role do NOT translate to legacy
+        # semantics — those tests assert empty results below.
+        cls.product_1.authorized_users.add(cls.user_product_member)
+        cls.product_type_1.authorized_users.add(cls.user_product_type_member)
+
         # Create test type
         cls.test_type, _ = Test_Type.objects.get_or_create(name="Auth Test Type")
 
@@ -323,11 +332,14 @@ class TestGetAuthorizedFindings(AuthorizationQueriesTestBase):
         self.assertNotIn(self.finding_1, findings)
         self.assertNotIn(self.finding_2, findings)
 
-    def test_user_global_reader_gets_all(self):
-        """User with global reader role should get all findings"""
+    def test_user_global_reader_gets_nothing_legacy(self):
+        """
+        Legacy: Global_Role(role=Reader) is inert. The user has no
+        authorized_users membership, isn't staff, isn't superuser — sees nothing.
+        """
         findings = get_authorized_findings(Permissions.Finding_View, user=self.user_global_reader)
-        self.assertIn(self.finding_1, findings)
-        self.assertIn(self.finding_2, findings)
+        self.assertNotIn(self.finding_1, findings)
+        self.assertNotIn(self.finding_2, findings)
 
     def test_user_product_member_gets_product_findings(self):
         """User with product membership should get only that product's findings"""
@@ -341,16 +353,19 @@ class TestGetAuthorizedFindings(AuthorizationQueriesTestBase):
         self.assertIn(self.finding_1, findings)
         self.assertNotIn(self.finding_2, findings)
 
-    def test_user_group_product_member_gets_group_findings(self):
-        """User in group with product access should get those findings"""
+    def test_user_group_product_member_gets_nothing_legacy(self):
+        """
+        Legacy: Product_Group grants don't translate to legacy.
+        Group memberships are inert; user sees nothing.
+        """
         findings = get_authorized_findings(Permissions.Finding_View, user=self.user_group_product_member)
-        self.assertIn(self.finding_1, findings)
+        self.assertNotIn(self.finding_1, findings)
         self.assertNotIn(self.finding_2, findings)
 
-    def test_user_group_product_type_member_gets_group_findings(self):
-        """User in group with product type access should get those findings"""
+    def test_user_group_product_type_member_gets_nothing_legacy(self):
+        """Legacy: Product_Type_Group grants are inert."""
         findings = get_authorized_findings(Permissions.Finding_View, user=self.user_group_product_type_member)
-        self.assertIn(self.finding_1, findings)
+        self.assertNotIn(self.finding_1, findings)
         self.assertNotIn(self.finding_2, findings)
 
     def test_queryset_parameter_filters_correctly(self):
@@ -435,11 +450,11 @@ class TestGetAuthorizedProducts(AuthorizationQueriesTestBase):
         self.assertNotIn(self.product_1, products)
         self.assertNotIn(self.product_2, products)
 
-    def test_user_global_reader_gets_all(self):
-        """User with global reader role should get all products"""
+    def test_user_global_reader_gets_nothing_legacy(self):
+        """Legacy: Global_Role(role=Reader) is inert."""
         products = get_authorized_products(Permissions.Product_View, user=self.user_global_reader)
-        self.assertIn(self.product_1, products)
-        self.assertIn(self.product_2, products)
+        self.assertNotIn(self.product_1, products)
+        self.assertNotIn(self.product_2, products)
 
     def test_user_product_member_gets_own_products(self):
         """User with product membership should get only that product"""
@@ -453,16 +468,16 @@ class TestGetAuthorizedProducts(AuthorizationQueriesTestBase):
         self.assertIn(self.product_1, products)
         self.assertNotIn(self.product_2, products)
 
-    def test_user_group_product_member_gets_group_products(self):
-        """User in group with product access should get those products"""
+    def test_user_group_product_member_gets_nothing_legacy(self):
+        """Legacy: Product_Group grants are inert."""
         products = get_authorized_products(Permissions.Product_View, user=self.user_group_product_member)
-        self.assertIn(self.product_1, products)
+        self.assertNotIn(self.product_1, products)
         self.assertNotIn(self.product_2, products)
 
-    def test_user_group_product_type_member_gets_group_products(self):
-        """User in group with product type access should get products in that type"""
+    def test_user_group_product_type_member_gets_nothing_legacy(self):
+        """Legacy: Product_Type_Group grants are inert."""
         products = get_authorized_products(Permissions.Product_View, user=self.user_group_product_type_member)
-        self.assertIn(self.product_1, products)
+        self.assertNotIn(self.product_1, products)
         self.assertNotIn(self.product_2, products)
 
 
@@ -487,12 +502,12 @@ class TestGetAuthorizedProductTypes(AuthorizationQueriesTestBase):
         self.assertNotIn(self.product_type_2, product_types)
 
     @patch("dojo.authorization.query_registrations.get_current_user")
-    def test_user_global_reader_gets_all(self, mock_get_current_user):
-        """User with global reader role should get all product types"""
+    def test_user_global_reader_gets_nothing_legacy(self, mock_get_current_user):
+        """Legacy: Global_Role(role=Reader) is inert."""
         mock_get_current_user.return_value = self.user_global_reader
         product_types = get_authorized_product_types(Permissions.Product_Type_View)
-        self.assertIn(self.product_type_1, product_types)
-        self.assertIn(self.product_type_2, product_types)
+        self.assertNotIn(self.product_type_1, product_types)
+        self.assertNotIn(self.product_type_2, product_types)
 
     @patch("dojo.authorization.query_registrations.get_current_user")
     def test_user_product_type_member_gets_own_types(self, mock_get_current_user):
@@ -503,11 +518,11 @@ class TestGetAuthorizedProductTypes(AuthorizationQueriesTestBase):
         self.assertNotIn(self.product_type_2, product_types)
 
     @patch("dojo.authorization.query_registrations.get_current_user")
-    def test_user_group_product_type_member_gets_group_types(self, mock_get_current_user):
-        """User in group with product type access should get that type"""
+    def test_user_group_product_type_member_gets_nothing_legacy(self, mock_get_current_user):
+        """Legacy: Product_Type_Group grants are inert."""
         mock_get_current_user.return_value = self.user_group_product_type_member
         product_types = get_authorized_product_types(Permissions.Product_Type_View)
-        self.assertIn(self.product_type_1, product_types)
+        self.assertNotIn(self.product_type_1, product_types)
         self.assertNotIn(self.product_type_2, product_types)
 
 
@@ -532,12 +547,12 @@ class TestGetAuthorizedEngagements(AuthorizationQueriesTestBase):
         self.assertNotIn(self.engagement_2, engagements)
 
     @patch("dojo.authorization.query_registrations.get_current_user")
-    def test_user_global_reader_gets_all(self, mock_get_current_user):
-        """User with global reader role should get all engagements"""
+    def test_user_global_reader_gets_nothing_legacy(self, mock_get_current_user):
+        """Legacy: Global_Role(role=Reader) is inert."""
         mock_get_current_user.return_value = self.user_global_reader
         engagements = get_authorized_engagements(Permissions.Engagement_View)
-        self.assertIn(self.engagement_1, engagements)
-        self.assertIn(self.engagement_2, engagements)
+        self.assertNotIn(self.engagement_1, engagements)
+        self.assertNotIn(self.engagement_2, engagements)
 
     @patch("dojo.authorization.query_registrations.get_current_user")
     def test_user_product_member_gets_product_engagements(self, mock_get_current_user):
@@ -720,11 +735,14 @@ class TestGetAuthorizedGroups(AuthorizationQueriesTestBase):
         self.assertIn(self.group_product_type, groups)
 
     @patch("dojo.authorization.query_registrations.get_current_user")
-    def test_user_group_member_gets_own_groups(self, mock_get_current_user):
-        """User who is a group member should get that group"""
+    def test_user_group_member_gets_nothing_legacy(self, mock_get_current_user):
+        """
+        Legacy: groups are visible only to staff/superuser
+        (see _carrier_queryset in query_registrations.py).
+        """
         mock_get_current_user.return_value = self.user_group_product_member
         groups = get_authorized_groups(Permissions.Group_View)
-        self.assertIn(self.group_product, groups)
+        self.assertNotIn(self.group_product, groups)
 
 
 class TestGetAuthorizedFindingGroups(AuthorizationQueriesTestBase):

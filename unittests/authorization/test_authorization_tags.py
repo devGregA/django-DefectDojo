@@ -2,7 +2,6 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import Group, Permission
 
-from dojo.authorization.roles_permissions import Permissions
 from dojo.models import Dojo_User, Product_Type
 from dojo.templatetags.authorization_tags import (
     group_has_configuration_permission,
@@ -35,7 +34,10 @@ class TestAuthorizationTags(DojoTestCase):
         result = has_object_permission(self.product_type, "Product_Type_View")
 
         self.assertFalse(result)
-        mock_has_permission.assert_called_with(None, self.product_type, Permissions.Product_Type_View)
+        # Legacy: the template filter is a pass-through. permission_to_action()
+        # inside user_has_permission handles both action strings and legacy
+        # Permissions enum names — no Permissions[name] lookup at the filter.
+        mock_has_permission.assert_called_with(None, self.product_type, "Product_Type_View")
 
     @patch("dojo.authorization.template_filters.user_has_permission")
     @patch("crum.get_current_user")
@@ -46,13 +48,18 @@ class TestAuthorizationTags(DojoTestCase):
         result = has_object_permission(self.product_type, "Product_Type_View")
 
         self.assertTrue(result)
-        mock_has_permission.assert_called_with(self.user, self.product_type, Permissions.Product_Type_View)
+        mock_has_permission.assert_called_with(self.user, self.product_type, "Product_Type_View")
         mock_current_user.assert_called_once()
 
-    def test_has_object_permission_wrong_permission(self):
-
-        with self.assertRaises(KeyError):
-            has_object_permission(self.product_type, "Test")
+    @patch("dojo.authorization.template_filters.user_has_permission")
+    def test_has_object_permission_unknown_permission_string(self, mock_has_permission):
+        # Legacy: unknown permission strings don't raise — the filter forwards
+        # them to user_has_permission whose permission_to_action() falls back
+        # to Action.View. (Pre-Track-B this raised KeyError on Permissions[name].)
+        mock_has_permission.return_value = False
+        result = has_object_permission(self.product_type, "Test")
+        self.assertFalse(result)
+        mock_has_permission.assert_called_with(None, self.product_type, "Test")
 
     @patch("dojo.authorization.template_filters.configuration_permission")
     @patch("crum.get_current_user")

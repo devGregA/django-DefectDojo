@@ -376,16 +376,16 @@ register_auth_filter("location.get_authorized_location_product_reference", _get_
 # ---------------------------------------------------------------------------
 
 
-def _get_authorized_endpoints(permission):
-    return _filter_by_authorized_products(Endpoint.objects.all(), "product", permission)
+def _get_authorized_endpoints(permission, user=None):
+    return _filter_by_authorized_products(Endpoint.objects.all(), "product", permission, user=user)
 
 
 register_auth_filter("endpoint.get_authorized_endpoints", _get_authorized_endpoints)
 
 
-def _get_authorized_endpoint_status(permission):
+def _get_authorized_endpoint_status(permission, user=None):
     return _filter_by_authorized_products(
-        Endpoint_Status.objects.all(), "endpoint__product", permission,
+        Endpoint_Status.objects.all(), "endpoint__product", permission, user=user,
     )
 
 
