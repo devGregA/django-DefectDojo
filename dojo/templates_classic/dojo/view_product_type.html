@@ -130,11 +130,6 @@
                     </div>
                 {% endif %}
             </div>
-                {# Authorized Users panel — source of truth for access under
-                   legacy authorization. The rbac_members_panel /
-                   rbac_groups_panel hooks below are empty here; Pro
-                   overrides them at pro/templates/dojo/view_product_type.html
-                   to render Members / Groups panels driven by Pro RBAC. #}
                 {% block authorized_users_panel %}
                 <div class="panel panel-default">
                     <div class="panel-heading">
