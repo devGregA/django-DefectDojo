@@ -350,23 +350,24 @@ def get_global_roles_with_permissions():
 
 def permission_to_action(permission):
     """
-    Map a fine-grained Permissions enum member (or an Action / action string)
-    to a legacy Action.
+    Map a fine-grained Permissions enum member, action string, or legacy
+    enum-name string (e.g. "Product_Edit") to an Action.
 
-    The mapping is suffix-based: every Permissions name is of the form
-    ``<Noun>_<Verb>``. Verbs map to actions; the noun is irrelevant because
-    legacy authorization is not noun-aware (the object passed at check time
-    determines the membership scope).
+    The suffix-based mapping captures every Permissions name (which all
+    follow the ``<Noun>_<Verb>`` convention); the noun is irrelevant
+    because legacy authorization is not noun-aware (the object passed at
+    check time determines the membership scope).
     """
     if isinstance(permission, Action):
         return permission
+
     if isinstance(permission, str):
         try:
             return Action(permission)
         except ValueError:
-            return Action.View
-
-    name = getattr(permission, "name", "") or str(permission)
+            name = permission
+    else:
+        name = getattr(permission, "name", "") or str(permission)
 
     if name == "Risk_Acceptance":
         return Action.Edit

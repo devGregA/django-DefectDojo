@@ -25,7 +25,7 @@
                             <span class="caret"></span>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-right" role="menu" aria-labelledby="dropdownMenu1">
-                                {% if eng|has_object_permission:"Engagement_Edit" %}
+                                {% if eng|has_object_permission:"edit" %}
                                     <li role="presentation">
                                         <a class="" href="{% url 'edit_engagement' eng.id %}">
                                         <i class="fa-solid fa-pen-to-square"></i> Edit Engagement
@@ -63,7 +63,7 @@
                                     <i class="fa-solid fa-clock-rotate-left"></i> View History
                                     </a>
                                 </li>
-                                {% if eng|has_object_permission:"Engagement_Edit" %}
+                                {% if eng|has_object_permission:"edit" %}
                                     <li role="separator" class="divider"></li>
                                     <li role="presentation">
                                         {% if eng.test_strategy %}
@@ -86,7 +86,7 @@
                                         </li>
                                     {% endif %}
                                 {% endif %}
-                                {% if eng|has_object_permission:"Engagement_Delete" %}
+                                {% if eng|has_object_permission:"delete" %}
                                     <li role="separator" class="divider"></li>
                                     <li role="presentation">
                                         <a class="text-danger" href="{% url 'delete_engagement' eng.id %}">
@@ -115,7 +115,7 @@
                                     <h4 class="pull-left">
                                         Engagement Presets <small>{{ eng.preset.title|truncatechars_html:60 }}</small>
                                     </h4>
-                                    {% if eng.product|has_object_permission:"Product_Edit" %}
+                                    {% if eng.product|has_object_permission:"edit" %}
                                         <div class="dropdown pull-right">
                                             <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenu1"
                                                 data-toggle="dropdown" aria-expanded="true" aria-label="Engagement preset options">
@@ -201,14 +201,14 @@
                                         <span class="caret"></span>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-right" role="menu" aria-labelledby="dropdownMenu1">
-                                            {% if eng|has_object_permission:"Test_Add" %}
+                                            {% if eng|has_object_permission:"add" %}
                                                 <li role="presentation">
                                                     <a class="" href="{% url 'add_tests' eng.id %}">
                                                     <i class="fa-solid fa-plus"></i> Add Tests
                                                     </a>
                                                 </li>
                                             {% endif %}
-                                            {% if eng|has_object_permission:"Import_Scan_Result" %}
+                                            {% if eng|has_object_permission:"import" %}
                                                 <li role="presentation">
                                                     <a class="" href="{% url 'import_scan_results' eng.id %}">
                                                     <i class="fa-solid fa-upload"></i> Import Scan Results
@@ -270,7 +270,7 @@
                                                             <a class="" href="{% url 'view_test' test.id %}" role="menuitem">
                                                             <i class="fa-solid fa-rectangle-list"></i> View</a>
                                                         </li>
-                                                        {% if test|has_object_permission:"Test_Edit" %}
+                                                        {% if test|has_object_permission:"edit" %}
                                                             <li role="presentation">
                                                                 <a class="" href="{% url 'edit_test' test.id %}" role="menuitem">
                                                                 <i class="fa-solid fa-pen-to-square"></i> Edit</a>
@@ -280,7 +280,7 @@
                                                                 <i class="fa-solid fa-copy"></i> Copy</a>
                                                             </li>
                                                         {% endif %}
-                                                        {% if test|has_object_permission:"Finding_Add" %}
+                                                        {% if test|has_object_permission:"add" %}
                                                             <li class="divider" role="separator"></li>
                                                             <li role="presentation">
                                                                 <a class="" href="{% url 'add_findings' test.id %}" role="menuitem">
@@ -293,7 +293,7 @@
                                                                 </a>
                                                             </li>
                                                         {% endif %}
-                                                        {% if test|has_object_permission:"Import_Scan_Result" %}
+                                                        {% if test|has_object_permission:"import" %}
                                                             <li class="divider"></li>
                                                             <li><a class="" href="{% url 're_import_scan_results' test.id %}" role="menuitem">
                                                                 <i class="fa-solid fa-upload"></i> Re-Upload Scan Results
@@ -306,7 +306,7 @@
                                                             <i class="fa-solid fa-file-lines"></i> Test Report
                                                             </a>
                                                         </li>
-                                                        {% if test|has_object_permission:"Test_Delete" %}
+                                                        {% if test|has_object_permission:"delete" %}
                                                             <li class="divider" role="separator"></li>
                                                             <li>
                                                                 <a class="text-danger" href="{% url 'delete_test' test.id %}" role="menuitem">
@@ -376,7 +376,7 @@
                         <div class="panel-heading">
                             <h4> Risk Acceptance
                                 {% if eng.product.enable_full_risk_acceptance %}
-                                    {% if eng|has_object_permission:"Risk_Acceptance" %}
+                                    {% if eng|has_object_permission:"edit" %}
                                         <a title="Add Risk Acceptance..." class="pull-right btn btn-sm btn-primary"
                                             href="{% url 'add_risk_acceptance' eng.id %}?return_url={{ request.get_full_path|urlencode }}"><span class="fa-solid fa-plus"></span></a>
                                         </a>
@@ -477,7 +477,7 @@
                                     &nbsp;
                                     <a name="collapsible" data-toggle="collapse" href="#add_feat_check_list">
                                     <i class="fa-solid fa-chevron-down"></i></a></span>
-                                    {% if eng|has_object_permission:"Engagement_Edit" %}
+                                    {% if eng|has_object_permission:"edit" %}
                                         {% if check %}
                                             <a title="Edit Checklist" class="btn btn-primary pull-right"
                                                 href="{% url 'complete_checklist' eng.id %}">
@@ -547,7 +547,7 @@
                                     &nbsp;
                                     <a name="collapsible" data-toggle="collapse" href="#add_feat_survey">
                                     <i class="fa-solid fa-chevron-down"></i></a></span>
-                                    {% if eng|has_object_permission:"Engagement_Edit" %}
+                                    {% if eng|has_object_permission:"edit" %}
                                     {% add_surveys eng %}
                                     {% endif %}
                                 </h4>
@@ -590,7 +590,7 @@
                             </h4>
                         </div>
                         <div id="add_feat_notes" class="panel-body collapse">
-                            {% if eng|has_object_permission:"Note_Add" %}
+                            {% if eng|has_object_permission:"add" %}
                                 <form class="" action="" method="post">
                                     {% csrf_token %}
                                     {% include "dojo/form_fields.html" with form=form %}
@@ -613,7 +613,7 @@
                                         <div>
                                             <div class="panel panel-default">
                                                 <div class="panel-comments">
-                                                    {% if user.username == note.author.username or eng|has_object_permission:"Note_Delete" or user.is_superuser %}
+                                                    {% if user.username == note.author.username or eng|has_object_permission:"delete" or user.is_superuser %}
                                                         <div class="pull-right">
                                                             <form method="post" action="{% url 'delete_note' note.id 'engagement' eng.id %}">
                                                                 {% csrf_token %}
@@ -624,7 +624,7 @@
                                                             </form>
                                                         </div>
                                                     {% endif %}
-                                                    {% if user.username == note.author.username or eng|has_object_permission:"Note_Edit" %}
+                                                    {% if user.username == note.author.username or eng|has_object_permission:"edit" %}
                                                         <div class="pull-right">
                                                             <form method="get" action="{% url 'edit_note' note.id 'engagement' eng.id %}">
                                                                 {% csrf_token %}
@@ -635,7 +635,7 @@
                                                             </form>
                                                         </div>
                                                     {% endif %}
-                                                    {% if user.username == note.author.username or eng|has_object_permission:"Note_View_History" %}
+                                                    {% if user.username == note.author.username or eng|has_object_permission:"view" %}
                                                         <div class="pull-right">
                                                             <form method="get" action="{% url 'note_history' note.id 'engagement' eng.id %}">
                                                                 {% csrf_token %}
@@ -682,7 +682,7 @@
                                 &nbsp;
                                 <a data-toggle="collapse" href="#add_feat_files">
                                 <i class="fa-solid fa-chevron-down"></i></a></span>
-                                {% if eng|has_object_permission:"Engagement_Edit" %}
+                                {% if eng|has_object_permission:"edit" %}
                                     <a title="Manage Files" name="Manage Files" class="btn btn-sm btn-primary pull-right"
                                         href="{% url 'manage_files' oid=eng.id obj_type='Engagement' %}">
                                     <span class="fa-solid fa-pen-to-square"></span></a>
@@ -830,7 +830,7 @@
                                     <a href="{{ eng | jira_issue_url }}" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> {{ eng | jira_key }}
                                         <small>(epic)</small>
                                     </a>
-                                    {% if eng|has_object_permission:"Engagement_Edit" %}
+                                    {% if eng|has_object_permission:"edit" %}
                                         &nbsp;
                                         <i id="unlink_eng_jira" class="fa-solid fa-trash" title="Unlink JIRA epic from this engagement." hx-post="{% url 'engagement_unlink_jira' eng.id %}" hx-swap="none" hx-on::after-request="window.location.reload()" hx-confirm="Are you sure you want to unlink this JIRA issue?" style="cursor:pointer"></i>
                                     {% endif %}
@@ -931,7 +931,7 @@
                         <div class="panel-heading">
                             <h4><span class="fa-solid fa-key" aria-hidden="true"></span>
                                 Credentials
-                                {% if creds and eng|has_object_permission:"Engagement_Edit" %}
+                                {% if creds and eng|has_object_permission:"edit" %}
                                     <a title="Add New Credential" class="pull-right btn btn-sm btn-primary"
                                         href="{% url 'new_cred_product_engagement' eng.id %}"><span class="fa-solid fa-plus"></span></a>
                                 {% endif %}
@@ -976,7 +976,7 @@
                                                                 View</a>
                                                             </li>
                                                             {% endif %}
-                                                            {% if eng|has_object_permission:"Engagement_Edit" %}
+                                                            {% if eng|has_object_permission:"edit" %}
                                                             <li>
                                                                 <a class="" href="{% url 'delete_cred_engagement' cred.engagement.id cred.id %}">
                                                                 Delete</a>

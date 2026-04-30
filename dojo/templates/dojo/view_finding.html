@@ -51,7 +51,7 @@
                             <span class="caret"></span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-right" role="menu" aria-labelledby="dropdownMenu1">
-                            {% if finding|has_object_permission:"Finding_Edit" %}
+                            {% if finding|has_object_permission:"edit" %}
                                 <li role="presentation">
                                     <a href="{% url 'edit_finding' finding.id %}">
                                         <i class="fa-solid fa-pen-to-square"></i> Edit Finding
@@ -63,7 +63,7 @@
                                     </a>
                                 </li>
                             {% endif %}
-                            {% if finding|has_object_permission:"Finding_Edit" %}
+                            {% if finding|has_object_permission:"edit" %}
                                 <li role="presentation">
                                     <a href="{% url 'manage_files' oid=finding.id obj_type='Finding' %}">
                                         <i class="fa-solid fa-file-image-o"></i> Manage Files
@@ -71,8 +71,8 @@
                                 </li>
                                 <li role="separator" class="divider"></li>
                             {% endif %}
-                            {% if finding|has_object_permission:"Finding_View" %}
-                                {% if finding|has_object_permission:"Finding_Edit" and clear_peer_review %}
+                            {% if finding|has_object_permission:"view" %}
+                                {% if finding|has_object_permission:"edit" and clear_peer_review %}
                                     <li role="presentation">
                                         <a href="{% url 'clear_finding_review' finding.id %}">
                                             <i class="icon-user-check"></i> Clear Review
@@ -86,7 +86,7 @@
                                     </li>
                                 {% endif %}
                             {% endif %}
-                            {% if finding|has_object_permission:"Finding_Edit" %}
+                            {% if finding|has_object_permission:"edit" %}
                                 <li role="presentation">
                                     <a href="{% url 'touch_finding' finding.id %}">
                                         <i class="fa-solid fa-clock"></i> Touch Finding
@@ -94,7 +94,7 @@
                                 </li>
                             {% endif %}
                             <li role="separator" class="divider"></li>
-                            {% if "Finding_Add"|has_global_permission %}
+                            {% if "add"|has_global_permission %}
                                 <li role="presentation">
                                     <a href="{% url 'mktemplate' finding.id %}">
                                         <i class="fa-solid fa-copy"></i> Make Finding a Template
@@ -102,14 +102,14 @@
                                 </li>
                             {% endif %}
 
-                            {% if finding|has_object_permission:"Finding_Edit" %}
+                            {% if finding|has_object_permission:"edit" %}
                                 <li role="presentation">
                                     <a href="{% url 'find_template_to_apply' finding.id %}">
                                         <i class="fa-solid fa-copy"></i> Apply Template to Finding
                                     </a>
                                 </li>
                             {% endif %}
-                            {% if finding|has_object_permission:"Finding_Edit" %}
+                            {% if finding|has_object_permission:"edit" %}
                                 <li role="separator" class="divider"></li>
                                     <li role="presentation">
                                         <a href="{% url 'remediation_date' finding.id %}">
@@ -117,7 +117,7 @@
                                         </a>
                                     </li>
                             {% endif %}
-                            {% if finding|has_object_permission:"Finding_Edit" %}
+                            {% if finding|has_object_permission:"edit" %}
                                 <li role="separator" class="divider"></li>
                                 {% if finding.mitigated %}
                                     <li role="presentation">
@@ -140,7 +140,7 @@
                                 </li>
                                 {% endif %}
                             {% endif %}
-                            {% if finding|has_object_permission:"Risk_Acceptance" %}
+                            {% if finding|has_object_permission:"edit" %}
                                 {% if finding.risk_accepted %}
                                     <li role="presentation">
                                     <a href="{% url 'risk_unaccept_finding' finding.id %}?return_url={{ request.get_full_path|urlencode }}">
@@ -171,7 +171,7 @@
                                     <i class="fa-solid fa-clock-rotate-left"></i> View History
                                 </a>
                             </li>
-                            {% if finding|has_object_permission:"Finding_Delete" %}
+                            {% if finding|has_object_permission:"delete" %}
                                 <li role="separator" class="divider"></li>
                                 <li role="presentation">
                                     <a class="text-danger delete-finding" href="#">
@@ -197,7 +197,7 @@
                                 <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
                                 Alert: This Finding is under review and may not be 100% accurate.
                             </span>
-                            {% if finding|has_object_permission:"Finding_Edit" and clear_peer_review %}
+                            {% if finding|has_object_permission:"edit" and clear_peer_review %}
                                 [<a title="Clear Review" class="text-primary" style="display: inline !important;"
                                     href="{% url 'clear_finding_review' finding.id %}">Clear Review</a>]
                             {% endif %}
@@ -1074,7 +1074,7 @@
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <h4>Credential
-                                {% if not cred_finding and finding|has_object_permission:"Finding_Edit" %}
+                                {% if not cred_finding and finding|has_object_permission:"edit" %}
                                     {% if cred_engagement or creds %}
                                         <a title="Add New Credential" class="pull-right btn btn-primary btn-sm"
                                            href="{% url 'new_cred_finding' finding.id %}"><span
@@ -1125,7 +1125,7 @@
                                                     <a class="btn btn-sm btn-secondary"
                                                        href="{% url 'view_cred_finding' cred.finding.id cred.id %}">View</a>
                                                     {% endif %}
-                                                    {% if finding|has_object_permission:"Finding_Edit" %}
+                                                    {% if finding|has_object_permission:"edit" %}
                                                     <a class="btn btn-sm btn-danger delete"
                                                        href="{% url 'delete_cred_finding' cred.finding.id cred.id %}">Delete</a>
                                                     {% endif %}
@@ -1201,7 +1201,7 @@
         var firstID = {% if findings_list.0 %}{{findings_list.0}}{% else %}null{% endif %};
         var currentID = {% if finding.id %}{{finding.id}}{% else %}null{% endif %};
         var lastID = {% if findings_list_lastElement %}{{findings_list_lastElement}}{% else %}null{% endif %};
-        var canEditFinding = {% if finding|has_object_permission:"Finding_Edit" %}true{% else %}false{% endif %};
+        var canEditFinding = {% if finding|has_object_permission:"edit" %}true{% else %}false{% endif %};
         var findingIsMitigated = {% if finding.mitigated %}true{% else %}false{% endif %};
         var findingIsVerified = {% if finding.verified %}true{% else %}false{% endif %};
         if(currentID != firstID)

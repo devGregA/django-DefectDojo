@@ -2,16 +2,18 @@ import crum
 
 from dojo.authorization.authorization import user_has_configuration_permission as configuration_permission
 from dojo.authorization.authorization import user_has_global_permission, user_has_permission
-from dojo.authorization.roles_permissions import Permissions
 from dojo.request_cache import cache_for_request
 
 
 def has_object_permission(obj, permission):
-    return user_has_permission(crum.get_current_user(), obj, Permissions[permission])
+    # Pass-through to user_has_permission(); permission_to_action() inside the
+    # legacy authorization layer accepts both the new action strings ("view",
+    # "edit", ...) and any leftover Permissions enum names ("Product_Edit", ...).
+    return user_has_permission(crum.get_current_user(), obj, permission)
 
 
 def has_global_permission(permission):
-    return user_has_global_permission(crum.get_current_user(), Permissions[permission])
+    return user_has_global_permission(crum.get_current_user(), permission)
 
 
 def has_configuration_permission(permission, request):

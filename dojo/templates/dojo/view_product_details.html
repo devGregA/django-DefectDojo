@@ -23,7 +23,7 @@
                 <span class="caret"></span>
               </button>
               <ul class="dropdown-menu dropdown-menu-right" role="menu" aria-labelledby="dropdownMenu1">
-                {% if prod|has_object_permission:"Product_Edit" %}
+                {% if prod|has_object_permission:"edit" %}
                   <li role="presentation">
                     <a class="" href="{% url 'edit_product' prod.id %}">
                                           <i class="fa-solid fa-pen-to-square"></i> {% trans "Edit" %}
@@ -43,7 +43,7 @@
                   </li>
                 {% endif %}
                 <li role="separator" class="divider"></li>
-                {% if prod|has_object_permission:"Product_API_Scan_Configuration_Add" %}
+                {% if prod|has_object_permission:"add" %}
                   <li role="presentation">
                     <a class="" href="{% url 'add_api_scan_configuration' prod.id %}">
                       <i class="fa-solid fa-plus"></i>{% trans "Add API Scan Configuration" %}
@@ -58,14 +58,14 @@
                 </li>
                 {% if system_settings.enable_product_tracking_files %}
                   <li role="separator" class="divider"></li>
-                  {% if prod|has_object_permission:"Product_Tracking_Files_Add" %}
+                  {% if prod|has_object_permission:"add" %}
                   <li role="presentation">
                     <a class="" href="{% url 'new_object' prod.id %}">
                         <i class="fa-solid fa-plus"></i> {% trans "Add Tracked Files" %}
                     </a>
                   </li>
                   {% endif %}
-                  {% if prod|has_object_permission:"Product_Tracking_Files_View" %}
+                  {% if prod|has_object_permission:"view" %}
                   <li role="presentation">
                     <a href="{% url 'view_objects' prod.id %}">
                         <i class="fa-solid fa-rectangle-list"></i> {% trans "View Tracked Files" %}
@@ -79,7 +79,7 @@
                       <i class="fa-solid fa-file-lines"></i> {{ labels.ASSET_REPORT_LABEL }}
                   </a>
                 </li>
-                {% if prod|has_object_permission:"Benchmark_Edit" %}
+                {% if prod|has_object_permission:"edit" %}
                   {% if system_settings.enable_benchmark and benchmark_type %}
                     <li role="separator" class="divider"></li>
                     {% for bt in benchmark_type %}
@@ -91,7 +91,7 @@
                     {% endfor %}
                   {% endif %}
                 {% endif %}
-                {% if prod|has_object_permission:"Product_Edit" %}
+                {% if prod|has_object_permission:"edit" %}
                   <li role="separator" class="divider"></li>
                   <li role="presentation">
                     <a href="{% url 'action_history' prod|content_type prod.id %}">
@@ -99,7 +99,7 @@
                     </a>
                   </li>
                 {% endif %}
-                {% if prod|has_object_permission:"Product_Delete" %}
+                {% if prod|has_object_permission:"delete" %}
                   <li role="separator" class="divider"></li>
                   <li role="presentation">
                     <a class="text-danger" href="{% url 'delete_product' prod.id %}">
@@ -163,7 +163,7 @@
     <div class="panel panel-default">
       <div class="panel-heading">
         <h3 class="panel-title"><span class="fa-solid fa-bolt" aria-hidden="true"></span>{% trans "Technologies" %} {% if app_analysis %}({{ app_analysis.count }}){% endif %}
-            {% if prod|has_object_permission:"Technology_Add" %}
+            {% if prod|has_object_permission:"add" %}
             <a title="{% trans "Add new Technology" %}" class="pull-right btn btn-sm btn-primary" href="/product/{{ prod.id }}/new_technology" id="addTechnology"><span class="fa-solid fa-plus"></span> </a>
             {% endif %}
         </h3>
@@ -178,13 +178,13 @@
                     <li class="dropdown" style="list-style:none;position:absolute">
                         <a href="#" class="dropdown-toggle pull-left" data-toggle="dropdown" aria-expanded="true" label="Actions" name="dropdownManageTechnologies"><b class="fa-solid fa-ellipsis-vertical"></b>&nbsp;</a>
                         <ul class="dropdown-menu">
-                            {% if prod|has_object_permission:"Technology_Edit" %}
+                            {% if prod|has_object_permission:"edit" %}
                             <li>
                                 <a name="editTechnology" href="{% url 'edit_technology' app.id %}">
                                 <i class="fa-solid fa-pen-to-square"></i>{% trans "Edit" %}</a>
                             </li>
                             {% endif %}
-                            {% if prod|has_object_permission:"Technology_Delete" %}
+                            {% if prod|has_object_permission:"delete" %}
                             <li>
                                 <a name="deleteTechnology" href="{% url 'delete_technology' app.id %}">
                                 <i class="fa-solid fa-trash"></i>{% trans "Delete" %}</a>
@@ -279,7 +279,7 @@
                 &nbsp;
                 <a href="https://docs.defectdojo.com/en/customize_dojo/user_management/about_perms_and_roles/#productproduct-type-membership--roles" target="_blank">
                     <i class="fa-solid fa-circle-question"></i></a>
-                {% if prod|has_object_permission:"Product_Manage_Members" %}
+                {% if prod|has_object_permission:"staff_only" %}
                 <div class="dropdown pull-right">
                     <button class="btn btn-primary dropdown-toggle" label="Actions" type="button" id="dropdownMenuAddProductMember"
                             data-toggle="dropdown" aria-expanded="true" aria-label="Add Product Member">
@@ -316,13 +316,13 @@
                                 <li class="dropdown" style="list-style:none;position:absolute">
                                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true" label="Actions" name="dropdownManageProductMember">&nbsp;<b class="fa-solid fa-ellipsis-vertical"></b>&nbsp;</a>
                                     <ul class="dropdown-menu">
-                                        {% if prod|has_object_permission:"Product_Manage_Members" %}
+                                        {% if prod|has_object_permission:"staff_only" %}
                                         <li>
                                             <a name="editProductMember" href="{% url 'edit_product_member' member.id %}">
                                             <i class="fa-solid fa-pen-to-square"></i>{% trans "Edit" %}</a>
                                         </li>
                                         {% endif %}
-                                        {% if member|has_object_permission:"Product_Member_Delete" %}
+                                        {% if member|has_object_permission:"delete" %}
                                         <li>
                                             <a name="deleteProductMember" href="{% url 'delete_product_member' member.id %}">
                                             <i class="fa-solid fa-trash"></i>{% trans "Delete" %}</a>
@@ -376,7 +376,7 @@
                   &nbsp;
                   <a href="https://docs.defectdojo.com/en/customize_dojo/user_management/about_perms_and_roles/#group-memberships" target="_blank">
                       <i class="fa-solid fa-circle-question"></i></a>
-                  {% if prod|has_object_permission:"Product_Group_Add" %}
+                  {% if prod|has_object_permission:"add" %}
                   <div class="dropdown pull-right">
                       <button class="btn btn-primary dropdown-toggle" label="Actions" type="button" id="dropdownMenuAddProductGroup"
                               data-toggle="dropdown" aria-expanded="true" aria-label="Add Product Group">
@@ -413,13 +413,13 @@
                               <li class="dropdown" style="list-style:none;position:absolute">
                                   <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true" label="Actions" name="dropdownManageProductGroup">&nbsp;<b class="fa-solid fa-ellipsis-vertical"></b>&nbsp;</a>
                                   <ul class="dropdown-menu">
-                                      {% if prod|has_object_permission:"Product_Group_Edit" %}
+                                      {% if prod|has_object_permission:"edit" %}
                                       <li>
                                           <a name="editProductGroup" href="{% url 'edit_product_group' group.id %}">
                                               <i class="fa-solid fa-pen-to-square"></i>{% trans "Edit" %}</a>
                                       </li>
                                       {% endif %}
-                                      {% if group|has_object_permission:"Product_Group_Delete" %}
+                                      {% if group|has_object_permission:"delete" %}
                                       <li>
                                           <a name="deleteProductGroup" href="{% url 'delete_product_group' group.id %}">
                                               <i class="fa-solid fa-trash"></i>{% trans "Delete" %}</a>

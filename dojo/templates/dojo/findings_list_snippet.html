@@ -55,11 +55,11 @@
             </div>
             {% if findings %}
                 <div class="clearfix">{% include "dojo/paging_snippet.html" with page=findings page_size=True %}</div>
-                {% if not product_tab or product_tab and product_tab.product|has_object_permission:"Finding_Edit" %}
+                {% if not product_tab or product_tab and product_tab.product|has_object_permission:"edit" %}
                     <div class="dropdown hidden" style="padding-bottom: 5px;" id="bulk_edit_menu">
                         {{ bulk_edit_form.media.css }}
                         {{ bulk_edit_form.media.js }}
-                        {% if not product_tab or product_tab and product_tab.product|has_object_permission:"Finding_Edit" %}
+                        {% if not product_tab or product_tab and product_tab.product|has_object_permission:"edit" %}
                             <button class="btn btn-info btn-sm btn-primary dropdown-toggle"
                                     type="button"
                                     id="dropdownMenu2"
@@ -84,7 +84,7 @@
                                     </a>
                                 </button>
                             {% endif %}
-                            {% if not product_tab or product_tab and product_tab.product|has_object_permission:"Finding_Delete" %}
+                            {% if not product_tab or product_tab and product_tab.product|has_object_permission:"delete" %}
                                 <button type="button"
                                         class="btn btn-sm  btn-primary"
                                         data-toggle="tooltip"
@@ -264,7 +264,7 @@
                         <thead>
                             <tr>
                                 {% block header %}
-                                    {% if not product_tab or product_tab and product_tab.product|has_object_permission:"Finding_Edit" %}
+                                    {% if not product_tab or product_tab and product_tab.product|has_object_permission:"edit" %}
                                         <th class="centered" title="Select all visible findings." scope="col" aria-label="Select all visible findings">
                                             <div class="dropdown">
                                                 <button class="btn btn-primary dropdown-toggle"
@@ -405,7 +405,7 @@
                             {% for finding in findings %}
                                 <tr class="{% if finding.active %}active_finding{% else %}inactive_finding{% endif %}">
                                     {% block body %}
-                                        {% if not product_tab or product_tab and product_tab.product|has_object_permission:"Finding_Edit" %}
+                                        {% if not product_tab or product_tab and product_tab.product|has_object_permission:"edit" %}
                                             <td class="centered">
                                                 <form action="#">
                                                     <input type="checkbox" name="select_{{ finding.id }}" id="{{ finding.id }}" class="select_one {{ finding.severity }}" aria-label="select-finding"/>
@@ -422,7 +422,7 @@
                                                                 <i class="fa-solid fa-circle-right"></i> {% trans "View" %}
                                                             </a>
                                                         </li>
-                                                        {% if finding|has_object_permission:"Finding_Edit" %}
+                                                        {% if finding|has_object_permission:"edit" %}
                                                             <li role="presentation">
                                                                 <a class="" href="{% url 'edit_finding' finding.id %}?return_url={{ request.get_full_path|urlencode }}" role="menuitem">
                                                                     <i class="fa-solid fa-pen-to-square"></i> {% trans "Edit" %}
@@ -435,9 +435,9 @@
                                                             </li>
                                                             <li class="divider" role="separator"></li>
                                                         {% endif %}
-                                                        {% if finding|has_object_permission:"Finding_View" %}
+                                                        {% if finding|has_object_permission:"view" %}
                                                             {% user_can_clear_peer_review finding request.user as clear_peer_review %}
-                                                            {% if finding|has_object_permission:"Finding_Edit" and clear_peer_review %}
+                                                            {% if finding|has_object_permission:"edit" and clear_peer_review %}
                                                                 <li role="presentation">
                                                                     <a href="{% url 'clear_finding_review' finding.id %}" role="menuitem">
                                                                         <i class="icon-user-check"></i> {% trans "Clear Review" %}
@@ -451,28 +451,28 @@
                                                                 </li>
                                                             {% endif %}
                                                         {% endif %}
-                                                        {% if finding|has_object_permission:"Finding_Edit" %}
+                                                        {% if finding|has_object_permission:"edit" %}
                                                             <li role="presentation">
                                                                 <a href="{% url 'touch_finding' finding.id %}?return_url={{ request.get_full_path|urlencode }}" role="menuitem">
                                                                     <i class="fa-solid fa-clock"></i> {% trans "Touch Finding" %}
                                                                 </a>
                                                             </li>
                                                         {% endif %}
-                                                        {% if finding|has_object_permission:"Finding_Add" %}
+                                                        {% if finding|has_object_permission:"add" %}
                                                             <li role="presentation">
                                                                 <a href="{% url 'mktemplate' finding.id %}" role="menuitem">
                                                                     <i class="fa-solid fa-copy"></i> {% trans "Make Finding a Template" %}
                                                                 </a>
                                                             </li>
                                                         {% endif %}
-                                                        {% if finding|has_object_permission:"Finding_Edit" %}
+                                                        {% if finding|has_object_permission:"edit" %}
                                                             <li role="presentation">
                                                                 <a href="{% url 'find_template_to_apply' finding.id %}" role="menuitem">
                                                                     <i class="fa-solid fa-copy"></i> {% trans "Apply Template to Finding" %}
                                                                 </a>
                                                             </li>
                                                         {% endif %}
-                                                        {% if finding|has_object_permission:"Finding_Edit" %}
+                                                        {% if finding|has_object_permission:"edit" %}
                                                             {% if finding.active %}
                                                                 <li role="presentation">
                                                                     <a href="{% url 'close_finding' finding.id %}" role="menuitem">
@@ -488,7 +488,7 @@
                                                             {% endif %}
                                                         {% endif %}
                                                         <li class="divider" role="separator"></li>
-                                                        {% if finding|has_object_permission:"Risk_Acceptance" %}
+                                                        {% if finding|has_object_permission:"edit" %}
                                                             {% if finding.risk_accepted %}
                                                                 <li role="presentation">
                                                                     <a href="{% url 'risk_unaccept_finding' finding.id %}?return_url={{ request.get_full_path|urlencode }}" role="menuitem">
@@ -519,7 +519,7 @@
                                                                 <i class="fa-solid fa-clock-rotate-left"></i> {% trans "View History" %}
                                                             </a>
                                                         </li>
-                                                        {% if finding|has_object_permission:"Finding_Delete" %}
+                                                        {% if finding|has_object_permission:"delete" %}
                                                             <li class="divider" role="separator"> </li>
                                                             <li role="presentation">
                                                                 <form method="post" action="{% url 'delete_finding' finding.id %}" style="display: inline" class="form-inline form" id="delete-finding-menu-{{ finding.id }}-form">
@@ -767,7 +767,7 @@
                 return data;
             }
             var datatables_columns = [
-                {% if not product_tab or product_tab and product_tab.product|has_object_permission:"Finding_Edit" %}
+                {% if not product_tab or product_tab and product_tab.product|has_object_permission:"edit" %}
                     { "data": "checkbox" },
                 {% endif %}
                     { "data": "action" },

@@ -18,13 +18,13 @@
                                 <span class="caret"></span>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-right" role="menu" aria-labelledby="dropdownMenu1">
-                                {% if group|has_object_permission:"Group_Edit" %}
+                                {% if group|has_object_permission:"edit" %}
                                 <li>
                                     <a class="" href="{% url 'edit_group' group.id %}">
                                         <i class="fa-solid fa-pen-to-square"></i> Edit</a>
                                 </li>
                                 {% endif %}
-                                {% if group|has_object_permission:"Group_Delete" %}
+                                {% if group|has_object_permission:"delete" %}
                                 <li role="separator" class="divider"></li>
                                 <li>
                                     <a class="" href="{% url 'delete_group' group.id %}" id="deleteUser">
@@ -47,7 +47,7 @@
                     &nbsp;
                     <a href="https://docs.defectdojo.com/en/customize_dojo/user_management/create_user_group/#manage-a-groups-users" target="_blank">
                         <i class="fa-solid fa-circle-question"></i></a>
-                    {% if group|has_object_permission:"Group_Manage_Members" %}
+                    {% if group|has_object_permission:"staff_only" %}
                     <div class="dropdown pull-right">
                         <button class="btn btn-primary dropdown-toggle" aria-label="Actions" type="button" id="dropdownMenuAddGroupMember"
                                 data-toggle="dropdown" aria-expanded="true">
@@ -83,13 +83,13 @@
                                 <li class="dropdown" style="list-style:none;position:absolute">
                                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true" label="Actions" name="dropdownManageGroupMembers">&nbsp;<b class="fa-solid fa-ellipsis-vertical"></b>&nbsp;</a>
                                     <ul class="dropdown-menu">
-                                        {% if group|has_object_permission:"Group_Manage_Members" %}
+                                        {% if group|has_object_permission:"staff_only" %}
                                         <li>
                                             <a name="editGroupMember" href="{% url 'edit_group_member' member.id %}">
                                                 <i class="fa-solid fa-pen-to-square"></i>Edit</a>
                                         </li>
                                         {% endif %}
-                                        {% if member|has_object_permission:"Group_Member_Delete" %}
+                                        {% if member|has_object_permission:"delete" %}
                                         <li>
                                             <a name="deleteGroupMember" href="{% url 'delete_group_member' member.id %}">
                                                 <i class="fa-solid fa-trash"></i> Delete</a>
@@ -157,13 +157,13 @@
                                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" name="dropdownManageProductTypeGroup"
                                        aria-expanded="true">&nbsp;<b class="fa-solid fa-ellipsis-vertical"></b>&nbsp;</a>
                                     <ul class="dropdown-menu">
-                                        {% if product_type_group.product_type|has_object_permission:"Product_Type_Group_Edit" %}
+                                        {% if product_type_group.product_type|has_object_permission:"edit" %}
                                         <li>
                                             <a name="editProductTypeGroup" href="{% url 'edit_product_type_group' product_type_group.id %}">
                                                 <i class="fa-solid fa-pen-to-square"></i> Edit</a>
                                         </li>
                                         {% endif %}
-                                        {% if product_type_group|has_object_permission:"Product_Type_Group_Delete" %}
+                                        {% if product_type_group|has_object_permission:"delete" %}
                                         <li>
                                             <a name="deleteProductTypeGroup" href="{% url 'delete_product_type_group' product_type_group.id %}">
                                                 <i class="fa-solid fa-trash"></i> Delete</a>
@@ -231,13 +231,13 @@
                                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" name="dropdownManageProductGroup"
                                        aria-expanded="true">&nbsp;<b class="fa-solid fa-ellipsis-vertical"></b>&nbsp;</a>
                                     <ul class="dropdown-menu">
-                                        {% if product_group.product|has_object_permission:"Product_Group_Edit" %}
+                                        {% if product_group.product|has_object_permission:"edit" %}
                                         <li>
                                             <a name="editProductGroup" href="{% url 'edit_product_group' product_group.id %}">
                                                 <i class="fa-solid fa-pen-to-square"></i> Edit</a>
                                         </li>
                                         {% endif %}
-                                        {% if product_group|has_object_permission:"Product_Group_Delete" %}
+                                        {% if product_group|has_object_permission:"delete" %}
                                         <li>
                                             <a name="deleteProductGroup" href="{% url 'delete_product_group' product_group.id %}">
                                                 <i class="fa-solid fa-trash"></i> Delete</a>

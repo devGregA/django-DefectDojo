@@ -49,7 +49,7 @@
                             role="menu"
                             aria-labelledby="dropdownMenu1">
                             {% if not host_view %}
-                                {% if location|has_object_permission:"Location_Edit" %}
+                                {% if location|has_object_permission:"edit" %}
                                     <li role="presentation">
                                         <a href="{% url 'edit_endpoint' location.id %}">
                                             <i class="fa-solid fa-pen-to-square"></i> Edit Endpoint
@@ -72,7 +72,7 @@
                                         <i class="fa-solid fa-file-lines"></i> Report
                                     </a>
                                 </li>
-                                {% if location|has_object_permission:"Location_Delete" %}
+                                {% if location|has_object_permission:"delete" %}
                                     <li role="separator" class="divider"></li>
                                     <li role="presentation" class="text-danger">
                                         <a class="text-danger" href="{% url 'delete_endpoint' location.id %}">

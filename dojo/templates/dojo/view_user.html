@@ -145,13 +145,13 @@
                                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" name="dropdownManageProductTypeMember"
                                             aria-expanded="true">&nbsp;<b class="fa-solid fa-ellipsis-vertical"></b>&nbsp;</a>
                                         <ul class="dropdown-menu">
-                                            {% if member.product_type|has_object_permission:"Product_Type_Manage_Members" %}
+                                            {% if member.product_type|has_object_permission:"staff_only" %}
                                             <li>
                                                 <a name="editProductTypeMember" href="{% url 'edit_product_type_member' member.id %}">
                                                     <i class="fa-solid fa-pen-to-square"></i> {% trans "Edit" %}</a>
                                             </li>
                                             {% endif %}
-                                            {% if member|has_object_permission:"Product_Type_Member_Delete" %}
+                                            {% if member|has_object_permission:"delete" %}
                                             <li>
                                                 <a name="deleteProductTypeMember" href="{% url 'delete_product_type_member' member.id %}">
                                                     <i class="fa-solid fa-trash"></i> {% trans "Delete" %}</a>
@@ -218,13 +218,13 @@
                                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" name="dropdownManageProductMember"
                                             aria-expanded="true">&nbsp;<b class="fa-solid fa-ellipsis-vertical"></b>&nbsp;</a>
                                         <ul class="dropdown-menu">
-                                            {% if member.product|has_object_permission:"Product_Manage_Members" %}
+                                            {% if member.product|has_object_permission:"staff_only" %}
                                             <li>
                                                 <a name="editProductMember" href="{% url 'edit_product_member' member.id %}">
                                                     <i class="fa-solid fa-pen-to-square"></i> {% trans "Edit" %}</a>
                                             </li>
                                             {% endif %}
-                                            {% if member|has_object_permission:"Product_Member_Delete" %}
+                                            {% if member|has_object_permission:"delete" %}
                                             <li>
                                                 <a name="deleteProductMember" href="{% url 'delete_product_member' member.id %}">
                                                     <i class="fa-solid fa-trash"></i> {% trans "Delete" %}</a>
@@ -292,13 +292,13 @@
                                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" name="dropdownManageProductTypeMember"
                                        aria-expanded="true">&nbsp;<b class="fa-solid fa-ellipsis-vertical"></b>&nbsp;</a>
                                     <ul class="dropdown-menu">
-                                        {% if member.group|has_object_permission:"Group_Manage_Members" %}
+                                        {% if member.group|has_object_permission:"staff_only" %}
                                         <li>
                                             <a name="editProductTypeMember" href="{% url 'edit_group_member' member.id %}">
                                                 <i class="fa-solid fa-pen-to-square"></i> {% trans "Edit" %}</a>
                                         </li>
                                         {% endif %}
-                                        {% if member|has_object_permission:"Group_Member_Delete" %}
+                                        {% if member|has_object_permission:"delete" %}
                                         <li>
                                             <a name="deleteProductTypeMember" href="{% url 'delete_group_member' member.id %}">
                                                 <i class="fa-solid fa-trash"></i> {% trans "Delete" %}</a>

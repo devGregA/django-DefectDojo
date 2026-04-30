@@ -19,7 +19,7 @@
         </div>
     </form>
     {% if template %}
-        {% if "Finding_Delete"|has_global_permission %}
+        {% if "delete"|has_global_permission %}
             <form method="post" action="{% url 'delete_template' template.id %}"
                 style="display: inline" class="">
                 {% csrf_token %}
