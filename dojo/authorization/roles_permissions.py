@@ -1,7 +1,47 @@
-from enum import IntEnum
+from enum import IntEnum, StrEnum
+
+
+class Action(StrEnum):
+
+    """
+    Legacy permission actions. The fine-grained Permissions enum below is
+    preserved so existing call sites (`@user_is_authorized(Permissions.X, …)`)
+    keep compiling, but every check now flattens to one of these intents:
+
+      * View          — read-only access to an object (membership in
+                        authorized_users, or staff/superuser bypass)
+      * Edit / Add    — mutating an existing object or creating one
+                        (membership in authorized_users + staff bypass)
+      * Delete        — destroying an object (staff/superuser only)
+      * Import        — bulk ingest of scan results (staff bypass + per-product
+                        membership)
+      * StaffOnly     — administrative actions like member management or
+                        configuration changes
+      * SuperuserOnly — system-wide changes that legacy never delegated
+
+    The role hierarchy (Reader / Writer / Maintainer / Owner) does not exist
+    in this model; per-product distinctions collapse to membership.
+    """
+
+    View = "view"
+    Add = "add"
+    Edit = "edit"
+    Delete = "delete"
+    Import = "import"
+    StaffOnly = "staff_only"
+    SuperuserOnly = "superuser_only"
 
 
 class Roles(IntEnum):
+
+    """
+    Preserved for backward compatibility. Legacy authorization no longer
+    branches on roles — these values now act as labels only. The membership
+    tables (Product_Member, Product_Type_Member, Global_Role) exist as inert
+    data tables that the dojo-pro plugin can adopt; nothing in dojo/ reads
+    role assignments after the legacy rewrite.
+    """
+
     Reader = 5
     API_Importer = 1
     Writer = 2
@@ -522,3 +562,41 @@ def get_global_roles_with_permissions():
         Roles.Maintainer: {Permissions.Product_Type_Add},
         Roles.Owner: {Permissions.Product_Type_Add},
     }
+
+
+def permission_to_action(permission):
+    """
+    Map a fine-grained Permissions enum member (or an Action / action string)
+    to a legacy Action.
+
+    The mapping is suffix-based: every Permissions name is of the form
+    ``<Noun>_<Verb>``. Verbs map to actions; the noun is irrelevant because
+    legacy authorization is not noun-aware (the object passed at check time
+    determines the membership scope).
+    """
+    if isinstance(permission, Action):
+        return permission
+    if isinstance(permission, str):
+        try:
+            return Action(permission)
+        except ValueError:
+            return Action.View
+
+    name = getattr(permission, "name", "") or str(permission)
+
+    if name == "Risk_Acceptance":
+        return Action.Edit
+    if name == "Import_Scan_Result":
+        return Action.Import
+    if name.endswith(("_View", "_View_History")):
+        return Action.View
+    if name.endswith(("_Edit", "_Configure_Notifications")):
+        return Action.Edit
+    if name.endswith("_Delete"):
+        return Action.Delete
+    if name.endswith(("_Add_Product", "_Add")):
+        return Action.Add
+    if "_Manage_" in name or name.endswith("_Add_Owner"):
+        return Action.StaffOnly
+
+    return Action.View
