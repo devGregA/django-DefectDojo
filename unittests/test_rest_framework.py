@@ -44,14 +44,11 @@ from dojo.api_v2.views import (
     CredentialsMappingViewSet,
     CredentialsViewSet,
     DevelopmentEnvironmentViewSet,
-    DojoGroupMemberViewSet,
-    DojoGroupViewSet,
     EndpointStatusViewSet,
     EndPointViewSet,
     EngagementViewSet,
     FindingTemplatesViewSet,
     FindingViewSet,
-    GlobalRoleViewSet,
     ImportLanguagesView,
     ImportScanView,
     JiraInstanceViewSet,
@@ -64,10 +61,6 @@ from dojo.api_v2.views import (
     NotificationsViewSet,
     NotificationWebhooksViewSet,
     ProductAPIScanConfigurationViewSet,
-    ProductGroupViewSet,
-    ProductMemberViewSet,
-    ProductTypeGroupViewSet,
-    ProductTypeMemberViewSet,
     ProductTypeViewSet,
     ProductViewSet,
     QuestionnaireAnsweredSurveyViewSet,
@@ -76,7 +69,6 @@ from dojo.api_v2.views import (
     QuestionnaireGeneralSurveyViewSet,
     QuestionnaireQuestionViewSet,
     RiskAcceptanceViewSet,
-    RoleViewSet,
     SonarqubeIssueViewSet,
     StubFindingsViewSet,
     TestsViewSet,
@@ -89,18 +81,7 @@ from dojo.api_v2.views import (
 )
 from dojo.asset.api.views import (
     AssetAPIScanConfigurationViewSet,
-    AssetGroupViewSet,
-    AssetMemberViewSet,
     AssetViewSet,
-)
-from dojo.authorization.models import (
-    Dojo_Group_Member,
-    Global_Role,
-    Product_Group,
-    Product_Member,
-    Product_Type_Group,
-    Product_Type_Member,
-    Role,
 )
 from dojo.authorization.roles_permissions import Permissions, permission_to_action
 from dojo.location.api.endpoint_compat import V3EndpointCompatibleViewSet, V3EndpointStatusCompatibleViewSet
@@ -116,7 +97,6 @@ from dojo.models import (
     Cred_Mapping,
     Cred_User,
     Development_Environment,
-    Dojo_Group,
     DojoMeta,
     Endpoint,
     Endpoint_Status,
@@ -153,8 +133,6 @@ from dojo.models import (
     UserContactInfo,
 )
 from dojo.organization.api.views import (
-    OrganizationGroupViewSet,
-    OrganizationMemberViewSet,
     OrganizationViewSet,
 )
 from dojo.url.api.views import URLViewSet
@@ -3617,322 +3595,6 @@ class OrganizationTest(BaseClass.BaseClassTest):
 
         response = self.client.post(self.url, self.payload)
         self.assertEqual(201, response.status_code, response.content[:1000])
-
-
-@versioned_fixtures
-class DojoGroupsTest(BaseClass.BaseClassTest):
-    fixtures = ["dojo_testdata.json"]
-
-    def __init__(self, *args, **kwargs):
-        self.endpoint_model = Dojo_Group
-        self.endpoint_path = "dojo_groups"
-        self.viewname = "dojo_group"
-        self.viewset = DojoGroupViewSet
-        self.payload = {
-            "name": "Test Group",
-            "description": "Test",
-            "configuration_permissions": [217, 218],
-        }
-        self.update_fields = {"description": "changed", "configuration_permissions": [219, 220]}
-        self.test_type = TestType.OBJECT_PERMISSIONS
-        self.permission_check_class = Dojo_Group
-        self.permission_update = Permissions.Group_Edit
-        self.permission_delete = Permissions.Group_Delete
-        self.deleted_objects = 4
-        BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
-
-    def test_list_object_not_authorized(self):
-        self.setUp_not_authorized()
-
-        response = self.client.get(self.url, format="json")
-        self.assertEqual(403, response.status_code, response.content[:1000])
-
-    def test_detail_object_not_authorized(self):
-        self.setUp_not_authorized()
-
-        current_objects = self.endpoint_model.objects.all()
-        relative_url = self.url + f"{current_objects[0].id}/"
-        response = self.client.get(relative_url)
-        self.assertEqual(403, response.status_code, response.content[:1000])
-
-    def test_create_object_not_authorized(self):
-        self.setUp_not_authorized()
-
-        response = self.client.post(self.url, self.payload)
-        self.assertEqual(403, response.status_code, response.content[:1000])
-
-    def test_create_group_with_non_configuration_permissions(self):
-        payload = self.payload.copy()
-        payload["configuration_permissions"] = [25, 26]  # these permissions exist but user can not assign them becaause they are not "configuration_permissions"
-        response = self.client.post(self.url, payload)
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("object does not exist", response.data["message"])
-
-    def test_update_group_with_non_configuration_permissions(self):
-        payload = {}
-        payload["configuration_permissions"] = [25, 26]  # these permissions exist but user can not assign them becaause they are not "configuration_permissions"
-        response = self.client.patch(self.url + "2/", payload)
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("object does not exist", response.data["message"])
-
-    def test_update_group_other_permissions_will_not_leak_and_stay_untouched(self):
-        Dojo_Group.objects.get(name="Group 1 Testdata").auth_group.permissions.set([218, 220, 26, 28])  # I was trying to set this in 'dojo_testdata.json' but it hasn't sucessful
-        payload = {}
-        payload["configuration_permissions"] = [217, 218, 219]
-        response = self.client.patch(self.url + "1/", payload)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["configuration_permissions"], payload["configuration_permissions"])
-        permissions = Dojo_Group.objects.get(name="Group 1 Testdata").auth_group.permissions.all().values_list("id", flat=True)
-        self.assertEqual(set(permissions), set(payload["configuration_permissions"] + [26, 28]))
-        Dojo_Group.objects.get(name="Group 1 Testdata").auth_group.permissions.clear()
-
-
-@versioned_fixtures
-class DojoGroupsUsersTest(BaseClass.MemberEndpointTest):
-    fixtures = ["dojo_testdata.json"]
-
-    def __init__(self, *args, **kwargs):
-        self.endpoint_model = Dojo_Group_Member
-        self.endpoint_path = "dojo_group_members"
-        self.viewname = "dojo_group_member"
-        self.viewset = DojoGroupMemberViewSet
-        self.payload = {
-            "group": 1,
-            "user": 3,
-            "role": 4,
-        }
-        self.update_fields = {"role": 3}
-        self.test_type = TestType.OBJECT_PERMISSIONS
-        self.permission_check_class = Dojo_Group_Member
-        self.permission_create = Permissions.Group_Manage_Members
-        self.permission_update = Permissions.Group_Manage_Members
-        self.permission_delete = Permissions.Group_Member_Delete
-        self.deleted_objects = 1
-        BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
-
-
-@versioned_fixtures
-class RolesTest(BaseClass.BaseClassTest):
-    fixtures = ["dojo_testdata.json"]
-
-    def __init__(self, *args, **kwargs):
-        self.endpoint_model = Role
-        self.endpoint_path = "roles"
-        self.viewname = "role"
-        self.viewset = RoleViewSet
-        self.test_type = TestType.STANDARD
-        BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
-
-
-@versioned_fixtures
-class GlobalRolesTest(BaseClass.BaseClassTest):
-    fixtures = ["dojo_testdata.json"]
-
-    def __init__(self, *args, **kwargs):
-        self.endpoint_model = Global_Role
-        self.endpoint_path = "global_roles"
-        self.viewname = "global_role"
-        self.viewset = GlobalRoleViewSet
-        self.payload = {
-            "user": 2,
-            "role": 2,
-        }
-        self.update_fields = {"role": 3}
-        self.test_type = TestType.STANDARD
-        self.deleted_objects = 1
-        BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
-
-
-@versioned_fixtures
-class ProductTypeMemberTest(BaseClass.MemberEndpointTest):
-    fixtures = ["dojo_testdata.json"]
-
-    def __init__(self, *args, **kwargs):
-        self.endpoint_model = Product_Type_Member
-        self.endpoint_path = "product_type_members"
-        self.viewname = "product_type_member"
-        self.viewset = ProductTypeMemberViewSet
-        self.payload = {
-            "product_type": 1,
-            "user": 3,
-            "role": 2,
-        }
-        self.update_fields = {"role": 3}
-        self.test_type = TestType.OBJECT_PERMISSIONS
-        self.permission_check_class = Product_Type_Member
-        self.permission_create = Permissions.Product_Type_Manage_Members
-        self.permission_update = Permissions.Product_Type_Manage_Members
-        self.permission_delete = Permissions.Product_Type_Member_Delete
-        self.deleted_objects = 1
-        BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
-
-
-@versioned_fixtures
-class OrganizationMemberTest(BaseClass.MemberEndpointTest):
-    fixtures = ["dojo_testdata.json"]
-
-    def __init__(self, *args, **kwargs):
-        self.endpoint_model = Product_Type_Member
-        self.endpoint_path = "organization_members"
-        self.viewname = "organization_member"
-        self.viewset = OrganizationMemberViewSet
-        self.payload = {
-            "organization": 1,
-            "user": 3,
-            "role": 2,
-        }
-        self.update_fields = {"role": 3}
-        self.test_type = TestType.OBJECT_PERMISSIONS
-        self.permission_check_class = Product_Type_Member
-        self.permission_create = Permissions.Product_Type_Manage_Members
-        self.permission_update = Permissions.Product_Type_Manage_Members
-        self.permission_delete = Permissions.Product_Type_Member_Delete
-        self.deleted_objects = 1
-        BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
-
-
-@versioned_fixtures
-class ProductMemberTest(BaseClass.MemberEndpointTest):
-    fixtures = ["dojo_testdata.json"]
-
-    def __init__(self, *args, **kwargs):
-        self.endpoint_model = Product_Member
-        self.endpoint_path = "product_members"
-        self.viewname = "product_member"
-        self.viewset = ProductMemberViewSet
-        self.payload = {
-            "product": 3,
-            "user": 2,
-            "role": 2,
-        }
-        self.update_fields = {"role": 3}
-        self.test_type = TestType.OBJECT_PERMISSIONS
-        self.permission_check_class = Product_Member
-        self.permission_create = Permissions.Product_Manage_Members
-        self.permission_update = Permissions.Product_Manage_Members
-        self.permission_delete = Permissions.Product_Member_Delete
-        self.deleted_objects = 1
-        BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
-
-
-@versioned_fixtures
-class AssetMemberTest(BaseClass.MemberEndpointTest):
-    fixtures = ["dojo_testdata.json"]
-
-    def __init__(self, *args, **kwargs):
-        self.endpoint_model = Product_Member
-        self.endpoint_path = "asset_members"
-        self.viewname = "asset_member"
-        self.viewset = AssetMemberViewSet
-        self.payload = {
-            "asset": 3,
-            "user": 2,
-            "role": 2,
-        }
-        self.update_fields = {"role": 3}
-        self.test_type = TestType.OBJECT_PERMISSIONS
-        self.permission_check_class = Product_Member
-        self.permission_create = Permissions.Product_Manage_Members
-        self.permission_update = Permissions.Product_Manage_Members
-        self.permission_delete = Permissions.Product_Member_Delete
-        self.deleted_objects = 1
-        BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
-
-
-@versioned_fixtures
-class ProductTypeGroupTest(BaseClass.MemberEndpointTest):
-    fixtures = ["dojo_testdata.json"]
-
-    def __init__(self, *args, **kwargs):
-        self.endpoint_model = Product_Type_Group
-        self.endpoint_path = "product_type_groups"
-        self.viewname = "product_type_group"
-        self.viewset = ProductTypeGroupViewSet
-        self.payload = {
-            "product_type": 1,
-            "group": 2,
-            "role": 2,
-        }
-        self.update_fields = {"role": 3}
-        self.test_type = TestType.OBJECT_PERMISSIONS
-        self.permission_check_class = Product_Type_Group
-        self.permission_create = Permissions.Product_Type_Group_Add
-        self.permission_update = Permissions.Product_Type_Group_Edit
-        self.permission_delete = Permissions.Product_Type_Group_Delete
-        self.deleted_objects = 1
-        BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
-
-
-@versioned_fixtures
-class OrganiazationGroupTest(BaseClass.MemberEndpointTest):
-    fixtures = ["dojo_testdata.json"]
-
-    def __init__(self, *args, **kwargs):
-        self.endpoint_model = Product_Type_Group
-        self.endpoint_path = "organization_groups"
-        self.viewname = "organization_group"
-        self.viewset = OrganizationGroupViewSet
-        self.payload = {
-            "organization": 1,
-            "group": 2,
-            "role": 2,
-        }
-        self.update_fields = {"role": 3}
-        self.test_type = TestType.OBJECT_PERMISSIONS
-        self.permission_check_class = Product_Type_Group
-        self.permission_create = Permissions.Product_Type_Group_Add
-        self.permission_update = Permissions.Product_Type_Group_Edit
-        self.permission_delete = Permissions.Product_Type_Group_Delete
-        self.deleted_objects = 1
-        BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
-
-
-@versioned_fixtures
-class ProductGroupTest(BaseClass.MemberEndpointTest):
-    fixtures = ["dojo_testdata.json"]
-
-    def __init__(self, *args, **kwargs):
-        self.endpoint_model = Product_Group
-        self.endpoint_path = "product_groups"
-        self.viewname = "product_group"
-        self.viewset = ProductGroupViewSet
-        self.payload = {
-            "product": 1,
-            "group": 2,
-            "role": 2,
-        }
-        self.update_fields = {"role": 3}
-        self.test_type = TestType.OBJECT_PERMISSIONS
-        self.permission_check_class = Product_Group
-        self.permission_create = Permissions.Product_Group_Add
-        self.permission_update = Permissions.Product_Group_Edit
-        self.permission_delete = Permissions.Product_Group_Delete
-        self.deleted_objects = 1
-        BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
-
-
-@versioned_fixtures
-class AssetGroupTest(BaseClass.MemberEndpointTest):
-    fixtures = ["dojo_testdata.json"]
-
-    def __init__(self, *args, **kwargs):
-        self.endpoint_model = Product_Group
-        self.endpoint_path = "asset_groups"
-        self.viewname = "asset_group"
-        self.viewset = AssetGroupViewSet
-        self.payload = {
-            "asset": 1,
-            "group": 2,
-            "role": 2,
-        }
-        self.update_fields = {"role": 3}
-        self.test_type = TestType.OBJECT_PERMISSIONS
-        self.permission_check_class = Product_Group
-        self.permission_create = Permissions.Product_Group_Add
-        self.permission_update = Permissions.Product_Group_Edit
-        self.permission_delete = Permissions.Product_Group_Delete
-        self.deleted_objects = 1
-        BaseClass.RESTEndpointTest.__init__(self, *args, **kwargs)
 
 
 @versioned_fixtures
