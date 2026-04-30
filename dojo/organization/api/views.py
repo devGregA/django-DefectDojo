@@ -50,17 +50,16 @@ class OrganizationViewSet(
     # Overwrite perfom_create of CreateModelMixin to add current user as owner
     def perform_create(self, serializer):
         serializer.save()
-        product_type_data = serializer.data
-        product_type_data.pop("authorization_groups")
-        product_type_data.pop("members")
-        # Manage custom fields separately with default fields of false
-        product_type_data["critical_product"] = product_type_data.pop("critical_asset", False)
-        product_type_data["key_product"] = product_type_data.pop("key_asset", False)
-        member = Product_Type_Member()
-        member.user = self.request.user
-        member.product_type = Product_Type(**product_type_data)
-        member.role = Role.objects.get(is_owner=True)
-        member.save()
+        # Reuse the just-saved instance — re-constructing a new Product_Type
+        # from serializer.data was a leftover from the RBAC era and breaks
+        # under legacy because authorized_users is a M2M that can't be
+        # assigned via __init__ kwargs.
+        product_type = serializer.instance
+        Product_Type_Member.objects.create(
+            user=self.request.user,
+            product_type=product_type,
+            role=Role.objects.get(is_owner=True),
+        )
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()

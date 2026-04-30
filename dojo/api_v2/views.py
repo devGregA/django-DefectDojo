@@ -2091,14 +2091,14 @@ class ProductTypeViewSet(
     # Overwrite perfom_create of CreateModelMixin to add current user as owner
     def perform_create(self, serializer):
         serializer.save()
-        product_type_data = serializer.data
-        product_type_data.pop("authorization_groups")
-        product_type_data.pop("members")
-        member = Product_Type_Member()
-        member.user = self.request.user
-        member.product_type = Product_Type(**product_type_data)
-        member.role = Role.objects.get(is_owner=True)
-        member.save()
+        # Reuse the just-saved instance instead of re-constructing one from
+        # serializer.data; the latter passes authorized_users (a M2M) into
+        # __init__ which raises under the legacy authorization model.
+        Product_Type_Member.objects.create(
+            user=self.request.user,
+            product_type=serializer.instance,
+            role=Role.objects.get(is_owner=True),
+        )
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()

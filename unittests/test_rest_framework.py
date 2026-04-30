@@ -101,7 +101,7 @@ from dojo.authorization.models import (
     Product_Type_Member,
     Role,
 )
-from dojo.authorization.roles_permissions import Permissions
+from dojo.authorization.roles_permissions import Permissions, permission_to_action
 from dojo.location.api.endpoint_compat import V3EndpointCompatibleViewSet, V3EndpointStatusCompatibleViewSet
 from dojo.location.api.views import LocationFindingReferenceViewSet, LocationProductReferenceViewSet, LocationViewSet
 from dojo.location.models import Location, LocationFindingReference, LocationProductReference
@@ -616,7 +616,7 @@ class BaseClass:
             self.assertEqual(403, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
                 ANY,
-                self.permission_create)
+                permission_to_action(self.permission_create))
 
         @skipIfNotSubclass(CreateModelMixin)
         def test_create_configuration_not_authorized(self):
@@ -690,13 +690,13 @@ class BaseClass:
             self.assertEqual(403, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
                 permission_object,
-                self.permission_update)
+                permission_to_action(self.permission_update))
 
             response = self.client.put(relative_url, self.payload)
             self.assertEqual(403, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
                 permission_object,
-                self.permission_update)
+                permission_to_action(self.permission_update))
 
         @skipIfNotSubclass(UpdateModelMixin)
         def test_update_configuration_not_authorized(self):
@@ -780,7 +780,7 @@ class BaseClass:
 
             mock.assert_called_with(User.objects.get(username="admin"),
                 permission_object,
-                self.permission_delete)
+                permission_to_action(self.permission_delete))
 
         @skipIfNotSubclass(DestroyModelMixin)
         def test_delete_configuration_not_authorized(self):
@@ -833,7 +833,7 @@ class BaseClass:
             self.assertEqual(403, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
                 self.permission_check_class.objects.get(id=current_objects["results"][0]["id"]),
-                self.permission_update)
+                permission_to_action(self.permission_update))
 
     class AuthenticatedViewTest(BaseClassTest):
         @skipIfNotSubclass(ListModelMixin)
@@ -2857,7 +2857,7 @@ class ImportScanTest(BaseClass.BaseClassTest):
             self.assertEqual(403, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
                 Engagement.objects.get(id=2),  # engagement id found via product name and engagement name
-                Permissions.Import_Scan_Result)
+                permission_to_action(Permissions.Import_Scan_Result))
             importer_mock.assert_not_called()
             reimporter_mock.assert_not_called()
 
@@ -2888,7 +2888,7 @@ class ImportScanTest(BaseClass.BaseClassTest):
             self.assertEqual(403, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
                 Product.objects.get(id=1),
-                Permissions.Engagement_Add)
+                permission_to_action(Permissions.Engagement_Add))
             importer_mock.assert_not_called()
             reimporter_mock.assert_not_called()
 
@@ -2920,7 +2920,7 @@ class ImportScanTest(BaseClass.BaseClassTest):
             self.assertEqual(403, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
                 Product_Type.objects.get(id=1),
-                Permissions.Product_Type_Add_Product)
+                permission_to_action(Permissions.Product_Type_Add_Product))
             importer_mock.assert_not_called()
             reimporter_mock.assert_not_called()
 
@@ -2951,7 +2951,7 @@ class ImportScanTest(BaseClass.BaseClassTest):
             response = self.client.post(self.url, payload)
             self.assertEqual(403, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
-                Permissions.Product_Type_Add)
+                permission_to_action(Permissions.Product_Type_Add))
             importer_mock.assert_not_called()
             reimporter_mock.assert_not_called()
 
@@ -2984,10 +2984,10 @@ class ImportScanTest(BaseClass.BaseClassTest):
             mock.assert_has_calls([
                 call(User.objects.get(username="admin"),
                     Product.objects.get(id=1),
-                    Permissions.Engagement_Add),
+                    permission_to_action(Permissions.Engagement_Add)),
                 call(User.objects.get(username="admin"),
                     Product.objects.get(id=1),
-                    Permissions.Import_Scan_Result),
+                    permission_to_action(Permissions.Import_Scan_Result)),
             ])
             importer_mock.assert_called_once()
             reimporter_mock.assert_not_called()
@@ -3019,7 +3019,7 @@ class ImportScanTest(BaseClass.BaseClassTest):
             self.assertEqual(201, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
                 Product_Type.objects.get(id=1),
-                Permissions.Product_Type_Add_Product)
+                permission_to_action(Permissions.Product_Type_Add_Product))
             importer_mock.assert_called_once()
             reimporter_mock.assert_not_called()
 
@@ -3050,7 +3050,7 @@ class ImportScanTest(BaseClass.BaseClassTest):
             response = self.client.post(self.url, payload)
             self.assertEqual(201, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
-                Permissions.Product_Type_Add)
+                permission_to_action(Permissions.Product_Type_Add))
             importer_mock.assert_called_once()
             reimporter_mock.assert_not_called()
 
@@ -3118,7 +3118,7 @@ class ReimportScanTest(DojoAPITestCase):
             self.assertEqual(403, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
                 Test.objects.get(id=4),  # test id found via product name and engagement name and scan_type
-                Permissions.Import_Scan_Result)
+                permission_to_action(Permissions.Import_Scan_Result))
             importer_mock.assert_not_called()
             reimporter_mock.assert_not_called()
 
@@ -3148,7 +3148,7 @@ class ReimportScanTest(DojoAPITestCase):
             self.assertEqual(201, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
                 Engagement.objects.get(id=4),
-                Permissions.Import_Scan_Result)
+                permission_to_action(Permissions.Import_Scan_Result))
             importer_mock.assert_called_once()
             reimporter_mock.assert_not_called()
 
@@ -3181,10 +3181,10 @@ class ReimportScanTest(DojoAPITestCase):
             mock.assert_has_calls([
                 call(User.objects.get(username="admin"),
                     Product.objects.get(id=1),
-                    Permissions.Engagement_Add),
+                    permission_to_action(Permissions.Engagement_Add)),
                 call(User.objects.get(username="admin"),
                     Product.objects.get(id=1),
-                    Permissions.Import_Scan_Result),
+                    permission_to_action(Permissions.Import_Scan_Result)),
             ])
             importer_mock.assert_called_once()
             reimporter_mock.assert_not_called()
@@ -3217,7 +3217,7 @@ class ReimportScanTest(DojoAPITestCase):
             self.assertEqual(201, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
                 Product_Type.objects.get(id=1),
-                Permissions.Product_Type_Add_Product)
+                permission_to_action(Permissions.Product_Type_Add_Product))
             importer_mock.assert_called_once()
             reimporter_mock.assert_not_called()
 
@@ -3248,7 +3248,7 @@ class ReimportScanTest(DojoAPITestCase):
             response = self.client.post(self.url, payload)
             self.assertEqual(201, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
-                Permissions.Product_Type_Add)
+                permission_to_action(Permissions.Product_Type_Add))
             importer_mock.assert_called_once()
             reimporter_mock.assert_not_called()
 
@@ -3274,7 +3274,7 @@ class ReimportScanTest(DojoAPITestCase):
             self.assertEqual(403, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
                 Test.objects.get(id=3),
-                Permissions.Import_Scan_Result)
+                permission_to_action(Permissions.Import_Scan_Result))
             importer_mock.assert_not_called()
             reimporter_mock.assert_not_called()
 
@@ -3307,7 +3307,7 @@ class ReimportScanTest(DojoAPITestCase):
             self.assertEqual(403, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
                 Product.objects.get(id=1),
-                Permissions.Engagement_Add)
+                permission_to_action(Permissions.Engagement_Add))
             importer_mock.assert_not_called()
             reimporter_mock.assert_not_called()
 
@@ -3339,7 +3339,7 @@ class ReimportScanTest(DojoAPITestCase):
             self.assertEqual(403, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
                 Product_Type.objects.get(id=1),
-                Permissions.Product_Type_Add_Product)
+                permission_to_action(Permissions.Product_Type_Add_Product))
             importer_mock.assert_not_called()
             reimporter_mock.assert_not_called()
 
@@ -3370,7 +3370,7 @@ class ReimportScanTest(DojoAPITestCase):
             response = self.client.post(self.url, payload)
             self.assertEqual(403, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
-                Permissions.Product_Type_Add)
+                permission_to_action(Permissions.Product_Type_Add))
             importer_mock.assert_not_called()
             reimporter_mock.assert_not_called()
 
@@ -3398,7 +3398,7 @@ class ReimportScanTest(DojoAPITestCase):
             self.assertEqual(403, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
                 Test.objects.get(id=4),  # engagement id found via product name and engagement name
-                Permissions.Import_Scan_Result)
+                permission_to_action(Permissions.Import_Scan_Result))
             importer_mock.assert_not_called()
             reimporter_mock.assert_not_called()
 
@@ -3427,7 +3427,7 @@ class ReimportScanTest(DojoAPITestCase):
             self.assertEqual(403, response.status_code, response.content[:1000])
             mock.assert_called_with(User.objects.get(username="admin"),
                 Test.objects.get(id=4),  # test id found via product name and engagement name and scan_type and test_title
-                Permissions.Import_Scan_Result)
+                permission_to_action(Permissions.Import_Scan_Result))
             importer_mock.assert_not_called()
             reimporter_mock.assert_not_called()
 
@@ -3465,7 +3465,7 @@ class ReimportScanTest(DojoAPITestCase):
             # NOT on Test 3 (which belongs to the engagement=1 param)
             mock.assert_called_with(User.objects.get(username="admin"),
                 Test.objects.get(id=4),
-                Permissions.Import_Scan_Result)
+                permission_to_action(Permissions.Import_Scan_Result))
             importer_mock.assert_not_called()
             reimporter_mock.assert_not_called()
 
