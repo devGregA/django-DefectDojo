@@ -1,3 +1,29 @@
+"""
+Legacy authorization checks.
+
+The hierarchical RBAC role system has been replaced with the simpler
+pre-2020 model: a user is authorized for an action on an object iff
+
+  * the user is a superuser, or
+  * the user is staff and the action is non-destructive
+    (View / Edit / Add / Import; Delete and member-management require explicit
+    staff confirmation but legacy treats every staff user as eligible), or
+  * the user is in the relevant ``authorized_users`` ManyToMany
+    (climbing the Product_Type → Product → Engagement → Test → Finding
+    hierarchy until an explicit membership is found).
+
+Per-product role granularity (Reader / Writer / Maintainer / Owner),
+group-level authorization, and configuration permissions per add/edit/delete
+codename are not present in this model. Deployments that need that fidelity
+should run the dojo-pro plugin, which keeps the RBAC layer alive and shadows
+this module's symbols at startup so the same code paths route through Pro.
+
+The public surface (function names + signatures) is preserved so existing
+callers in dojo/views.py, dojo/forms.py, etc. keep compiling. Track B step
+#13 simplifies callers to pass action strings directly; until that lands,
+the existing ``Permissions.X`` enum members are still accepted and reduced
+to a legacy Action via ``permission_to_action()``.
+"""
 from django.core.exceptions import PermissionDenied
 from django.db.models import Model, QuerySet
 
@@ -9,10 +35,9 @@ from dojo.authorization.models import (
     Product_Type_Member,
 )
 from dojo.authorization.roles_permissions import (
+    Action,
     Permissions,
-    Roles,
-    get_global_roles_with_permissions,
-    get_roles_with_permissions,
+    permission_to_action,
 )
 from dojo.location.models import AbstractLocation, Location
 from dojo.models import (
@@ -32,251 +57,158 @@ from dojo.models import (
     Stub_Finding,
     Test,
 )
-from dojo.request_cache import cache_for_request
 
 
 def user_has_configuration_permission(user: Dojo_User, permission: str):
     if not user:
         return False
-
     if user.is_anonymous:
         return False
-
     return user.has_perm(permission)
 
 
 def user_is_superuser_or_global_owner(user: Dojo_User) -> bool:
     """
-    Returns True if the user is a superuser or has a global role (directly or
-    via group membership) whose Role.is_owner is True.
+    Legacy: there is no Owner role; only the superuser flag elevates
+    a user to system-wide authority.
     """
     if not user or getattr(user, "is_anonymous", False):
         return False
+    return bool(user.is_superuser)
 
+
+def user_has_permission(user: Dojo_User, obj: Model, permission) -> bool:
+    """
+    Legacy object-level authorization check.
+
+    Resolution order:
+
+      1. anonymous → deny
+      2. superuser → allow
+      3. action → mapped from Permissions / string / Action via permission_to_action
+      4. SuperuserOnly action → deny (already handled superuser above)
+      5. StaffOnly / Delete → require is_staff
+      6. View / Edit / Add / Import → user.is_staff for non-View, or membership
+         in the obj.authorized_users chain (climbing Product_Type ←
+         Product ← Engagement ← Test ← Finding when needed).
+
+    The Member / Group / Cred_Mapping / etc. carrier objects don't expose
+    authorized_users themselves; they delegate to their wrapped product
+    or product type, except for self-removal (a user is always allowed to
+    delete their own membership row).
+    """
+    if not user or getattr(user, "is_anonymous", False):
+        return False
     if user.is_superuser:
         return True
 
-    if (
-        hasattr(user, "global_role")
-        and user.global_role.role is not None
-        and user.global_role.role.is_owner
-    ):
-        return True
+    action = permission_to_action(permission)
 
-    for group in get_groups(user):
-        if (
-            hasattr(group, "global_role")
-            and group.global_role.role is not None
-            and group.global_role.role.is_owner
-        ):
-            return True
-
-    return False
-
-
-def user_has_permission(user: Dojo_User, obj: Model, permission: int) -> bool:
-    if user.is_anonymous:
+    if action == Action.SuperuserOnly:
         return False
 
-    if user.is_superuser:
+    if action in {Action.StaffOnly, Action.Delete}:
+        return bool(user.is_staff)
+
+    # Member/group self-deletion: any user can remove their own membership
+    if isinstance(obj, Product_Type_Member | Product_Member | Dojo_Group_Member) and obj.user_id == user.id:
         return True
 
-    if isinstance(obj, Product_Type | Product):
-        # Global roles are only relevant for product types, products and their
-        # dependent objects
-        if user_has_global_permission(user, permission):
-            return True
+    return _user_authorized_for(user, obj, action)
+
+
+def _user_authorized_for(user: Dojo_User, obj: Model, action: Action) -> bool:
+    """
+    Membership-chain check. Returns True if user has any membership that
+    grants ``action`` on ``obj``.
+    """
+    if obj is None:
+        return False
 
     if isinstance(obj, Product_Type):
-        # Check if the user has a role for the product type with the requested
-        # permissions
-        member = get_product_type_member(user, obj)
-        if member is not None and role_has_permission(
-            member.role.id, permission,
-        ):
+        if user.is_staff and action != Action.View:
             return True
-        # Check if the user is in a group with a role for the product type with
-        # the requested permissions
-        for product_type_group in get_product_type_groups(user, obj):
-            if role_has_permission(product_type_group.role.id, permission):
-                return True
-        return False
-    if (
-        isinstance(obj, Product)
-        and permission.value >= Permissions.Product_View.value
-    ):
-        # Products inherit permissions of their product type
-        if user_has_permission(user, obj.prod_type, permission):
-            return True
+        return obj.authorized_users.filter(pk=user.pk).exists()
 
-        # Check if the user has a role for the product with the requested
-        # permissions
-        member = get_product_member(user, obj)
-        if member is not None and role_has_permission(
-            member.role.id, permission,
-        ):
+    if isinstance(obj, Product):
+        if user.is_staff and action != Action.View:
             return True
-        # Check if the user is in a group with a role for the product with the
-        # requested permissions
-        for product_group in get_product_groups(user, obj):
-            if role_has_permission(product_group.role.id, permission):
-                return True
+        if obj.authorized_users.filter(pk=user.pk).exists():
+            return True
+        return bool(obj.prod_type_id and obj.prod_type.authorized_users.filter(pk=user.pk).exists())
+
+    if isinstance(obj, Engagement):
+        return _user_authorized_for(user, obj.product, action)
+
+    if isinstance(obj, Test):
+        return _user_authorized_for(user, obj.engagement.product, action) if obj.engagement_id else False
+
+    if isinstance(obj, Finding | Stub_Finding):
+        return _user_authorized_for(user, obj.test.engagement.product, action)
+
+    if isinstance(obj, Finding_Group):
+        return _user_authorized_for(user, obj.test.engagement.product, action)
+
+    if isinstance(obj, Risk_Acceptance):
+        if obj.engagement_id is not None:
+            return _user_authorized_for(user, obj.engagement.product, action)
         return False
-    if (
-        isinstance(obj, Engagement)
-        and permission in Permissions.get_engagement_permissions()
-    ):
-        return user_has_permission(user, obj.product, permission)
-    if (
-        isinstance(obj, Test)
-        and permission in Permissions.get_test_permissions()
-    ) or (
-        isinstance(obj, Risk_Acceptance)
-        and permission == Permissions.Risk_Acceptance
-    ):
-        if obj.engagement is not None:
-            return user_has_permission(user, obj.engagement.product, permission)
-        return user_has_global_permission(user, permission)
-    if ((
-        isinstance(obj, Finding | Stub_Finding)
-    ) and permission in Permissions.get_finding_permissions()) or (
-        isinstance(obj, Finding_Group)
-        and permission in Permissions.get_finding_group_permissions()
-    ):
-        return user_has_permission(
-            user, obj.test.engagement.product, permission,
-        )
-    if (
-        isinstance(obj, Location)
-        and permission in Permissions.get_location_permissions()
-    ):
-        return any(user_has_permission(user, ref.product, permission) for ref in obj.products.all())
-    if (
-        isinstance(obj, AbstractLocation)
-        and permission in Permissions.get_location_permissions()
-    ):
-        return user_has_permission(user, obj.location, permission)
-    if (
-        # TODO: Delete this after the move to Locations
-        isinstance(obj, Endpoint)
-        and permission in Permissions.get_location_permissions()
-    ) or (
-        isinstance(obj, Languages)
-        and permission in Permissions.get_language_permissions()
-    ) or (
-        isinstance(obj, App_Analysis)
-        and permission in Permissions.get_technology_permissions()
-    ) or (
-        isinstance(obj, Product_API_Scan_Configuration)
-        and permission
-        in Permissions.get_product_api_scan_configuration_permissions()
-    ):
-        return user_has_permission(user, obj.product, permission)
-    if (
-        isinstance(obj, Product_Type_Member)
-        and permission in Permissions.get_product_type_member_permissions()
-    ):
-        if permission == Permissions.Product_Type_Member_Delete:
-            # Every member is allowed to remove himself
-            return obj.user == user or user_has_permission(
-                user, obj.product_type, permission,
-            )
-        return user_has_permission(user, obj.product_type, permission)
-    if (
-        isinstance(obj, Product_Member)
-        and permission in Permissions.get_product_member_permissions()
-    ):
-        if permission == Permissions.Product_Member_Delete:
-            # Every member is allowed to remove himself
-            return obj.user == user or user_has_permission(
-                user, obj.product, permission,
-            )
-        return user_has_permission(user, obj.product, permission)
-    if (
-        isinstance(obj, Product_Type_Group)
-        and permission in Permissions.get_product_type_group_permissions()
-    ):
-        return user_has_permission(user, obj.product_type, permission)
-    if (
-        isinstance(obj, Product_Group)
-        and permission in Permissions.get_product_group_permissions()
-    ):
-        return user_has_permission(user, obj.product, permission)
-    if (
-        isinstance(obj, Dojo_Group)
-        and permission in Permissions.get_group_permissions()
-    ):
-        # Check if the user has a role for the group with the requested
-        # permissions
-        group_member = get_group_member(user, obj)
-        return group_member is not None and role_has_permission(
-            group_member.role.id, permission,
-        )
-    if (
-        isinstance(obj, Dojo_Group_Member)
-        and permission in Permissions.get_group_member_permissions()
-    ):
-        if permission == Permissions.Group_Member_Delete:
-            # Every user is allowed to remove himself
-            return obj.user == user or user_has_permission(
-                user, obj.group, permission,
-            )
-        return user_has_permission(user, obj.group, permission)
-    if (
-        isinstance(obj, Cred_Mapping)
-        and permission in Permissions.get_credential_permissions()
-    ):
-        if obj.product:
-            return user_has_permission(user, obj.product, permission)
-        if obj.engagement:
-            return user_has_permission(
-                user, obj.engagement.product, permission,
-            )
-        if obj.test:
-            return user_has_permission(
-                user, obj.test.engagement.product, permission,
-            )
-        if obj.finding:
-            return user_has_permission(
-                user, obj.finding.test.engagement.product, permission,
-            )
-        return None
-    msg = f"No authorization implemented for class {type(obj).__name__} and permission {permission}"
+
+    if isinstance(obj, Location):
+        return any(_user_authorized_for(user, ref.product, action) for ref in obj.products.all())
+
+    if isinstance(obj, AbstractLocation):
+        return _user_authorized_for(user, obj.location, action)
+
+    if isinstance(obj, Endpoint | Languages | App_Analysis | Product_API_Scan_Configuration):
+        return _user_authorized_for(user, obj.product, action)
+
+    if isinstance(obj, Product_Type_Member | Product_Type_Group):
+        return _user_authorized_for(user, obj.product_type, action)
+
+    if isinstance(obj, Product_Member | Product_Group):
+        return _user_authorized_for(user, obj.product, action)
+
+    if isinstance(obj, Dojo_Group | Dojo_Group_Member):
+        # Group authorization is staff-only in legacy; non-staff already filtered out.
+        return bool(user.is_staff)
+
+    if isinstance(obj, Cred_Mapping):
+        if obj.product_id:
+            return _user_authorized_for(user, obj.product, action)
+        if obj.engagement_id:
+            return _user_authorized_for(user, obj.engagement.product, action)
+        if obj.test_id:
+            return _user_authorized_for(user, obj.test.engagement.product, action)
+        if obj.finding_id:
+            return _user_authorized_for(user, obj.finding.test.engagement.product, action)
+        return False
+
+    msg = f"No legacy authorization implemented for class {type(obj).__name__}"
     raise NoAuthorizationImplementedError(msg)
 
 
-def user_has_global_permission(user: Dojo_User, permission: int) -> bool:
-    if not user:
-        return False
+def user_has_global_permission(user: Dojo_User, permission) -> bool:
+    """
+    Legacy: global permissions reduce to is_superuser / is_staff.
 
-    if user.is_anonymous:
+    The one Django configuration-permission carve-out preserved from the
+    pre-2020 model: ``dojo.add_product_type`` lets a non-staff user
+    create product types if explicitly granted via Django auth.
+    """
+    if not user or getattr(user, "is_anonymous", False):
         return False
-
     if user.is_superuser:
         return True
 
-    if permission == Permissions.Product_Type_Add:
-        if user_has_configuration_permission(user, "dojo.add_product_type"):
-            return True
+    action = permission_to_action(permission)
 
-    if (
-        hasattr(user, "global_role")
-        and user.global_role.role is not None
-        and role_has_global_permission(user.global_role.role.id, permission)
-    ):
+    if permission == Permissions.Product_Type_Add and user_has_configuration_permission(user, "dojo.add_product_type"):
         return True
 
-    for group in get_groups(user):
-        if (
-            hasattr(group, "global_role")
-            and group.global_role.role is not None
-            and role_has_global_permission(
-                group.global_role.role.id, permission,
-            )
-        ):
-            return True
-
-    return False
+    if action == Action.SuperuserOnly:
+        return False
+    return bool(user.is_staff)
 
 
 def user_has_configuration_permission_or_403(user: Dojo_User, permission: str) -> None:
@@ -284,53 +216,33 @@ def user_has_configuration_permission_or_403(user: Dojo_User, permission: str) -
         raise PermissionDenied
 
 
-def user_has_permission_or_403(user: Dojo_User, obj: Model, permission: int) -> None:
+def user_has_permission_or_403(user: Dojo_User, obj: Model, permission) -> None:
     if not user_has_permission(user, obj, permission):
         raise PermissionDenied
 
 
-def user_has_global_permission_or_403(user: Dojo_User, permission: int) -> None:
+def user_has_global_permission_or_403(user: Dojo_User, permission) -> None:
     if not user_has_global_permission(user, permission):
         raise PermissionDenied
 
 
-def get_roles_for_permission(permission: int) -> set[int]:
-    if not Permissions.has_value(permission):
-        msg = f"Permission {permission} does not exist"
-        raise PermissionDoesNotExistError(msg)
-    roles_for_permissions = set()
-    roles = get_roles_with_permissions()
-    for role in roles:
-        permissions = roles.get(role)
-        if permission in permissions:
-            roles_for_permissions.add(role)
-    return roles_for_permissions
+# ---------------------------------------------------------------------------
+# Backward-compat shims for the role hierarchy. Legacy authorization does not
+# branch on roles, but call sites still import these symbols. Returning empty
+# results keeps them harmless until Track B step #13 simplifies the callers.
+# ---------------------------------------------------------------------------
 
 
-def role_has_permission(role: int, permission: int) -> bool:
-    if role is None:
-        return False
-    if not Roles.has_value(role):
-        msg = f"Role {role} does not exist"
-        raise RoleDoesNotExistError(msg)
-    roles = get_roles_with_permissions()
-    permissions = roles.get(role)
-    if not permissions:
-        return False
-    return permission in permissions
+def get_roles_for_permission(permission) -> set[int]:
+    return set()
 
 
-def role_has_global_permission(role: int, permission: int) -> bool:
-    if role is None:
-        return False
-    if not Roles.has_value(role):
-        msg = f"Role {role} does not exist"
-        raise RoleDoesNotExistError(msg)
-    roles = get_global_roles_with_permissions()
-    permissions = roles.get(role)
-    if permissions and permission in permissions:
-        return True
-    return role_has_permission(role, permission)
+def role_has_permission(role: int, permission) -> bool:
+    return False
+
+
+def role_has_global_permission(role: int, permission) -> bool:
+    return False
 
 
 class NoAuthorizationImplementedError(Exception):
@@ -348,93 +260,54 @@ class RoleDoesNotExistError(Exception):
         self.message = message
 
 
+# ---------------------------------------------------------------------------
+# RBAC member / group lookup helpers. These return empty/None under legacy —
+# the underlying tables (Product_Member, Product_Type_Member, etc.) still
+# exist in the database, but legacy authorization does not consult them.
+# Track B step #13 will remove call sites; until then these stubs prevent
+# AttributeError / TypeError in transitional code.
+# ---------------------------------------------------------------------------
+
+
 def get_product_member(user: Dojo_User, product: Product) -> Product_Member | None:
-    return get_product_member_dict(user).get(product.id)
+    return None
 
 
-@cache_for_request
 def get_product_member_dict(user: Dojo_User) -> dict[int, Product_Member]:
-    pm_dict = {}
-    for product_member in (
-        Product_Member.objects.select_related("product")
-        .select_related("role")
-        .filter(user=user)
-    ):
-        pm_dict[product_member.product.id] = product_member
-    return pm_dict
+    return {}
 
 
 def get_product_type_member(user: Dojo_User, product_type: Product_Type) -> Product_Type_Member | None:
-    return get_product_type_member_dict(user).get(product_type.id)
+    return None
 
 
-@cache_for_request
 def get_product_type_member_dict(user: Dojo_User) -> dict[int, Product_Type_Member]:
-    ptm_dict = {}
-    for product_type_member in (
-        Product_Type_Member.objects.select_related("product_type")
-        .select_related("role")
-        .filter(user=user)
-    ):
-        ptm_dict[product_type_member.product_type.id] = product_type_member
-    return ptm_dict
+    return {}
 
 
 def get_product_groups(user: Dojo_User, product: Product) -> list[Product_Group]:
-    return get_product_groups_dict(user).get(product.id, [])
+    return []
 
 
-@cache_for_request
 def get_product_groups_dict(user: Dojo_User) -> dict[int, list[Product_Group]]:
-    pg_dict = {}
-    for product_group in (
-        Product_Group.objects.select_related("product")
-        .select_related("role")
-        .filter(group__users=user)
-    ):
-        pgu_list = [] if pg_dict.get(product_group.product.id) is None else pg_dict[product_group.product.id]
-        pgu_list.append(product_group)
-        pg_dict[product_group.product.id] = pgu_list
-    return pg_dict
+    return {}
 
 
 def get_product_type_groups(user: Dojo_User, product_type: Product_Type) -> list[Product_Type_Group]:
-    return get_product_type_groups_dict(user).get(product_type.id, [])
+    return []
 
 
-@cache_for_request
 def get_product_type_groups_dict(user: Dojo_User) -> dict[int, list[Product_Type_Group]]:
-    pgt_dict = {}
-    for product_type_group in (
-        Product_Type_Group.objects.select_related("product_type")
-        .select_related("role")
-        .filter(group__users=user)
-    ):
-        if pgt_dict.get(product_type_group.product_type.id) is None:
-            pgtu_list = []
-        else:
-            pgtu_list = pgt_dict[product_type_group.product_type.id]
-        pgtu_list.append(product_type_group)
-        pgt_dict[product_type_group.product_type.id] = pgtu_list
-    return pgt_dict
+    return {}
 
 
-@cache_for_request
 def get_groups(user: Dojo_User) -> QuerySet[Dojo_Group]:
-    return Dojo_Group.objects.select_related("global_role").filter(users=user)
+    return Dojo_Group.objects.none()
 
 
-def get_group_member(user: Dojo_User, group: Dojo_Group) -> dict[int, Dojo_Group_Member]:
-    return get_group_members_dict(user).get(group.id)
+def get_group_member(user: Dojo_User, group: Dojo_Group) -> Dojo_Group_Member | None:
+    return None
 
 
-@cache_for_request
 def get_group_members_dict(user: Dojo_User) -> dict[int, Dojo_Group_Member]:
-    gu_dict = {}
-    for group_member in (
-        Dojo_Group_Member.objects.select_related("group")
-        .select_related("role")
-        .filter(user=user)
-    ):
-        gu_dict[group_member.group.id] = group_member
-    return gu_dict
+    return {}
