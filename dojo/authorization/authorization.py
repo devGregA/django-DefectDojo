@@ -153,8 +153,12 @@ def _user_authorized_for(user: Dojo_User, obj: Model, action: Action) -> bool:
         return _user_authorized_for(user, obj.test.engagement.product, action)
 
     if isinstance(obj, Risk_Acceptance):
-        if obj.engagement_id is not None:
-            return _user_authorized_for(user, obj.engagement.product, action)
+        # Risk_Acceptance is reachable from Engagement via the reverse M2M
+        # `engagement.risk_acceptance`. Pre-2020 followed the same path
+        # (see dojo/user/helper.py at e7805aa14~).
+        engagement = obj.engagement_set.first()
+        if engagement is not None:
+            return _user_authorized_for(user, engagement.product, action)
         return False
 
     if isinstance(obj, Location):

@@ -609,6 +609,8 @@ register_auth_filter("user.get_authorized_users", _get_authorized_users)
 
 
 def _get_authorized_users_for_product_type(users, product_type, permission):
+    if users is None:
+        users = Dojo_User.objects.all()
     user = get_current_user()
     if user is None or getattr(user, "is_anonymous", False):
         return users.none()
@@ -621,6 +623,8 @@ register_auth_filter("user.get_authorized_users_for_product_type", _get_authoriz
 
 
 def _get_authorized_users_for_product_and_product_type(users, product, permission):
+    if users is None:
+        users = Dojo_User.objects.all()
     user = get_current_user()
     if user is None or getattr(user, "is_anonymous", False):
         return users.none()

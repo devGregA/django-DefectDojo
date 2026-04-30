@@ -201,8 +201,12 @@ class UserTest(APITestCase):
         r = nonpriv_client.post(url)
         self.assertEqual(r.status_code, 403, r.content[:1000])
 
-    def test_user_reset_api_token_allows_global_owner(self):
-        # Create a global-owner user (not superuser)
+    def test_user_reset_api_token_denies_global_owner_legacy(self):
+        """
+        Legacy: Global_Role(role=Owner) is inert. Resetting another
+        user's API token requires is_superuser; a global-owner who isn't
+        a superuser is treated like any non-privileged user.
+        """
         password = "testTEST1234!@#$"
         r = self.client.post(reverse("user-list"), {
             "username": "api-user-global-owner",
@@ -240,4 +244,4 @@ class UserTest(APITestCase):
 
         url = "{}{}/reset_api_token/".format(reverse("user-list"), target_id)
         r = go_client.post(url)
-        self.assertEqual(r.status_code, 204, r.content[:1000])
+        self.assertEqual(r.status_code, 403, r.content[:1000])
