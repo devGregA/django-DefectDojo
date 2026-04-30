@@ -510,6 +510,33 @@ class Add_Product_AuthorizedUsersForm(forms.Form):
         )
 
 
+class Authorize_User_For_ProductsForm(forms.Form):
+    products = forms.ModelMultipleChoiceField(
+        queryset=Product.objects.none(), required=True, label=labels.ASSET_PLURAL_LABEL,
+    )
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+        # Show products the user is not already directly authorized for.
+        self.fields["products"].queryset = (
+            Product.objects.exclude(authorized_users=user).order_by("name")
+        )
+
+
+class Authorize_User_For_ProductTypesForm(forms.Form):
+    product_types = forms.ModelMultipleChoiceField(
+        queryset=Product_Type.objects.none(), required=True, label=labels.ORG_PLURAL_LABEL,
+    )
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+        self.fields["product_types"].queryset = (
+            Product_Type.objects.exclude(authorized_users=user).order_by("name")
+        )
+
+
 class Add_Product_Member_UserForm(forms.ModelForm):
     products = forms.ModelMultipleChoiceField(queryset=Product.objects.none(), required=True,
                                               label=labels.ASSET_PLURAL_LABEL)

@@ -39,6 +39,8 @@ from dojo.forms import (
     Add_Product_Type_Member_UserForm,
     AddDojoUserForm,
     APIKeyForm,
+    Authorize_User_For_ProductsForm,
+    Authorize_User_For_ProductTypesForm,
     ChangePasswordForm,
     ConfigurationPermissionsForm,
     DeleteUserForm,
@@ -642,6 +644,94 @@ def add_product_member(request, uid):
         "user": user,
         "form": memberform,
     })
+
+
+@user_passes_test(lambda u: u.is_staff)
+def authorize_user_for_products(request, uid):
+    """OS legacy: add this user to one or more products' authorized_users."""
+    page_name = _("Authorize User for Products")
+    user = get_object_or_404(Dojo_User, id=uid)
+    form = Authorize_User_For_ProductsForm(user=user)
+    if request.method == "POST":
+        form = Authorize_User_For_ProductsForm(request.POST, user=user)
+        if form.is_valid():
+            products = form.cleaned_data["products"]
+            for product in products:
+                product.authorized_users.add(user)
+            messages.add_message(
+                request, messages.SUCCESS,
+                _("Authorized %(username)s for %(count)d product(s).") % {
+                    "username": user.username, "count": len(products),
+                },
+                extra_tags="alert-success",
+            )
+            return HttpResponseRedirect(reverse("view_user", args=(uid,)))
+    add_breadcrumb(title=page_name, top_level=False, request=request)
+    return render(request, "dojo/authorize_user_for_products.html", {
+        "name": page_name, "user": user, "form": form,
+    })
+
+
+@user_passes_test(lambda u: u.is_staff)
+def authorize_user_for_product_types(request, uid):
+    """OS legacy: add this user to one or more product_types' authorized_users."""
+    page_name = _("Authorize User for Product Types")
+    user = get_object_or_404(Dojo_User, id=uid)
+    form = Authorize_User_For_ProductTypesForm(user=user)
+    if request.method == "POST":
+        form = Authorize_User_For_ProductTypesForm(request.POST, user=user)
+        if form.is_valid():
+            product_types = form.cleaned_data["product_types"]
+            for pt in product_types:
+                pt.authorized_users.add(user)
+            messages.add_message(
+                request, messages.SUCCESS,
+                _("Authorized %(username)s for %(count)d product type(s).") % {
+                    "username": user.username, "count": len(product_types),
+                },
+                extra_tags="alert-success",
+            )
+            return HttpResponseRedirect(reverse("view_user", args=(uid,)))
+    add_breadcrumb(title=page_name, top_level=False, request=request)
+    return render(request, "dojo/authorize_user_for_product_types.html", {
+        "name": page_name, "user": user, "form": form,
+    })
+
+
+@user_passes_test(lambda u: u.is_staff)
+def revoke_user_from_product(request, uid, pid):
+    """OS legacy: remove user from a product's authorized_users."""
+    if request.method != "POST":
+        raise PermissionDenied
+    user = get_object_or_404(Dojo_User, id=uid)
+    product = get_object_or_404(Product, id=pid)
+    product.authorized_users.remove(user)
+    messages.add_message(
+        request, messages.SUCCESS,
+        _("Revoked %(username)s from %(product)s.") % {
+            "username": user.username, "product": product.name,
+        },
+        extra_tags="alert-success",
+    )
+    return HttpResponseRedirect(reverse("view_user", args=(uid,)))
+
+
+@user_passes_test(lambda u: u.is_staff)
+def revoke_user_from_product_type(request, uid, ptid):
+    """OS legacy: remove user from a product_type's authorized_users."""
+    if request.method != "POST":
+        raise PermissionDenied
+    user = get_object_or_404(Dojo_User, id=uid)
+    pt = get_object_or_404(Product_Type, id=ptid)
+    pt.authorized_users.remove(user)
+    messages.add_message(
+        request, messages.SUCCESS,
+        _("Revoked %(username)s from %(pt)s.") % {
+            "username": user.username, "pt": pt.name,
+        },
+        extra_tags="alert-success",
+    )
+    return HttpResponseRedirect(reverse("view_user", args=(uid,)))
 
 
 @user_passes_test(lambda u: u.is_superuser)
