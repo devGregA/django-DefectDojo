@@ -3025,25 +3025,10 @@ class TagSerializer(serializers.Serializer):
 class SystemSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = System_Settings
-        fields = "__all__"
-
-    def validate(self, data):
-        if self.instance is not None:
-            default_group = self.instance.default_group
-            default_group_role = self.instance.default_group_role
-
-        if "default_group" in data:
-            default_group = data["default_group"]
-        if "default_group_role" in data:
-            default_group_role = data["default_group_role"]
-
-        if (default_group is None and default_group_role is not None) or (
-            default_group is not None and default_group_role is None
-        ):
-            msg = "default_group and default_group_role must either both be set or both be empty."
-            raise ValidationError(msg)
-
-        return data
+        # default_group / default_group_role / default_group_email_pattern
+        # are RBAC-only auto-assignment knobs and inert under legacy
+        # authorization. Pro re-adds them via a subclass / runtime hook.
+        exclude = ("default_group", "default_group_role", "default_group_email_pattern")
 
 
 class CeleryStatusSerializer(serializers.Serializer):

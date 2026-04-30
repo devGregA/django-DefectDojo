@@ -3145,7 +3145,6 @@ class SystemSettingsForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["default_group_role"].queryset = get_group_member_roles()
 
         self.fields["enable_product_tracking_files"].label = labels.SETTINGS_TRACKED_FILES_ENABLE_LABEL
         self.fields["enable_product_tracking_files"].help_text = labels.SETTINGS_TRACKED_FILES_ENABLE_HELP
@@ -3173,7 +3172,11 @@ class SystemSettingsForm(forms.ModelForm):
 
     class Meta:
         model = System_Settings
-        fields = "__all__"
+        # default_group / default_group_role / default_group_email_pattern
+        # auto-assign new users to a Dojo_Group at login, which is inert
+        # under legacy authorization. Pro re-adds these fields via a
+        # subclass / runtime hook.
+        exclude = ("default_group", "default_group_role", "default_group_email_pattern")
 
 
 class BenchmarkForm(forms.ModelForm):
