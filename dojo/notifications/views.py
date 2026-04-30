@@ -269,7 +269,7 @@ class AddNotificationWebhooksView(NotificationWebhooksView):
 class EditNotificationWebhooksView(NotificationWebhooksView):
     template = "dojo/edit_notification_webhook.html"
     permission = "dojo.change_notification_webhooks"
-    # TODO: this could be better: @user_is_authorized(Finding, Permissions.Finding_Delete, 'fid')
+    # TODO: this could be better: @user_is_authorized(Finding, "delete", 'fid')
     breadcrumb = "Edit Notification Webhook"
 
     def get_notification_webhook(self, nwhid: int):
@@ -359,7 +359,7 @@ class EditNotificationWebhooksView(NotificationWebhooksView):
 class DeleteNotificationWebhooksView(NotificationWebhooksView):
     template = "dojo/delete_notification_webhook.html"
     permission = "dojo.delete_notification_webhooks"
-    # TODO: this could be better: @user_is_authorized(Finding, Permissions.Finding_Delete, 'fid')
+    # TODO: this could be better: @user_is_authorized(Finding, "delete", 'fid')
     breadcrumb = "Edit Notification Webhook"
 
     def get_notification_webhook(self, nwhid: int):

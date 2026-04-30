@@ -12,7 +12,6 @@ from rest_framework.response import Response
 
 from dojo.api_v2.serializers import RiskAcceptanceSerializer
 from dojo.authorization.api_permissions import UserHasRiskAcceptanceRelatedObjectPermission
-from dojo.authorization.roles_permissions import Permissions
 from dojo.engagement.queries import get_authorized_engagements
 from dojo.models import Engagement, Risk_Acceptance, User, Vulnerability_Id
 
@@ -77,7 +76,7 @@ class AcceptedFindingsMixin(ABC):
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         owner = request.user
         accepted_result = []
-        for engagement in get_authorized_engagements(Permissions.Risk_Acceptance):
+        for engagement in get_authorized_engagements("edit"):
             if not engagement.product.enable_full_risk_acceptance:
                 continue
             base_findings = engagement.unaccepted_open_findings

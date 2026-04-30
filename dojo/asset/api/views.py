@@ -21,7 +21,6 @@ from dojo.authorization.models import (
     Product_Group,
     Product_Member,
 )
-from dojo.authorization.roles_permissions import Permissions
 from dojo.models import (
     Product,
     Product_API_Scan_Configuration,
@@ -51,7 +50,7 @@ class AssetAPIScanConfigurationViewSet(
 
     def get_queryset(self):
         return get_authorized_product_api_scan_configurations(
-            Permissions.Product_API_Scan_Configuration_View,
+            "view",
         )
 
 
@@ -75,7 +74,7 @@ class AssetViewSet(
     )
 
     def get_queryset(self):
-        return get_authorized_products(Permissions.Product_View).distinct()
+        return get_authorized_products("view").distinct()
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -146,7 +145,7 @@ class AssetMemberViewSet(
 
     def get_queryset(self):
         return get_authorized_product_members(
-            Permissions.Product_View,
+            "view",
         ).distinct()
 
     @extend_schema(
@@ -174,7 +173,7 @@ class AssetGroupViewSet(
 
     def get_queryset(self):
         return get_authorized_product_groups(
-            Permissions.Product_Group_View,
+            "view",
         ).distinct()
 
     @extend_schema(

@@ -19,7 +19,6 @@ from dojo.authorization.authorization import (
     user_has_permission_or_403,
 )
 from dojo.authorization.models import Dojo_Group_Member, Global_Role, Product_Group, Product_Type_Group
-from dojo.authorization.roles_permissions import Permissions
 from dojo.filters import GroupFilter
 from dojo.forms import (
     Add_Group_MemberForm,
@@ -56,7 +55,7 @@ labels = get_labels()
 
 class ListGroups(View):
     def get_groups(self):
-        return get_authorized_groups(Permissions.Group_View)
+        return get_authorized_groups("view")
 
     def get_initial_context(self, request: HttpRequest, groups: QuerySet[Dojo_Group]):
         filtered_groups = GroupFilter(request.GET, queryset=groups)
@@ -119,7 +118,7 @@ class ViewGroup(View):
         # quick permission check
         if not user_has_configuration_permission(request.user, "auth.view_group"):
             raise PermissionDenied
-        user_has_permission_or_403(request.user, group, Permissions.Group_View)
+        user_has_permission_or_403(request.user, group, "view")
         # Set up the initial context
         context = self.get_initial_context(group)
         # Set up the config permissions
@@ -204,7 +203,7 @@ class EditGroup(View):
         group = self.get_group(group_id)
         global_role = self.get_global_role(group)
         # quick permission check
-        user_has_permission_or_403(request.user, group, Permissions.Group_Edit)
+        user_has_permission_or_403(request.user, group, "edit")
         # Set up the initial context
         context = self.get_initial_context(request, group, global_role)
         # Add a breadcrumb
@@ -217,7 +216,7 @@ class EditGroup(View):
         group = self.get_group(group_id)
         global_role = self.get_global_role(group)
         # quick permission check
-        user_has_permission_or_403(request.user, group, Permissions.Group_Edit)
+        user_has_permission_or_403(request.user, group, "edit")
         # Set up the initial context
         context = self.get_initial_context(request, group, global_role)
         # Process the forms
@@ -289,7 +288,7 @@ class DeleteGroup(View):
         # Fetch the group and global role
         group = self.get_group(group_id)
         # quick permission check
-        user_has_permission_or_403(request.user, group, Permissions.Group_Delete)
+        user_has_permission_or_403(request.user, group, "delete")
         # Set up the initial context
         context = self.get_initial_context(request, group)
         # Add a breadcrumb
@@ -301,7 +300,7 @@ class DeleteGroup(View):
         # Fetch the group and global role
         group = self.get_group(group_id)
         # quick permission check
-        user_has_permission_or_403(request.user, group, Permissions.Group_Delete)
+        user_has_permission_or_403(request.user, group, "delete")
         # Set up the initial context
         context = self.get_initial_context(request, group)
         # Process the forms
@@ -406,7 +405,7 @@ def add_group_member(request, gid):
     if request.method == "POST":
         groupform = Add_Group_MemberForm(request.POST, initial={"group": group.id})
         if groupform.is_valid():
-            if groupform.cleaned_data["role"].is_owner and not user_has_permission(request.user, group, Permissions.Group_Add_Owner):
+            if groupform.cleaned_data["role"].is_owner and not user_has_permission(request.user, group, "staff_only"):
                 messages.add_message(request,
                                      messages.WARNING,
                                      "You are not permitted to add users as owners.",
@@ -451,7 +450,7 @@ def edit_group_member(request, mid):
                     if is_title_in_breadcrumbs("View User"):
                         return HttpResponseRedirect(reverse("view_user", args=(member.user.id, )))
                     return HttpResponseRedirect(reverse("view_group", args=(member.group.id, )))
-            if member.role.is_owner and not user_has_permission(request.user, member.group, Permissions.Group_Add_Owner):
+            if member.role.is_owner and not user_has_permission(request.user, member.group, "staff_only"):
                 messages.add_message(request,
                                      messages.WARNING,
                                      "You are not permitted to make users owners.",

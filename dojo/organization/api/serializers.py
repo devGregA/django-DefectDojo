@@ -6,14 +6,13 @@ from dojo.authorization.models import (
     Product_Type_Group,
     Product_Type_Member,
 )
-from dojo.authorization.roles_permissions import Permissions
 from dojo.models import Product_Type
 from dojo.product_type.queries import get_authorized_product_types
 
 
 class RelatedOrganizationField(serializers.PrimaryKeyRelatedField):
     def get_queryset(self):
-        return get_authorized_product_types(Permissions.Product_Type_View)
+        return get_authorized_product_types("view")
 
 
 class OrganizationMemberSerializer(serializers.ModelSerializer):
@@ -30,7 +29,7 @@ class OrganizationMemberSerializer(serializers.ModelSerializer):
             and not user_has_permission(
                 self.context["request"].user,
                 data.get("organization"),
-                Permissions.Product_Type_Manage_Members,
+                "staff_only",
             )
         ):
             msg = "You are not permitted to add a member to this Organization"
@@ -63,7 +62,7 @@ class OrganizationMemberSerializer(serializers.ModelSerializer):
         if data.get("role").is_owner and not user_has_permission(
             self.context["request"].user,
             data.get("organization"),
-            Permissions.Product_Type_Member_Add_Owner,
+            "staff_only",
         ):
             msg = "You are not permitted to add a member as Owner to this Organization"
             raise PermissionDenied(msg)
@@ -85,7 +84,7 @@ class OrganizationGroupSerializer(serializers.ModelSerializer):
             and not user_has_permission(
                 self.context["request"].user,
                 data.get("organization"),
-                Permissions.Product_Type_Group_Add,
+                "add",
             )
         ):
             msg = "You are not permitted to add a group to this Organization"
@@ -106,7 +105,7 @@ class OrganizationGroupSerializer(serializers.ModelSerializer):
         if data.get("role").is_owner and not user_has_permission(
             self.context["request"].user,
             data.get("organization"),
-            Permissions.Product_Type_Group_Add_Owner,
+            "staff_only",
         ):
             msg = "You are not permitted to add a group as Owner to this Organization"
             raise PermissionDenied(msg)

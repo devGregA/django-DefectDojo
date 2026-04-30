@@ -46,7 +46,6 @@ from django.utils.translation import gettext as _
 from kombu import Connection
 
 from dojo.authorization.models import Dojo_Group_Member
-from dojo.authorization.roles_permissions import Permissions
 from dojo.celery import app
 from dojo.finding.queries import get_authorized_findings
 from dojo.github import (
@@ -1726,7 +1725,7 @@ def get_words_for_field(model, fieldname):
     max_results = getattr(settings, "MAX_AUTOCOMPLETE_WORDS", 20000)
     models = None
     if model == Finding:
-        models = get_authorized_findings(Permissions.Finding_View, user=get_current_user())
+        models = get_authorized_findings("view", user=get_current_user())
     elif model == Finding_Template:
         models = Finding_Template.objects.all()
 

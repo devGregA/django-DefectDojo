@@ -14,7 +14,6 @@ from django.urls import reverse
 from django.utils import timezone
 
 from dojo.authorization.authorization import user_has_permission_or_403
-from dojo.authorization.roles_permissions import Permissions
 from dojo.endpoint.utils import endpoint_meta_import
 from dojo.forms import (
     DeleteEndpointForm,
@@ -129,7 +128,7 @@ def process_endpoint_view(request: HttpRequest, location_id: int, *, host_view=F
         # In host view, aggregate all locations (endpoints) sharing the same host.
         locations = annotate_host_contents(
             get_authorized_locations(
-                permission=Permissions.Location_View,
+                permission="view",
                 queryset=Location.objects.prefetch_related("tags", "url").filter(
                     location_type=URL.LOCATION_TYPE, url__host=host,
                 ),
@@ -181,7 +180,7 @@ def process_endpoint_view(request: HttpRequest, location_id: int, *, host_view=F
         if len(product) == 1:
             # If a single product is selected, get the product and check permissions
             product = get_object_or_404(Product, id=product[0])
-            user_has_permission_or_403(request.user, product, Permissions.Product_View)
+            user_has_permission_or_403(request.user, product, "view")
             # Create the product tab for the view
             product_tab = Product_Tab(product, "Host" if host_view else "Endpoint", tab="endpoints")
             # Get the status of the location for the selected product
@@ -232,7 +231,7 @@ def process_endpoints_view(request, *, host_view=False, vulnerable=False):
     # Determine the view name and get authorized endpoints
     view_name = "Vulnerable" if vulnerable else "All"
     locations = get_authorized_locations(
-        permission=Permissions.Location_View,
+        permission="view",
         queryset=Location.objects.prefetch_related("tags", "url").filter(location_type=URL.LOCATION_TYPE),
         user=request.user,
     )
@@ -268,7 +267,7 @@ def process_endpoints_view(request, *, host_view=False, vulnerable=False):
         if len(products) == 1:
             # If a single product is selected, get the product and check permissions
             product = get_object_or_404(Product, id=products[0])
-            user_has_permission_or_403(request.user, product, Permissions.Product_View)
+            user_has_permission_or_403(request.user, product, "view")
             # Create the product tab for the view
             product_tab = Product_Tab(product, view_name, tab="endpoints")
 
@@ -488,9 +487,9 @@ def endpoint_bulk_update_all(request, product_id=None):
             # If a product_id is provided, check user authorization for deletion on that product
             if product_id is not None:
                 product = get_object_or_404(Product, id=product_id)
-                user_has_permission_or_403(request.user, product, Permissions.Location_Delete)
+                user_has_permission_or_403(request.user, product, "delete")
             # Filter locations to only those the user is authorized to delete
-            locations = get_authorized_locations(Permissions.Location_Delete, locations, request.user)
+            locations = get_authorized_locations("delete", locations, request.user)
             skipped_location_count = total_location_count - locations.count()
             deleted_location_count = locations.count()
             # This will also delete related finding and product location references via cascade
@@ -512,9 +511,9 @@ def endpoint_bulk_update_all(request, product_id=None):
             # If a product_id is provided, check user authorization for mitigation on that product
             if product_id is not None:
                 product = get_object_or_404(Product, id=product_id)
-                user_has_permission_or_403(request.user, product, Permissions.Finding_Edit)
+                user_has_permission_or_403(request.user, product, "edit")
             # Filter locations to only those the user is authorized to edit (mitigate)
-            locations = get_authorized_locations(Permissions.Location_Edit, locations, request.user)
+            locations = get_authorized_locations("edit", locations, request.user)
             skipped_location_count = total_location_count - locations.count()
             updated_location_count = locations.count()
             # Notify user if any locations were skipped due to lack of authorization

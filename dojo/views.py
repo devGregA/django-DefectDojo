@@ -19,7 +19,6 @@ from dojo.authorization.authorization import (
     user_has_permission,
     user_has_permission_or_403,
 )
-from dojo.authorization.roles_permissions import Permissions
 from dojo.filters import LogEntryFilter, PgHistoryFilter
 from dojo.forms import ManageFileFormSet
 from dojo.location.models import Location
@@ -67,34 +66,34 @@ def action_history(request, cid, oid):
     object_value = None
 
     if ct.model == "product":
-        user_has_permission_or_403(request.user, obj, Permissions.Product_View)
+        user_has_permission_or_403(request.user, obj, "view")
         product_id = obj.id
         active_tab = "overview"
         object_value = Product.objects.get(id=obj.id)
     elif ct.model == "engagement":
-        user_has_permission_or_403(request.user, obj, Permissions.Engagement_View)
+        user_has_permission_or_403(request.user, obj, "view")
         object_value = Engagement.objects.get(id=obj.id)
         product_id = object_value.product.id
         active_tab = "engagements"
     elif ct.model == "test":
-        user_has_permission_or_403(request.user, obj, Permissions.Test_View)
+        user_has_permission_or_403(request.user, obj, "view")
         object_value = Test.objects.get(id=obj.id)
         product_id = object_value.engagement.product.id
         active_tab = "engagements"
         test = True
     elif ct.model == "finding":
-        user_has_permission_or_403(request.user, obj, Permissions.Finding_View)
+        user_has_permission_or_403(request.user, obj, "view")
         object_value = Finding.objects.get(id=obj.id)
         product_id = object_value.test.engagement.product.id
         active_tab = "findings"
         finding = object_value
     elif ct.model == "location":
-        user_has_permission_or_403(request.user, obj, Permissions.Location_View)
+        user_has_permission_or_403(request.user, obj, "view")
         object_value = Location.objects.get(id=obj.id)
         active_tab = "endpoints"
     # TODO: Delete this after the move to Locations
     elif ct.model == "endpoint":
-        user_has_permission_or_403(request.user, obj, Permissions.Location_View)
+        user_has_permission_or_403(request.user, obj, "view")
         object_value = Endpoint.objects.get(id=obj.id)
         product_id = object_value.product.id
         active_tab = "endpoints"
@@ -105,11 +104,11 @@ def action_history(request, cid, oid):
         # Check the case that there are no engagements associated with the risk acceptance
         if len(fetched_engagements) == 0:
             # Determine if the user has risk acceptance view permission globally
-            authorized = user_has_global_permission(request.user, Permissions.Risk_Acceptance)
+            authorized = user_has_global_permission(request.user, "edit")
         else:
             # Iterate through engagements to see if the user has view permission on any of them
             for engagement in fetched_engagements:
-                if user_has_permission(request.user, engagement, Permissions.Engagement_View):
+                if user_has_permission(request.user, engagement, "view"):
                     authorized = True
                     break
         if not authorized:
@@ -184,15 +183,15 @@ def action_history(request, cid, oid):
 def manage_files(request, oid, obj_type):
     if obj_type == "Engagement":
         obj = get_object_or_404(Engagement, pk=oid)
-        user_has_permission_or_403(request.user, obj, Permissions.Engagement_Edit)
+        user_has_permission_or_403(request.user, obj, "edit")
         obj_vars = ("view_engagement", "engagement_set")
     elif obj_type == "Test":
         obj = get_object_or_404(Test, pk=oid)
-        user_has_permission_or_403(request.user, obj, Permissions.Test_Edit)
+        user_has_permission_or_403(request.user, obj, "edit")
         obj_vars = ("view_test", "test_set")
     elif obj_type == "Finding":
         obj = get_object_or_404(Finding, pk=oid)
-        user_has_permission_or_403(request.user, obj, Permissions.Finding_Edit)
+        user_has_permission_or_403(request.user, obj, "edit")
         obj_vars = ("view_finding", "finding_set")
     else:
         raise Http404
@@ -260,12 +259,8 @@ def protected_serve(request, path, document_root=None, *, show_indexes=False):
         raise Http404
     # Should only one item (but not sure what type) in the list, so O(n=1)
     for obj in object_set:
-        if isinstance(obj, Engagement):
-            user_has_permission_or_403(request.user, obj, Permissions.Engagement_View)
-        elif isinstance(obj, Test):
-            user_has_permission_or_403(request.user, obj, Permissions.Test_View)
-        elif isinstance(obj, Finding):
-            user_has_permission_or_403(request.user, obj, Permissions.Finding_View)
+        if isinstance(obj, (Engagement, Test, Finding)):
+            user_has_permission_or_403(request.user, obj, "view")
 
     return generate_file_response(file)
 
@@ -278,15 +273,15 @@ def access_file(request, fid, oid, obj_type, *, url=False):
     file = get_object_or_404(FileUpload, pk=fid)
     if obj_type == "Engagement":
         obj = get_object_or_404(Engagement, pk=oid)
-        user_has_permission_or_403(request.user, obj, Permissions.Engagement_View)
+        user_has_permission_or_403(request.user, obj, "view")
         obj_manager = file.engagement_set
     elif obj_type == "Test":
         obj = get_object_or_404(Test, pk=oid)
-        user_has_permission_or_403(request.user, obj, Permissions.Test_View)
+        user_has_permission_or_403(request.user, obj, "view")
         obj_manager = file.test_set
     elif obj_type == "Finding":
         obj = get_object_or_404(Finding, pk=oid)
-        user_has_permission_or_403(request.user, obj, Permissions.Finding_View)
+        user_has_permission_or_403(request.user, obj, "view")
         obj_manager = file.finding_set
     else:
         raise Http404

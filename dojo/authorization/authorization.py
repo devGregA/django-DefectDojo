@@ -36,7 +36,6 @@ from dojo.authorization.models import (
 )
 from dojo.authorization.roles_permissions import (
     Action,
-    Permissions,
     permission_to_action,
 )
 from dojo.location.models import AbstractLocation, Location
@@ -203,7 +202,7 @@ def user_has_global_permission(user: Dojo_User, permission) -> bool:
 
     action = permission_to_action(permission)
 
-    if permission == Permissions.Product_Type_Add and user_has_configuration_permission(user, "dojo.add_product_type"):
+    if permission == "add" and user_has_configuration_permission(user, "dojo.add_product_type"):
         return True
 
     if action == Action.SuperuserOnly:

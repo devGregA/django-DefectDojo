@@ -36,7 +36,6 @@ from dojo.authorization.models import (
     Product_Type_Group,
     Product_Type_Member,
 )
-from dojo.authorization.roles_permissions import Permissions
 from dojo.endpoint.utils import endpoint_filter, endpoint_get_or_create, validate_endpoints_to_add
 from dojo.engagement.queries import get_authorized_engagements
 from dojo.finding.queries import get_authorized_findings
@@ -314,7 +313,7 @@ class Add_Product_Type_Member_UserForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         current_members = Product_Type_Member.objects.filter(user=self.initial["user"]).values_list("product_type", flat=True)
-        self.fields["product_types"].queryset = get_authorized_product_types(Permissions.Product_Type_Member_Add_Owner) \
+        self.fields["product_types"].queryset = get_authorized_product_types("staff_only") \
             .exclude(id__in=current_members)
         self.fields["user"].disabled = True
 
@@ -380,7 +379,7 @@ class ProductForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["prod_type"].queryset = get_authorized_product_types(Permissions.Product_Type_Add_Product)
+        self.fields["prod_type"].queryset = get_authorized_product_types("add")
         self.fields["enable_product_tag_inheritance"].label = labels.ASSET_TAG_INHERITANCE_ENABLE_LABEL
         self.fields["enable_product_tag_inheritance"].help_text = labels.ASSET_TAG_INHERITANCE_ENABLE_HELP
         if prod_type_id := kwargs.get("instance", Product()).prod_type_id:  # we are editing existing instance
@@ -484,7 +483,7 @@ class Add_Product_Member_UserForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         current_members = Product_Member.objects.filter(user=self.initial["user"]).values_list("product", flat=True)
-        self.fields["products"].queryset = get_authorized_products(Permissions.Product_Member_Add_Owner) \
+        self.fields["products"].queryset = get_authorized_products("staff_only") \
             .exclude(id__in=current_members)
         self.fields["user"].disabled = True
 
@@ -973,7 +972,7 @@ class RiskAcceptanceForm(EditRiskAcceptanceForm):
             # logger.debug('setting default expiration_date: %s', expiration_date)
             self.fields["expiration_date"].initial = expiration_date
         # self.fields['path'].help_text = 'Existing proof uploaded: %s' % self.instance.filename() if self.instance.filename() else 'None'
-        self.fields["accepted_findings"].queryset = get_authorized_findings(Permissions.Risk_Acceptance)
+        self.fields["accepted_findings"].queryset = get_authorized_findings("edit")
         if disclaimer := get_system_setting("disclaimer_notes"):
             self.disclaimer = disclaimer.strip()
 
@@ -1030,7 +1029,7 @@ class AddFindingsRiskAcceptanceForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["accepted_findings"].queryset = get_authorized_findings(Permissions.Risk_Acceptance)
+        self.fields["accepted_findings"].queryset = get_authorized_findings("edit")
 
 
 class CheckForm(forms.ModelForm):
@@ -1103,11 +1102,11 @@ class EngForm(forms.ModelForm):
 
         if product:
             self.fields["preset"] = forms.ModelChoiceField(help_text="Settings and notes for performing this engagement.", required=False, queryset=Engagement_Presets.objects.filter(product=product))
-            self.fields["lead"].queryset = get_authorized_users_for_product_and_product_type(None, product, Permissions.Product_View).filter(is_active=True)
+            self.fields["lead"].queryset = get_authorized_users_for_product_and_product_type(None, product, "view").filter(is_active=True)
         else:
-            self.fields["lead"].queryset = get_authorized_users(Permissions.Engagement_View).filter(is_active=True)
+            self.fields["lead"].queryset = get_authorized_users("view").filter(is_active=True)
 
-        self.fields["product"].queryset = get_authorized_products(Permissions.Engagement_Add)
+        self.fields["product"].queryset = get_authorized_products("add")
 
         # Don't show CICD fields on a interactive engagement
         if cicd is False:
@@ -1181,10 +1180,10 @@ class TestForm(forms.ModelForm):
 
         if obj:
             product = get_product(obj)
-            self.fields["lead"].queryset = get_authorized_users_for_product_and_product_type(None, product, Permissions.Product_View).filter(is_active=True)
+            self.fields["lead"].queryset = get_authorized_users_for_product_and_product_type(None, product, "view").filter(is_active=True)
             self.fields["api_scan_configuration"].queryset = Product_API_Scan_Configuration.objects.filter(product=product)
         else:
-            self.fields["lead"].queryset = get_authorized_users(Permissions.Test_View).filter(is_active=True)
+            self.fields["lead"].queryset = get_authorized_users("view").filter(is_active=True)
 
     def is_valid(self):
         valid = super().is_valid()
@@ -1594,7 +1593,7 @@ class FindingForm(forms.ModelForm):
             if self.instance and self.instance.pk:
                 self.fields["endpoints"].initial = self.instance.endpoints.all()
 
-        self.fields["mitigated_by"].queryset = get_authorized_users(Permissions.Finding_Edit)
+        self.fields["mitigated_by"].queryset = get_authorized_users("edit")
 
         # do not show checkbox if finding is not accepted and simple risk acceptance is disabled
         # if checked, always show to allow unaccept also with full risk acceptance enabled
@@ -2028,7 +2027,7 @@ class AddEndpointForm(forms.Form):
             product = kwargs.pop("product")
         super().__init__(*args, **kwargs)
         self.fields["product"] = forms.ModelChoiceField(
-            queryset=get_authorized_products(Permissions.Location_Add),
+            queryset=get_authorized_products("add"),
             label=labels.ASSET_LABEL,
             help_text=labels.ASSET_ENDPOINT_HELP)
         if product is not None:
@@ -2150,7 +2149,7 @@ class CloseFindingForm(forms.ModelForm):
             self.fields["note_type"] = forms.ModelChoiceField(queryset=queryset, label="Note Type", required=True)
 
         if self.can_edit_mitigated_data:
-            self.fields["mitigated_by"].queryset = get_authorized_users(Permissions.Finding_Edit)
+            self.fields["mitigated_by"].queryset = get_authorized_users("edit")
             self.fields["mitigated"].initial = self.instance.mitigated
             self.fields["mitigated_by"].initial = self.instance.mitigated_by
         if disclaimer := get_system_setting("disclaimer_notes"):
@@ -2258,9 +2257,9 @@ class ReviewFindingForm(forms.Form):
         super().__init__(*args, **kwargs)
         # Get the list of users
         if finding is not None:
-            users = get_authorized_users_for_product_and_product_type(None, finding.test.engagement.product, Permissions.Finding_Edit)
+            users = get_authorized_users_for_product_and_product_type(None, finding.test.engagement.product, "edit")
         else:
-            users = get_authorized_users(Permissions.Finding_Edit).filter(is_active=True)
+            users = get_authorized_users("edit").filter(is_active=True)
         # Remove the current user
         if user is not None:
             users = users.exclude(id=user.id)
@@ -2439,7 +2438,7 @@ class Add_Product_GroupForm(forms.ModelForm):
         self.fields["product"].disabled = True
         self.fields["product"].label = labels.ASSET_LABEL
         current_groups = Product_Group.objects.filter(product=self.initial["product"]).values_list("group", flat=True)
-        authorized_groups = get_authorized_groups(Permissions.Group_View)
+        authorized_groups = get_authorized_groups("view")
         authorized_groups = authorized_groups.exclude(id__in=current_groups)
         self.fields["groups"].queryset = authorized_groups
 
@@ -2455,7 +2454,7 @@ class Add_Product_Group_GroupForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         current_members = Product_Group.objects.filter(group=self.initial["group"]).values_list("product", flat=True)
-        self.fields["products"].queryset = get_authorized_products(Permissions.Product_Member_Add_Owner) \
+        self.fields["products"].queryset = get_authorized_products("staff_only") \
             .exclude(id__in=current_members)
         self.fields["group"].disabled = True
 
@@ -2489,7 +2488,7 @@ class Add_Product_Type_GroupForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         current_groups = Product_Type_Group.objects.filter(product_type=self.initial["product_type"]).values_list("group", flat=True)
-        authorized_groups = get_authorized_groups(Permissions.Group_View)
+        authorized_groups = get_authorized_groups("view")
         authorized_groups = authorized_groups.exclude(id__in=current_groups)
         self.fields["groups"].queryset = authorized_groups
         self.fields["product_type"].disabled = True
@@ -2507,7 +2506,7 @@ class Add_Product_Type_Group_GroupForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         current_members = Product_Type_Group.objects.filter(group=self.initial["group"]).values_list("product_type", flat=True)
-        self.fields["product_types"].queryset = get_authorized_product_types(Permissions.Product_Type_Member_Add_Owner) \
+        self.fields["product_types"].queryset = get_authorized_product_types("staff_only") \
             .exclude(id__in=current_members)
         self.fields["group"].disabled = True
 
@@ -2711,7 +2710,7 @@ class ProductTypeCountsForm(ProductCountsFormBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["product_type"].queryset = get_authorized_product_types(Permissions.Product_Type_View)
+        self.fields["product_type"].queryset = get_authorized_product_types("view")
 
 
 class ProductTagCountsForm(ProductCountsFormBase):
@@ -2723,7 +2722,7 @@ class ProductTagCountsForm(ProductCountsFormBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        prods = get_authorized_products(Permissions.Product_View)
+        prods = get_authorized_products("view")
         tags_available_to_user = Product.tags.tag_model.objects.filter(product__in=prods)
         self.fields["product_tag"].queryset = tags_available_to_user
 
@@ -3650,7 +3649,7 @@ class AssignUserForm(forms.ModelForm):
             assignee = kwargs.pop("asignees")
         super().__init__(*args, **kwargs)
         if assignee is None:
-            self.fields["assignee"] = forms.ModelChoiceField(queryset=get_authorized_users(Permissions.Engagement_View), empty_label="Not Assigned", required=False)
+            self.fields["assignee"] = forms.ModelChoiceField(queryset=get_authorized_users("view"), empty_label="Not Assigned", required=False)
         else:
             self.fields["assignee"].initial = assignee
 
@@ -3668,7 +3667,7 @@ class AddEngagementForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["product"].queryset = get_authorized_products(Permissions.Engagement_Add)
+        self.fields["product"].queryset = get_authorized_products("add")
 
 
 class ExistingEngagementForm(forms.Form):
@@ -3680,7 +3679,7 @@ class ExistingEngagementForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["engagement"].queryset = get_authorized_engagements(Permissions.Engagement_Edit).order_by("-target_start")
+        self.fields["engagement"].queryset = get_authorized_engagements("edit").order_by("-target_start")
 
 
 class ConfigurationPermissionsForm(forms.Form):

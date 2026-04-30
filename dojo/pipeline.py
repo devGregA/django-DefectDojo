@@ -9,7 +9,7 @@ from social_core.backends.azuread_tenant import AzureADTenantOAuth2
 from social_core.backends.google import GoogleOAuth2
 
 from dojo.authorization.models import Dojo_Group_Member, Product_Member, Role
-from dojo.authorization.roles_permissions import Permissions, Roles
+from dojo.authorization.roles_permissions import Roles
 from dojo.models import Dojo_Group, Product, Product_Type
 from dojo.product.queries import get_authorized_products
 
@@ -133,7 +133,7 @@ def cleanup_old_groups_for_user(user, group_names):
 def update_product_access(backend, uid, user=None, social=None, *args, **kwargs):
     if settings.GITLAB_PROJECT_AUTO_IMPORT is True:
         # Get user's product names
-        user_product_names = [prod.name for prod in get_authorized_products(Permissions.Product_View, user)]
+        user_product_names = [prod.name for prod in get_authorized_products("view", user)]
         # Get Gitlab access token
         soc = user.social_auth.get()
         token = soc.extra_data["access_token"]

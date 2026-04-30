@@ -13,7 +13,6 @@ from dojo.authorization.models import (
     Product_Type_Member,
     Role,
 )
-from dojo.authorization.roles_permissions import Permissions
 from dojo.models import Product_Type
 from dojo.organization.api import serializers
 from dojo.organization.api.filters import (
@@ -45,7 +44,7 @@ class OrganizationViewSet(
 
     def get_queryset(self):
         return get_authorized_product_types(
-            Permissions.Product_Type_View,
+            "view",
         ).distinct()
 
     # Overwrite perfom_create of CreateModelMixin to add current user as owner
@@ -126,7 +125,7 @@ class OrganizationMemberViewSet(
 
     def get_queryset(self):
         return get_authorized_product_type_members(
-            Permissions.Product_Type_View,
+            "view",
         ).distinct()
 
     def destroy(self, request, *args, **kwargs):
@@ -168,7 +167,7 @@ class OrganizationGroupViewSet(
 
     def get_queryset(self):
         return get_authorized_product_type_groups(
-            Permissions.Product_Type_Group_View,
+            "view",
         ).distinct()
 
     @extend_schema(

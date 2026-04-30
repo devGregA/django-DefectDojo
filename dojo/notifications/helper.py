@@ -16,7 +16,6 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 
 from dojo import __version__ as dd_version
-from dojo.authorization.roles_permissions import Permissions
 from dojo.celery import app
 from dojo.celery_dispatch import dojo_dispatch_task
 from dojo.decorators import we_want_async
@@ -745,13 +744,13 @@ class NotificationManager(NotificationManagerHelpers):
             users = get_authorized_users_for_product_and_product_type(
                 users,
                 self.product,
-                Permissions.Product_View,
+                "view",
             )
         elif self.product_type is not None:
             users = get_authorized_users_for_product_type(
                 users,
                 self.product_type,
-                Permissions.Product_Type_View,
+                "view",
             )
         else:
             # nor product_type nor product defined, we should not make noise and send only notifications to admins

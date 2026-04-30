@@ -14,7 +14,6 @@ from django.utils.translation import gettext as _
 
 from dojo.authorization.authorization import user_has_permission
 from dojo.authorization.models import Product_Type_Group, Product_Type_Member, Role
-from dojo.authorization.roles_permissions import Permissions
 from dojo.filters import ProductFilter, ProductFilterWithoutObjectLookups, ProductTypeFilter
 from dojo.forms import (
     Add_Product_Type_GroupForm,
@@ -58,7 +57,7 @@ labels = get_labels()
 
 
 def product_type(request):
-    prod_types = get_authorized_product_types(Permissions.Product_Type_View)
+    prod_types = get_authorized_product_types("view")
     name_words = prod_types.values_list("name", flat=True)
 
     ptl = ProductTypeFilter(request.GET, queryset=prod_types)
@@ -126,11 +125,11 @@ def add_product_type(request):
 def view_product_type(request, ptid):
     page_name = str(labels.ORG_READ_LABEL)
     pt = get_object_or_404(Product_Type, pk=ptid)
-    members = get_authorized_members_for_product_type(pt, Permissions.Product_Type_View)
-    global_members = get_authorized_global_members_for_product_type(pt, Permissions.Product_Type_View)
-    groups = get_authorized_groups_for_product_type(pt, Permissions.Product_Type_View)
-    global_groups = get_authorized_global_groups_for_product_type(pt, Permissions.Product_Type_View)
-    products = get_authorized_products(Permissions.Product_View).filter(prod_type=pt)
+    members = get_authorized_members_for_product_type(pt, "view")
+    global_members = get_authorized_global_members_for_product_type(pt, "view")
+    groups = get_authorized_groups_for_product_type(pt, "view")
+    global_groups = get_authorized_global_groups_for_product_type(pt, "view")
+    products = get_authorized_products("view").filter(prod_type=pt)
     filter_string_matching = get_system_setting("filter_string_matching", False)
     filter_class = ProductFilterWithoutObjectLookups if filter_string_matching else ProductFilter
     prod_filter = filter_class(request.GET, queryset=products, user=request.user)
@@ -188,7 +187,7 @@ def delete_product_type(request, ptid):
 def edit_product_type(request, ptid):
     page_name = str(labels.ORG_UPDATE_LABEL)
     pt = get_object_or_404(Product_Type, pk=ptid)
-    members = get_authorized_members_for_product_type(pt, Permissions.Product_Type_Manage_Members)
+    members = get_authorized_members_for_product_type(pt, "staff_only")
     pt_form = Product_TypeForm(instance=pt)
     if request.method == "POST" and request.POST.get("edit_product_type"):
         pt_form = Product_TypeForm(request.POST, instance=pt)
@@ -218,7 +217,7 @@ def add_product_type_member(request, ptid):
     if request.method == "POST":
         memberform = Add_Product_Type_MemberForm(request.POST, initial={"product_type": pt.id})
         if memberform.is_valid():
-            if memberform.cleaned_data["role"].is_owner and not user_has_permission(request.user, pt, Permissions.Product_Type_Member_Add_Owner):
+            if memberform.cleaned_data["role"].is_owner and not user_has_permission(request.user, pt, "staff_only"):
                 messages.add_message(request,
                                     messages.WARNING,
                                     _("You are not permitted to add users as owners."),
@@ -263,7 +262,7 @@ def edit_product_type_member(request, memberid):
                     if is_title_in_breadcrumbs("View User"):
                         return HttpResponseRedirect(reverse("view_user", args=(member.user.id, )))
                     return HttpResponseRedirect(reverse("view_product_type", args=(member.product_type.id, )))
-            if member.role.is_owner and not user_has_permission(request.user, member.product_type, Permissions.Product_Type_Member_Add_Owner):
+            if member.role.is_owner and not user_has_permission(request.user, member.product_type, "staff_only"):
                 messages.add_message(request,
                                     messages.WARNING,
                                     "You are not permitted to make users to owners.",
@@ -328,7 +327,7 @@ def add_product_type_group(request, ptid):
     if request.method == "POST":
         group_form = Add_Product_Type_GroupForm(request.POST, initial={"product_type": pt.id})
         if group_form.is_valid():
-            if group_form.cleaned_data["role"].is_owner and not user_has_permission(request.user, pt, Permissions.Product_Type_Group_Add_Owner):
+            if group_form.cleaned_data["role"].is_owner and not user_has_permission(request.user, pt, "staff_only"):
                 messages.add_message(request,
                                     messages.WARNING,
                                     _("You are not permitted to add groups as owners."),
@@ -365,7 +364,7 @@ def edit_product_type_group(request, groupid):
     if request.method == "POST":
         groupform = Edit_Product_Type_Group_Form(request.POST, instance=group)
         if groupform.is_valid():
-            if group.role.is_owner and not user_has_permission(request.user, group.product_type, Permissions.Product_Type_Group_Add_Owner):
+            if group.role.is_owner and not user_has_permission(request.user, group.product_type, "staff_only"):
                 messages.add_message(request,
                                      messages.WARNING,
                                      _("You are not permitted to make groups owners."),

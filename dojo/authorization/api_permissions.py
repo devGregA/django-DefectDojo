@@ -16,7 +16,6 @@ from dojo.authorization.authorization import (
     user_has_permission,
     user_is_superuser_or_global_owner,
 )
-from dojo.authorization.roles_permissions import Permissions
 from dojo.importers.auto_create_context import AutoCreateContextManager
 from dojo.location.models import Location
 from dojo.models import (
@@ -133,16 +132,16 @@ class BaseDjangoModelPermission(permissions.BasePermission):
 class UserHasAppAnalysisPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
-            request, Product, "product", Permissions.Technology_Add,
+            request, Product, "product", "add",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj.product,
-            Permissions.Technology_View,
-            Permissions.Technology_Edit,
-            Permissions.Technology_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
@@ -150,31 +149,31 @@ class UserHasCredentialPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.data.get("product") is not None:
             return check_post_permission(
-                request, Cred_Mapping, "product", Permissions.Credential_Add,
+                request, Cred_Mapping, "product", "add",
             )
         if request.data.get("engagement") is not None:
             return check_post_permission(
-                request, Cred_Mapping, "engagement", Permissions.Credential_Add,
+                request, Cred_Mapping, "engagement", "add",
             )
         if request.data.get("test") is not None:
             return check_post_permission(
-                request, Cred_Mapping, "test", Permissions.Credential_Add,
+                request, Cred_Mapping, "test", "add",
             )
         if request.data.get("finding") is not None:
             return check_post_permission(
-                request, Cred_Mapping, "finding", Permissions.Credential_Add,
+                request, Cred_Mapping, "finding", "add",
             )
         return check_post_permission(
-            request, Cred_Mapping, "product", Permissions.Credential_Add,
+            request, Cred_Mapping, "product", "add",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj.product,
-            Permissions.Credential_View,
-            Permissions.Credential_Edit,
-            Permissions.Credential_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
@@ -198,30 +197,30 @@ class UserHasDojoGroupPermission(permissions.BasePermission):
             return user_has_configuration_permission(
                 request.user, "auth.view_group",
             ) and user_has_permission(
-                request.user, obj, Permissions.Group_View,
+                request.user, obj, "view",
             )
         return check_object_permission(
             request,
             obj,
-            Permissions.Group_View,
-            Permissions.Group_Edit,
-            Permissions.Group_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
 class UserHasDojoGroupMemberPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
-            request, Dojo_Group, "group", Permissions.Group_Manage_Members,
+            request, Dojo_Group, "group", "staff_only",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Group_View,
-            Permissions.Group_Manage_Members,
-            Permissions.Group_Member_Delete,
+            "view",
+            "staff_only",
+            "delete",
         )
 
 
@@ -230,38 +229,38 @@ class UserHasDojoMetaPermission(permissions.BasePermission):
         "product": {
             "model": Product,
             "permissions": {
-                "get_permission": Permissions.Product_View,
-                "put_permission": Permissions.Product_Edit,
-                "delete_permission": Permissions.Product_Edit,
-                "post_permission": Permissions.Product_Edit,
+                "get_permission": "view",
+                "put_permission": "edit",
+                "delete_permission": "edit",
+                "post_permission": "edit",
             },
         },
         "finding": {
             "model": Finding,
             "permissions": {
-                "get_permission": Permissions.Finding_View,
-                "put_permission": Permissions.Finding_Edit,
-                "delete_permission": Permissions.Finding_Edit,
-                "post_permission": Permissions.Finding_Edit,
+                "get_permission": "view",
+                "put_permission": "edit",
+                "delete_permission": "edit",
+                "post_permission": "edit",
             },
         },
         "location": {
             "model": Location,
             "permissions": {
-                "get_permission": Permissions.Location_View,
-                "put_permission": Permissions.Location_Edit,
-                "delete_permission": Permissions.Location_Edit,
-                "post_permission": Permissions.Location_Edit,
+                "get_permission": "view",
+                "put_permission": "edit",
+                "delete_permission": "edit",
+                "post_permission": "edit",
             },
         },
         # TODO: Delete this after the move to Locations
         "endpoint": {
             "model": Endpoint if not settings.V3_FEATURE_LOCATIONS else Location,
             "permissions": {
-                "get_permission": Permissions.Location_View,
-                "put_permission": Permissions.Location_Edit,
-                "delete_permission": Permissions.Location_Edit,
-                "post_permission": Permissions.Location_Edit,
+                "get_permission": "view",
+                "put_permission": "edit",
+                "delete_permission": "edit",
+                "post_permission": "edit",
             },
         },
     }
@@ -313,16 +312,16 @@ class UserHasDojoMetaPermission(permissions.BasePermission):
 class UserHasToolProductSettingsPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
-            request, Product, "product", Permissions.Product_Edit,
+            request, Product, "product", "edit",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj.product,
-            Permissions.Product_View,
-            Permissions.Product_Edit,
-            Permissions.Product_Edit,
+            "view",
+            "edit",
+            "edit",
         )
 
 
@@ -330,16 +329,16 @@ class UserHasToolProductSettingsPermission(permissions.BasePermission):
 class UserHasEndpointPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
-            request, Product, "product", Permissions.Location_Add,
+            request, Product, "product", "add",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Location_View,
-            Permissions.Location_Edit,
-            Permissions.Location_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
@@ -347,50 +346,50 @@ class UserHasEndpointPermission(permissions.BasePermission):
 class UserHasEndpointStatusPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
-            request, Endpoint, "endpoint", Permissions.Location_Edit,
+            request, Endpoint, "endpoint", "edit",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj.endpoint,
-            Permissions.Location_View,
-            Permissions.Location_Edit,
-            Permissions.Location_Edit,
+            "view",
+            "edit",
+            "edit",
         )
 
 
 class UserHasEngagementPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
-                request, Product, "product", Permissions.Engagement_Add,
+                request, Product, "product", "add",
             )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Engagement_View,
-            Permissions.Engagement_Edit,
-            Permissions.Engagement_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
 class UserHasEngagementRelatedObjectPermission(BaseRelatedObjectPermission):
     permission_map = {
-        "get_permission": Permissions.Engagement_View,
-        "put_permission": Permissions.Engagement_Edit,
-        "delete_permission": Permissions.Engagement_Edit,
-        "post_permission": Permissions.Engagement_Edit,
+        "get_permission": "view",
+        "put_permission": "edit",
+        "delete_permission": "edit",
+        "post_permission": "edit",
     }
 
 
 class UserHasEngagementNotePermission(BaseRelatedObjectPermission):
     permission_map = {
-        "get_permission": Permissions.Engagement_View,
-        "put_permission": Permissions.Engagement_Edit,
-        "delete_permission": Permissions.Engagement_Edit,
-        "post_permission": Permissions.Engagement_View,
+        "get_permission": "view",
+        "put_permission": "edit",
+        "delete_permission": "edit",
+        "post_permission": "view",
     }
 
 
@@ -406,52 +405,52 @@ class UserHasRiskAcceptancePermission(permissions.BasePermission):
         return check_object_permission(
             request,
             obj,
-            Permissions.Risk_Acceptance,
-            Permissions.Risk_Acceptance,
-            Permissions.Risk_Acceptance,
+            "edit",
+            "edit",
+            "edit",
         )
 
 
 class UserHasRiskAcceptanceRelatedObjectPermission(BaseRelatedObjectPermission):
     permission_map = {
-        "get_permission": Permissions.Risk_Acceptance,
-        "put_permission": Permissions.Risk_Acceptance,
-        "delete_permission": Permissions.Risk_Acceptance,
-        "post_permission": Permissions.Risk_Acceptance,
+        "get_permission": "edit",
+        "put_permission": "edit",
+        "delete_permission": "edit",
+        "post_permission": "edit",
     }
 
 
 class UserHasFindingPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
-            request, Test, "test", Permissions.Finding_Add,
+            request, Test, "test", "add",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Finding_View,
-            Permissions.Finding_Edit,
-            Permissions.Finding_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
 class UserHasFindingRelatedObjectPermission(BaseRelatedObjectPermission):
     permission_map = {
-        "get_permission": Permissions.Finding_View,
-        "put_permission": Permissions.Finding_Edit,
-        "delete_permission": Permissions.Finding_Edit,
-        "post_permission": Permissions.Finding_Edit,
+        "get_permission": "view",
+        "put_permission": "edit",
+        "delete_permission": "edit",
+        "post_permission": "edit",
     }
 
 
 class UserHasFindingNotePermission(BaseRelatedObjectPermission):
     permission_map = {
-        "get_permission": Permissions.Finding_View,
-        "put_permission": Permissions.Finding_Edit,
-        "delete_permission": Permissions.Finding_Edit,
-        "post_permission": Permissions.Finding_View,
+        "get_permission": "view",
+        "put_permission": "edit",
+        "delete_permission": "edit",
+        "post_permission": "view",
     }
 
 
@@ -481,7 +480,7 @@ class UserHasImportPermission(permissions.BasePermission):
                 msg = "The provided identifiers are inconsistent — the engagement name does not match the specified engagement."
                 raise ValidationError(msg)
             return user_has_permission(
-                request.user, engagement, Permissions.Import_Scan_Result,
+                request.user, engagement, "import",
             )
         if engagement_id := converted_dict.get("engagement_id"):
             # engagement_id doesn't exist
@@ -536,7 +535,7 @@ class UserHasMetaImportPermission(permissions.BasePermission):
         if product:
             # existing product, nothing special to check
             return user_has_permission(
-                request.user, product, Permissions.Import_Scan_Result,
+                request.user, product, "import",
             )
         if product_id := converted_dict.get("product_id"):
             # product_id doesn't exist
@@ -552,16 +551,16 @@ class UserHasProductPermission(permissions.BasePermission):
             request,
             Product_Type,
             "prod_type",
-            Permissions.Product_Type_Add_Product,
+            "add",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Product_View,
-            Permissions.Product_Edit,
-            Permissions.Product_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
@@ -571,80 +570,80 @@ class UserHasAssetPermission(permissions.BasePermission):
             request,
             Product_Type,
             "organization",
-            Permissions.Product_Type_Add_Product,
+            "add",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Product_View,
-            Permissions.Product_Edit,
-            Permissions.Product_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
 class UserHasProductMemberPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
-            request, Product, "product", Permissions.Product_Manage_Members,
+            request, Product, "product", "staff_only",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Product_View,
-            Permissions.Product_Manage_Members,
-            Permissions.Product_Member_Delete,
+            "view",
+            "staff_only",
+            "delete",
         )
 
 
 class UserHasAssetMemberPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
-            request, Product, "asset", Permissions.Product_Manage_Members,
+            request, Product, "asset", "staff_only",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Product_View,
-            Permissions.Product_Manage_Members,
-            Permissions.Product_Member_Delete,
+            "view",
+            "staff_only",
+            "delete",
         )
 
 
 class UserHasProductGroupPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
-            request, Product, "product", Permissions.Product_Group_Add,
+            request, Product, "product", "add",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Product_Group_View,
-            Permissions.Product_Group_Edit,
-            Permissions.Product_Group_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
 class UserHasAssetGroupPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
-            request, Product, "asset", Permissions.Product_Group_Add,
+            request, Product, "asset", "add",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Product_Group_View,
-            Permissions.Product_Group_Edit,
-            Permissions.Product_Group_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
@@ -652,7 +651,7 @@ class UserHasProductTypePermission(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method == "POST":
             return user_has_global_permission(
-                request.user, Permissions.Product_Type_Add,
+                request.user, "add",
             )
         return True
 
@@ -660,9 +659,9 @@ class UserHasProductTypePermission(permissions.BasePermission):
         return check_object_permission(
             request,
             obj,
-            Permissions.Product_Type_View,
-            Permissions.Product_Type_Edit,
-            Permissions.Product_Type_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
@@ -670,7 +669,7 @@ class UserHasOrganizationPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method == "POST":
             return user_has_global_permission(
-                request.user, Permissions.Product_Type_Add,
+                request.user, "add",
             )
         return True
 
@@ -678,9 +677,9 @@ class UserHasOrganizationPermission(permissions.BasePermission):
         return check_object_permission(
             request,
             obj,
-            Permissions.Product_Type_View,
-            Permissions.Product_Type_Edit,
-            Permissions.Product_Type_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
@@ -690,16 +689,16 @@ class UserHasProductTypeMemberPermission(permissions.BasePermission):
             request,
             Product_Type,
             "product_type",
-            Permissions.Product_Type_Manage_Members,
+            "staff_only",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Product_Type_View,
-            Permissions.Product_Type_Manage_Members,
-            Permissions.Product_Type_Member_Delete,
+            "view",
+            "staff_only",
+            "delete",
         )
 
 
@@ -709,16 +708,16 @@ class UserHasOrganizationMemberPermission(permissions.BasePermission):
             request,
             Product_Type,
             "organization",
-            Permissions.Product_Type_Manage_Members,
+            "staff_only",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Product_Type_View,
-            Permissions.Product_Type_Manage_Members,
-            Permissions.Product_Type_Member_Delete,
+            "view",
+            "staff_only",
+            "delete",
         )
 
 
@@ -728,16 +727,16 @@ class UserHasProductTypeGroupPermission(permissions.BasePermission):
             request,
             Product_Type,
             "product_type",
-            Permissions.Product_Type_Group_Add,
+            "add",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Product_Type_Group_View,
-            Permissions.Product_Type_Group_Edit,
-            Permissions.Product_Type_Group_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
@@ -747,16 +746,16 @@ class UserHasOrganizationGroupPermission(permissions.BasePermission):
             request,
             Product_Type,
             "organization",
-            Permissions.Product_Type_Group_Add,
+            "add",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Product_Type_Group_View,
-            Permissions.Product_Type_Group_Edit,
-            Permissions.Product_Type_Group_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
@@ -800,7 +799,7 @@ class UserHasReimportPermission(permissions.BasePermission):
                 msg = "The provided identifiers are inconsistent — the test does not belong to the specified engagement."
                 raise ValidationError(msg)
             return user_has_permission(
-                request.user, test, Permissions.Import_Scan_Result,
+                request.user, test, "import",
             )
         if test_id := converted_dict.get("test_id"):
             # test_id doesn't exist
@@ -837,66 +836,66 @@ class UserHasReimportPermission(permissions.BasePermission):
 class UserHasTestPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
-            request, Engagement, "engagement", Permissions.Test_Add,
+            request, Engagement, "engagement", "add",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Test_View,
-            Permissions.Test_Edit,
-            Permissions.Test_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
 class UserHasTestRelatedObjectPermission(BaseRelatedObjectPermission):
     permission_map = {
-        "get_permission": Permissions.Test_View,
-        "put_permission": Permissions.Test_Edit,
-        "delete_permission": Permissions.Test_Edit,
-        "post_permission": Permissions.Test_Edit,
+        "get_permission": "view",
+        "put_permission": "edit",
+        "delete_permission": "edit",
+        "post_permission": "edit",
     }
 
 
 class UserHasTestNotePermission(BaseRelatedObjectPermission):
     permission_map = {
-        "get_permission": Permissions.Test_View,
-        "put_permission": Permissions.Test_Edit,
-        "delete_permission": Permissions.Test_Edit,
-        "post_permission": Permissions.Test_View,
+        "get_permission": "view",
+        "put_permission": "edit",
+        "delete_permission": "edit",
+        "post_permission": "view",
     }
 
 
 class UserHasTestImportPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
-            request, Test, "test", Permissions.Test_Edit,
+            request, Test, "test", "edit",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj.test,
-            Permissions.Test_View,
-            Permissions.Test_Edit,
-            Permissions.Test_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
 class UserHasLanguagePermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
-            request, Product, "product", Permissions.Language_Add,
+            request, Product, "product", "add",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Language_View,
-            Permissions.Language_Edit,
-            Permissions.Language_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
@@ -906,16 +905,16 @@ class UserHasProductAPIScanConfigurationPermission(permissions.BasePermission):
             request,
             Product,
             "product",
-            Permissions.Product_API_Scan_Configuration_Add,
+            "add",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Product_API_Scan_Configuration_View,
-            Permissions.Product_API_Scan_Configuration_Edit,
-            Permissions.Product_API_Scan_Configuration_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
@@ -925,16 +924,16 @@ class UserHasAssetAPIScanConfigurationPermission(permissions.BasePermission):
             request,
             Product,
             "asset",
-            Permissions.Product_API_Scan_Configuration_Add,
+            "add",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj,
-            Permissions.Product_API_Scan_Configuration_View,
-            Permissions.Product_API_Scan_Configuration_Edit,
-            Permissions.Product_API_Scan_Configuration_Delete,
+            "view",
+            "edit",
+            "delete",
         )
 
 
@@ -948,7 +947,7 @@ class UserHasJiraProductPermission(permissions.BasePermission):
                 has_permission_result = (
                     has_permission_result
                     and user_has_permission(
-                        request.user, obj, Permissions.Engagement_Edit,
+                        request.user, obj, "edit",
                     )
                 )
             product_id = request.data.get("product", None)
@@ -957,7 +956,7 @@ class UserHasJiraProductPermission(permissions.BasePermission):
                 has_permission_result = (
                     has_permission_result
                     and user_has_permission(
-                        request.user, obj, Permissions.Product_Edit,
+                        request.user, obj, "edit",
                     )
                 )
             return has_permission_result
@@ -972,9 +971,9 @@ class UserHasJiraProductPermission(permissions.BasePermission):
                 and check_object_permission(
                     request,
                     engagement,
-                    Permissions.Engagement_View,
-                    Permissions.Engagement_Edit,
-                    Permissions.Engagement_Edit,
+                    "view",
+                    "edit",
+                    "edit",
                 )
             )
         product = obj.product
@@ -984,9 +983,9 @@ class UserHasJiraProductPermission(permissions.BasePermission):
                 and check_object_permission(
                     request,
                     product,
-                    Permissions.Product_View,
-                    Permissions.Product_Edit,
-                    Permissions.Product_Edit,
+                    "view",
+                    "edit",
+                    "edit",
                 )
             )
         return has_permission_result
@@ -1002,7 +1001,7 @@ class UserHasJiraIssuePermission(permissions.BasePermission):
                 has_permission_result = (
                     has_permission_result
                     and user_has_permission(
-                        request.user, obj, Permissions.Engagement_Edit,
+                        request.user, obj, "edit",
                     )
                 )
             finding_id = request.data.get("finding", None)
@@ -1011,7 +1010,7 @@ class UserHasJiraIssuePermission(permissions.BasePermission):
                 has_permission_result = (
                     has_permission_result
                     and user_has_permission(
-                        request.user, obj, Permissions.Finding_Edit,
+                        request.user, obj, "edit",
                     )
                 )
             finding_group_id = request.data.get("finding_group", None)
@@ -1020,7 +1019,7 @@ class UserHasJiraIssuePermission(permissions.BasePermission):
                 has_permission_result = (
                     has_permission_result
                     and user_has_permission(
-                        request.user, obj, Permissions.Finding_Group_Edit,
+                        request.user, obj, "edit",
                     )
                 )
             return has_permission_result
@@ -1035,9 +1034,9 @@ class UserHasJiraIssuePermission(permissions.BasePermission):
                 and check_object_permission(
                     request,
                     engagement,
-                    Permissions.Engagement_View,
-                    Permissions.Engagement_Edit,
-                    Permissions.Engagement_Edit,
+                    "view",
+                    "edit",
+                    "edit",
                 )
             )
         finding = obj.finding
@@ -1047,9 +1046,9 @@ class UserHasJiraIssuePermission(permissions.BasePermission):
                 and check_object_permission(
                     request,
                     finding,
-                    Permissions.Finding_View,
-                    Permissions.Finding_Edit,
-                    Permissions.Finding_Edit,
+                    "view",
+                    "edit",
+                    "edit",
                 )
             )
         finding_group = obj.finding_group
@@ -1059,9 +1058,9 @@ class UserHasJiraIssuePermission(permissions.BasePermission):
                 and check_object_permission(
                     request,
                     finding_group,
-                    Permissions.Finding_Group_View,
-                    Permissions.Finding_Group_Edit,
-                    Permissions.Finding_Group_Edit,
+                    "view",
+                    "edit",
+                    "edit",
                 )
             )
         return has_permission_result
@@ -1080,17 +1079,17 @@ class IsSuperUserOrGlobalOwner(permissions.BasePermission):
 class UserHasEngagementPresetPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
-            request, Product, "product", Permissions.Product_Edit,
+            request, Product, "product", "edit",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj.product,
-            Permissions.Product_View,
-            Permissions.Product_Edit,
-            Permissions.Product_Edit,
-            Permissions.Product_Edit,
+            "view",
+            "edit",
+            "edit",
+            "edit",
         )
 
 
@@ -1210,16 +1209,16 @@ def check_auto_create_permission(
             msg = "The provided identifiers are inconsistent — the engagement does not belong to the specified product."
             raise ValidationError(msg)
         return user_has_permission(
-            user, engagement, Permissions.Import_Scan_Result,
+            user, engagement, "import",
         )
 
     if product and product_name and engagement_name:
-        if not user_has_permission(user, product, Permissions.Engagement_Add):
+        if not user_has_permission(user, product, "add"):
             msg = f'No permission to create engagements in product "{product_name}"'
             raise PermissionDenied(msg)
 
         if not user_has_permission(
-            user, product, Permissions.Import_Scan_Result,
+            user, product, "import",
         ):
             msg = f'No permission to import scans into product "{product_name}"'
             raise PermissionDenied(msg)
@@ -1234,7 +1233,7 @@ def check_auto_create_permission(
 
         if not product_type:
             if not user_has_global_permission(
-                user, Permissions.Product_Type_Add,
+                user, "add",
             ):
                 msg = f'No permission to create product_type "{product_type_name}"'
                 raise PermissionDenied(msg)
@@ -1242,7 +1241,7 @@ def check_auto_create_permission(
             # all objects in it can be created as well
             return True
         if not user_has_permission(
-            user, product_type, Permissions.Product_Type_Add_Product,
+            user, product_type, "add",
         ):
             msg = f'No permission to create products in product_type "{product_type}"'
             raise PermissionDenied(msg)
@@ -1293,16 +1292,16 @@ class LocationFindingReferencePermission(permissions.BasePermission):
             request,
             Finding,
             "finding",
-            Permissions.Finding_Edit,
+            "edit",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj.finding,
-            Permissions.Finding_View,
-            Permissions.Finding_Edit,
-            Permissions.Finding_Edit,
+            "view",
+            "edit",
+            "edit",
         )
 
 
@@ -1312,14 +1311,14 @@ class LocationProductReferencePermission(permissions.BasePermission):
             request,
             Product,
             "product",
-            Permissions.Product_Edit,
+            "edit",
         )
 
     def has_object_permission(self, request, view, obj):
         return check_object_permission(
             request,
             obj.product,
-            Permissions.Product_View,
-            Permissions.Product_Edit,
-            Permissions.Product_Edit,
+            "view",
+            "edit",
+            "edit",
         )

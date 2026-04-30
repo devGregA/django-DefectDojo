@@ -14,7 +14,6 @@ from django.views.decorators.http import require_POST
 
 from dojo.authorization.authorization import user_has_permission_or_403
 from dojo.authorization.models import Global_Role
-from dojo.authorization.roles_permissions import Permissions
 from dojo.filters import (
     FindingFilter,
     FindingFilterWithoutObjectLookups,
@@ -45,7 +44,7 @@ def view_finding_group(request, fgid):
     if finding_group.test.engagement.product.id:
         pid = finding_group.test.engagement.product.id
         product = get_object_or_404(Product, id=pid)
-        user_has_permission_or_403(request.user, product, Permissions.Product_View)
+        user_has_permission_or_403(request.user, product, "view")
         product_tab = Product_Tab(product, title="Findings", tab="findings")
         jira_project = jira_services.get_project(product)
         github_config = GITHUB_PKey.objects.filter(product=pid).first()
@@ -53,7 +52,7 @@ def view_finding_group(request, fgid):
     elif finding_group.test.engagement.id:
         eid = finding_group.test.engagement.id
         engagement = get_object_or_404(Engagement, id=eid)
-        user_has_permission_or_403(request.user, engagement, Permissions.Engagement_View)
+        user_has_permission_or_403(request.user, engagement, "view")
         product_tab = Product_Tab(engagement.product, title=engagement.name, tab="engagements")
         jira_project = jira_services.get_project(engagement)
         github_config = GITHUB_PKey.objects.filter(product__engagement=eid).first()
@@ -296,7 +295,7 @@ class ListFindingGroups(View):
 
     def get(self, request: HttpRequest) -> HttpResponse:
         global_role = Global_Role.objects.filter(user=request.user).first()
-        products = get_authorized_products(Permissions.Product_View)
+        products = get_authorized_products("view")
         if request.user.is_superuser or (global_role and global_role.role):
             finding_groups = self.get_finding_groups(request)
         elif products.exists():

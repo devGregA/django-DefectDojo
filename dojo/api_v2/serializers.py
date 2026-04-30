@@ -35,7 +35,6 @@ from dojo.authorization.models import (
     Product_Type_Member,
     Role,
 )
-from dojo.authorization.roles_permissions import Permissions
 from dojo.celery_dispatch import dojo_dispatch_task
 from dojo.endpoint.utils import endpoint_filter, endpoint_meta_import
 from dojo.finding.helper import (
@@ -782,7 +781,7 @@ class DojoGroupMemberSerializer(serializers.ModelSerializer):
             and not user_has_permission(
                 self.context["request"].user,
                 data.get("group"),
-                Permissions.Group_Manage_Members,
+                "staff_only",
             )
         ):
             msg = "You are not permitted to add a user to this group"
@@ -815,7 +814,7 @@ class DojoGroupMemberSerializer(serializers.ModelSerializer):
         if data.get("role").is_owner and not user_has_permission(
             self.context["request"].user,
             data.get("group"),
-            Permissions.Group_Add_Owner,
+            "staff_only",
         ):
             msg = "You are not permitted to add a user as Owner to this group"
             raise PermissionDenied(msg)
@@ -941,7 +940,7 @@ class ProductMemberSerializer(serializers.ModelSerializer):
             and not user_has_permission(
                 self.context["request"].user,
                 data.get("product"),
-                Permissions.Product_Manage_Members,
+                "staff_only",
             )
         ):
             msg = "You are not permitted to add a member to this product"
@@ -962,7 +961,7 @@ class ProductMemberSerializer(serializers.ModelSerializer):
         if data.get("role").is_owner and not user_has_permission(
             self.context["request"].user,
             data.get("product"),
-            Permissions.Product_Member_Add_Owner,
+            "staff_only",
         ):
             msg = "You are not permitted to add a member as Owner to this product"
             raise PermissionDenied(msg)
@@ -982,7 +981,7 @@ class ProductGroupSerializer(serializers.ModelSerializer):
             and not user_has_permission(
                 self.context["request"].user,
                 data.get("product"),
-                Permissions.Product_Group_Add,
+                "add",
             )
         ):
             msg = "You are not permitted to add a group to this product"
@@ -1003,7 +1002,7 @@ class ProductGroupSerializer(serializers.ModelSerializer):
         if data.get("role").is_owner and not user_has_permission(
             self.context["request"].user,
             data.get("product"),
-            Permissions.Product_Group_Add_Owner,
+            "staff_only",
         ):
             msg = "You are not permitted to add a group as Owner to this product"
             raise PermissionDenied(msg)
@@ -1023,7 +1022,7 @@ class ProductTypeMemberSerializer(serializers.ModelSerializer):
             and not user_has_permission(
                 self.context["request"].user,
                 data.get("product_type"),
-                Permissions.Product_Type_Manage_Members,
+                "staff_only",
             )
         ):
             msg = "You are not permitted to add a member to this product type"
@@ -1056,7 +1055,7 @@ class ProductTypeMemberSerializer(serializers.ModelSerializer):
         if data.get("role").is_owner and not user_has_permission(
             self.context["request"].user,
             data.get("product_type"),
-            Permissions.Product_Type_Member_Add_Owner,
+            "staff_only",
         ):
             msg = "You are not permitted to add a member as Owner to this product type"
             raise PermissionDenied(msg)
@@ -1076,7 +1075,7 @@ class ProductTypeGroupSerializer(serializers.ModelSerializer):
             and not user_has_permission(
                 self.context["request"].user,
                 data.get("product_type"),
-                Permissions.Product_Type_Group_Add,
+                "add",
             )
         ):
             msg = "You are not permitted to add a group to this product type"
@@ -1097,7 +1096,7 @@ class ProductTypeGroupSerializer(serializers.ModelSerializer):
         if data.get("role").is_owner and not user_has_permission(
             self.context["request"].user,
             data.get("product_type"),
-            Permissions.Product_Type_Group_Add_Owner,
+            "staff_only",
         ):
             msg = "You are not permitted to add a group as Owner to this product type"
             raise PermissionDenied(msg)
@@ -1130,7 +1129,7 @@ class EngagementSerializer(serializers.ModelSerializer):
             and not user_has_permission(
                 self.context["request"].user,
                 data.get("product"),
-                Permissions.Engagement_Edit,
+                "edit",
             )
         ):
             msg = "You are not permitted to edit engagements in the destination product"
@@ -1583,7 +1582,7 @@ class RiskAcceptanceSerializer(serializers.ModelSerializer):
         findings = data.get("accepted_findings", [])
         findings_ids = [x.id for x in findings]
         finding_objects = Finding.objects.filter(id__in=findings_ids)
-        authed_findings = get_authorized_findings(Permissions.Risk_Acceptance).filter(id__in=findings_ids)
+        authed_findings = get_authorized_findings("edit").filter(id__in=findings_ids)
         if len(findings) != len(authed_findings):
             msg = "You are not permitted to add one or more selected findings to this risk acceptance"
             raise PermissionDenied(msg)
@@ -1768,7 +1767,7 @@ class FindingSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request is None:
             return []
-        if not user_has_permission(request.user, obj, Permissions.Risk_Acceptance):
+        if not user_has_permission(request.user, obj, "edit"):
             return []
         return RiskAcceptanceSerializer(
             obj.risk_acceptance_set.all(), many=True,
@@ -2956,7 +2955,7 @@ class FindingCloseSerializer(serializers.ModelSerializer):
                 })
 
             # Ensure selected user is authorized (Finding_Edit)
-            authorized_users = get_authorized_users(Permissions.Finding_Edit, user=request_user)
+            authorized_users = get_authorized_users("edit", user=request_user)
             if not authorized_users.filter(id=mitigated_by_user.id).exists():
                 raise serializers.ValidationError({
                     "mitigated_by": [

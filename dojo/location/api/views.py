@@ -9,7 +9,6 @@ from dojo.authorization.api_permissions import (
     LocationFindingReferencePermission,
     LocationProductReferencePermission,
 )
-from dojo.authorization.roles_permissions import Permissions
 from dojo.location.api.filters import (
     LocationFilter,
     LocationFindingReferenceFilter,
@@ -61,7 +60,7 @@ class LocationFindingReferenceViewSet(PrefetchDojoModelViewSet):
 
     def get_queryset(self) -> QuerySet[LocationFindingReference]:
         """Return the queryset of LocationFindingReferences."""
-        return get_authorized_location_finding_reference(Permissions.Location_View)
+        return get_authorized_location_finding_reference("view")
 
 
 class LocationProductReferenceViewSet(PrefetchDojoModelViewSet):
@@ -79,4 +78,4 @@ class LocationProductReferenceViewSet(PrefetchDojoModelViewSet):
 
     def get_queryset(self) -> QuerySet[LocationProductReference]:
         """Return the queryset of LocationProductReferences."""
-        return get_authorized_location_product_reference(Permissions.Location_View)
+        return get_authorized_location_product_reference("view")

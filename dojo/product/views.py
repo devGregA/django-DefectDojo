@@ -31,7 +31,6 @@ from dojo.authorization.models import (
     Product_Group,
     Product_Member,
 )
-from dojo.authorization.roles_permissions import Permissions
 from dojo.components.sql_group_concat import Sql_GroupConcat
 from dojo.filters import (
     EngagementFilter,
@@ -139,7 +138,7 @@ labels = get_labels()
 
 
 def product(request):
-    prods = get_authorized_products(Permissions.Product_View)
+    prods = get_authorized_products("view")
     # perform all stuff for filtering and pagination first, before annotation/prefetching
     # otherwise the paginator will perform all the annotations/prefetching already only to count the total number of records
     # see https://code.djangoproject.com/ticket/23771 and https://code.djangoproject.com/ticket/25375
@@ -253,12 +252,12 @@ def view_product(request, pid):
                                       .prefetch_related("members") \
                                       .prefetch_related("prod_type__members")
     prod = get_object_or_404(prod_query, id=pid)
-    product_members = get_authorized_members_for_product(prod, Permissions.Product_View)
-    global_product_members = get_authorized_global_members_for_product(prod, Permissions.Product_View)
-    product_type_members = get_authorized_members_for_product_type(prod.prod_type, Permissions.Product_Type_View)
-    product_groups = get_authorized_groups_for_product(prod, Permissions.Product_View)
-    global_product_groups = get_authorized_global_groups_for_product(prod, Permissions.Product_View)
-    product_type_groups = get_authorized_groups_for_product_type(prod.prod_type, Permissions.Product_Type_View)
+    product_members = get_authorized_members_for_product(prod, "view")
+    global_product_members = get_authorized_global_members_for_product(prod, "view")
+    product_type_members = get_authorized_members_for_product_type(prod.prod_type, "view")
+    product_groups = get_authorized_groups_for_product(prod, "view")
+    global_product_groups = get_authorized_global_groups_for_product(prod, "view")
+    product_type_groups = get_authorized_groups_for_product_type(prod.prod_type, "view")
     personal_notifications_form = ProductNotificationsForm(
         instance=Notifications.objects.filter(user=request.user).filter(product=prod).first())
     langSummary = Languages.objects.filter(product=prod).aggregate(Sum("files"), Sum("code"), Count("files"))
@@ -923,7 +922,7 @@ def prefetch_for_view_engagements(engagements, recent_test_day_count):
 
 
 def new_product(request, ptid=None):
-    if get_authorized_product_types(Permissions.Product_Type_Add_Product).count() == 0:
+    if get_authorized_product_types("add").count() == 0:
         raise PermissionDenied
 
     jira_project_form = None
@@ -945,7 +944,7 @@ def new_product(request, ptid=None):
 
         if form.is_valid():
             product_type = form.instance.prod_type
-            user_has_permission_or_403(request.user, product_type, Permissions.Product_Type_Add_Product)
+            user_has_permission_or_403(request.user, product_type, "add")
 
             product = form.save()
             messages.add_message(request,
@@ -1542,7 +1541,7 @@ class AdHocFindingView(View):
         # Get the initial objects
         product = self.get_product(product_id)
         # Make sure the user is authorized
-        user_has_permission_or_403(request.user, product, Permissions.Finding_Add)
+        user_has_permission_or_403(request.user, product, "add")
         # Create the necessary nested objects
         test = self.create_nested_objects(product)
         # Set up the initial context
@@ -1554,7 +1553,7 @@ class AdHocFindingView(View):
         # Get the initial objects
         product = self.get_product(product_id)
         # Make sure the user is authorized
-        user_has_permission_or_403(request.user, product, Permissions.Finding_Add)
+        user_has_permission_or_403(request.user, product, "add")
         # Create the necessary nested objects
         test = self.create_nested_objects(product)
         # Set up the initial context
@@ -1692,7 +1691,7 @@ def add_product_member(request, pid):
         memberform = Add_Product_MemberForm(request.POST, initial={"product": product.id})
         if memberform.is_valid():
             if memberform.cleaned_data["role"].is_owner and not user_has_permission(request.user, product,
-                                                                                    Permissions.Product_Member_Add_Owner):
+                                                                                    "staff_only"):
                 messages.add_message(request,
                                      messages.WARNING,
                                      _("You are not permitted to add users as owners."),
@@ -1729,7 +1728,7 @@ def edit_product_member(request, memberid):
         memberform = Edit_Product_MemberForm(request.POST, instance=member)
         if memberform.is_valid():
             if member.role.is_owner and not user_has_permission(request.user, member.product,
-                                                                Permissions.Product_Member_Add_Owner):
+                                                                "staff_only"):
                 messages.add_message(request,
                                      messages.WARNING,
                                      _("You are not permitted to make users to owners."),
@@ -1916,7 +1915,7 @@ def edit_product_group(request, groupid):
         groupform = Edit_Product_Group_Form(request.POST, instance=group)
         if groupform.is_valid():
             if group.role.is_owner and not user_has_permission(request.user, group.product,
-                                                               Permissions.Product_Group_Add_Owner):
+                                                               "staff_only"):
                 messages.add_message(request,
                                      messages.WARNING,
                                      _("You are not permitted to make groups owners."),
@@ -1977,7 +1976,7 @@ def add_product_group(request, pid):
         group_form = Add_Product_GroupForm(request.POST, initial={"product": product.id})
         if group_form.is_valid():
             if group_form.cleaned_data["role"].is_owner and not user_has_permission(request.user, product,
-                                                                                    Permissions.Product_Group_Add_Owner):
+                                                                                    "staff_only"):
                 messages.add_message(request,
                                      messages.WARNING,
                                      _("You are not permitted to add groups as owners."),

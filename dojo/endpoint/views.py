@@ -16,7 +16,6 @@ from django.urls import reverse
 from django.utils import timezone
 
 from dojo.authorization.authorization import user_has_permission_or_403
-from dojo.authorization.roles_permissions import Permissions
 from dojo.celery_dispatch import dojo_dispatch_task
 from dojo.endpoint.queries import get_authorized_endpoints_for_queryset
 from dojo.endpoint.utils import clean_hosts_run, endpoint_meta_import
@@ -65,7 +64,7 @@ def process_endpoints_view(request, *, host_view=False, vulnerable=False):
     endpoints = endpoints.prefetch_related("product", "product__tags", "tags").annotate(
         active_finding_count=Coalesce(active_finding_subquery, Value(0)),
     ).distinct()
-    endpoints = get_authorized_endpoints_for_queryset(Permissions.Location_View, endpoints, request.user)
+    endpoints = get_authorized_endpoints_for_queryset("view", endpoints, request.user)
     filter_string_matching = get_system_setting("filter_string_matching", False)
     filter_class = EndpointFilterWithoutObjectLookups if filter_string_matching else EndpointFilter
     if host_view:
@@ -90,7 +89,7 @@ def process_endpoints_view(request, *, host_view=False, vulnerable=False):
         p = request.GET.getlist("product", [])
         if len(p) == 1:
             product = get_object_or_404(Product, id=p[0])
-            user_has_permission_or_403(request.user, product, Permissions.Product_View)
+            user_has_permission_or_403(request.user, product, "view")
             product_tab = Product_Tab(product, view_name, tab="endpoints")
 
     return render(
@@ -281,7 +280,7 @@ def add_product_endpoint(request):
     if request.method == "POST":
         form = AddEndpointForm(request.POST)
         if form.is_valid():
-            user_has_permission_or_403(request.user, form.product, Permissions.Location_Add)
+            user_has_permission_or_403(request.user, form.product, "add")
             endpoints = form.save()
             tags = request.POST.get("tags")
             for e in endpoints:
@@ -335,9 +334,9 @@ def endpoint_bulk_update_all(request, pid=None):
 
             if pid is not None:
                 product = get_object_or_404(Product, id=pid)
-                user_has_permission_or_403(request.user, product, Permissions.Location_Delete)
+                user_has_permission_or_403(request.user, product, "delete")
 
-            endpoints = get_authorized_endpoints_for_queryset(Permissions.Location_Delete, endpoints, request.user)
+            endpoints = get_authorized_endpoints_for_queryset("delete", endpoints, request.user)
 
             skipped_endpoint_count = total_endpoint_count - endpoints.count()
             deleted_endpoint_count = endpoints.count()
@@ -359,9 +358,9 @@ def endpoint_bulk_update_all(request, pid=None):
 
             if pid is not None:
                 product = get_object_or_404(Product, id=pid)
-                user_has_permission_or_403(request.user, product, Permissions.Finding_Edit)
+                user_has_permission_or_403(request.user, product, "edit")
 
-            endpoints = get_authorized_endpoints_for_queryset(Permissions.Location_Edit, endpoints, request.user)
+            endpoints = get_authorized_endpoints_for_queryset("edit", endpoints, request.user)
 
             skipped_endpoint_count = total_endpoint_count - endpoints.count()
             updated_endpoint_count = endpoints.count()

@@ -7,7 +7,6 @@ from dojo.authorization.models import (
     Product_Group,
     Product_Member,
 )
-from dojo.authorization.roles_permissions import Permissions
 from dojo.models import (
     Dojo_User,
     Product,
@@ -19,7 +18,7 @@ from dojo.product.queries import get_authorized_products
 
 class RelatedAssetField(serializers.PrimaryKeyRelatedField):
     def get_queryset(self):
-        return get_authorized_products(Permissions.Product_View)
+        return get_authorized_products("view")
 
 
 class AssetAPIScanConfigurationSerializer(serializers.ModelSerializer):
@@ -96,7 +95,7 @@ class AssetMemberSerializer(serializers.ModelSerializer):
             and not user_has_permission(
                 self.context["request"].user,
                 data.get("asset"),
-                Permissions.Product_Manage_Members,
+                "staff_only",
             )
         ):
             msg = "You are not permitted to add a member to this Asset"
@@ -117,7 +116,7 @@ class AssetMemberSerializer(serializers.ModelSerializer):
         if data.get("role").is_owner and not user_has_permission(
             self.context["request"].user,
             data.get("asset"),
-            Permissions.Product_Member_Add_Owner,
+            "staff_only",
         ):
             msg = "You are not permitted to add a member as Owner to this Asset"
             raise PermissionDenied(msg)
@@ -139,7 +138,7 @@ class AssetGroupSerializer(serializers.ModelSerializer):
             and not user_has_permission(
                 self.context["request"].user,
                 data.get("asset"),
-                Permissions.Product_Group_Add,
+                "add",
             )
         ):
             msg = "You are not permitted to add a group to this Asset"
@@ -160,7 +159,7 @@ class AssetGroupSerializer(serializers.ModelSerializer):
         if data.get("role").is_owner and not user_has_permission(
             self.context["request"].user,
             data.get("asset"),
-            Permissions.Product_Group_Add_Owner,
+            "staff_only",
         ):
             msg = "You are not permitted to add a group as Owner to this Asset"
             raise PermissionDenied(msg)

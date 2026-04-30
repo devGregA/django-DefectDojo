@@ -34,7 +34,6 @@ from openpyxl.styles import Font
 
 import dojo.risk_acceptance.helper as ra_helper
 from dojo.authorization.authorization import user_has_permission_or_403
-from dojo.authorization.roles_permissions import Permissions
 from dojo.celery_dispatch import dojo_dispatch_task
 from dojo.endpoint.utils import save_endpoints_to_add
 from dojo.engagement.queries import get_authorized_engagements
@@ -132,7 +131,7 @@ def engagement_calendar(request):
         raise Resolver404
 
     if "lead" not in request.GET or "0" in request.GET.getlist("lead"):
-        engagements = get_authorized_engagements(Permissions.Engagement_View)
+        engagements = get_authorized_engagements("view")
     else:
         filters = []
         leads = request.GET.getlist("lead", "")
@@ -140,7 +139,7 @@ def engagement_calendar(request):
             leads.remove("-1")
             filters.append(Q(lead__isnull=True))
         filters.append(Q(lead__in=leads))
-        engagements = get_authorized_engagements(Permissions.Engagement_View).filter(reduce(operator.or_, filters))
+        engagements = get_authorized_engagements("view").filter(reduce(operator.or_, filters))
 
     engagements = engagements.select_related("lead")
     engagements = engagements.prefetch_related("product")
@@ -155,7 +154,7 @@ def engagement_calendar(request):
             "caltype": "engagements",
             "leads": request.GET.getlist("lead", ""),
             "engagements": engagements,
-            "users": get_authorized_users(Permissions.Engagement_View),
+            "users": get_authorized_users("view"),
         })
 
 
@@ -164,7 +163,7 @@ def get_filtered_engagements(request, view):
         msg = f"View {view} is not allowed"
         raise ValidationError(msg)
 
-    engagements = get_authorized_engagements(Permissions.Engagement_View).order_by("-target_start")
+    engagements = get_authorized_engagements("view").order_by("-target_start")
 
     if view == "active":
         engagements = engagements.filter(active=True)
@@ -198,8 +197,8 @@ def engagements(request, view):
     filtered_engagements = get_filtered_engagements(request, view)
 
     engs = get_page_items(request, filtered_engagements.qs, 25)
-    product_name_words = sorted(get_authorized_products(Permissions.Product_View).values_list("name", flat=True))
-    engagement_name_words = sorted(get_authorized_engagements(Permissions.Engagement_View).values_list("name", flat=True).distinct())
+    product_name_words = sorted(get_authorized_products("view").values_list("name", flat=True))
+    engagement_name_words = sorted(get_authorized_engagements("view").values_list("name", flat=True).distinct())
 
     add_breadcrumb(
         title=f"{view.capitalize()} Engagements",
@@ -218,7 +217,7 @@ def engagements(request, view):
 
 def engagements_all(request):
 
-    products_with_engagements = get_authorized_products(Permissions.Engagement_View)
+    products_with_engagements = get_authorized_products("view")
     products_with_engagements = products_with_engagements.filter(~Q(engagement=None)).distinct()
 
     # count using prefetch instead of just using 'engagement__set_test_test` to avoid loading all test in memory just to count them
@@ -253,7 +252,7 @@ def engagements_all(request):
     prods = get_page_items(request, filtered.qs, 25)
     prods.paginator.count = sum(len(prod.engagement_set.all()) for prod in prods)
     name_words = products_with_engagements.values_list("name", flat=True)
-    eng_words = get_authorized_engagements(Permissions.Engagement_View).values_list("name", flat=True).distinct()
+    eng_words = get_authorized_engagements("view").values_list("name", flat=True).distinct()
 
     add_breadcrumb(
         title="All Engagements",
@@ -288,7 +287,7 @@ def edit_engagement(request, eid):
                 user_has_permission_or_403(
                     request.user,
                     form.cleaned_data.get("product"),
-                    Permissions.Engagement_Edit,
+                    "edit",
                 )
             engagement.product = form.cleaned_data.get("product")
             engagement = form.save(commit=False)
@@ -452,7 +451,7 @@ class ViewEngagement(View):
     def get(self, request, eid, *args, **kwargs):
         eng = get_object_or_404(Engagement, id=eid)
         # Make sure the user is authorized
-        user_has_permission_or_403(request.user, eng, Permissions.Engagement_View)
+        user_has_permission_or_403(request.user, eng, "view")
         tests = eng.test_set.all().order_by("test_type__name", "-updated")
         default_page_num = 10
         tests_filter = self.get_filtered_tests(request, tests, eng)
@@ -518,7 +517,7 @@ class ViewEngagement(View):
     def post(self, request, eid, *args, **kwargs):
         eng = get_object_or_404(Engagement, id=eid)
         # Make sure the user is authorized
-        user_has_permission_or_403(request.user, eng, Permissions.Engagement_View)
+        user_has_permission_or_403(request.user, eng, "view")
         tests = eng.test_set.all().order_by("test_type__name", "-updated")
         default_page_num = 10
 
@@ -549,7 +548,7 @@ class ViewEngagement(View):
             available_note_types = find_available_notetypes(notes)
         form = DoneForm()
         files = eng.files.all()
-        user_has_permission_or_403(request.user, eng, Permissions.Note_Add)
+        user_has_permission_or_403(request.user, eng, "add")
         eng.progress = "check_list"
         eng.save()
 
@@ -750,7 +749,7 @@ class ImportScanResultsView(View):
             msg = "Either Engagement or Product has to be provided"
             raise Exception(msg)
         # Ensure the supplied user has access to import to the engagement or product
-        user_has_permission_or_403(user, engagement_or_product, Permissions.Import_Scan_Result)
+        user_has_permission_or_403(user, engagement_or_product, "import")
 
         return engagement, product, engagement_or_product
 

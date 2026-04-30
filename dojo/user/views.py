@@ -31,7 +31,6 @@ from rest_framework.exceptions import ValidationError as RFValidationError
 
 from dojo.authorization.authorization import user_is_superuser_or_global_owner
 from dojo.authorization.models import Dojo_Group_Member, Product_Member, Product_Type_Member
-from dojo.authorization.roles_permissions import Permissions
 from dojo.decorators import dojo_ratelimit
 from dojo.filters import UserFilter
 from dojo.forms import (
@@ -401,8 +400,8 @@ def add_user(request):
 
 def view_user(request, uid):
     user = get_object_or_404(Dojo_User, id=uid)
-    product_members = get_authorized_product_members_for_user(user, Permissions.Product_View)
-    product_type_members = get_authorized_product_type_members_for_user(user, Permissions.Product_Type_View)
+    product_members = get_authorized_product_members_for_user(user, "view")
+    product_type_members = get_authorized_product_type_members_for_user(user, "view")
     group_members = get_authorized_group_members_for_user(user)
     configuration_permission_form = ConfigurationPermissionsForm(user=user)
 

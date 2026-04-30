@@ -18,7 +18,6 @@ from dojo.authorization.authorization import (
     user_has_permission,
     user_has_permission_or_403,
 )
-from dojo.authorization.roles_permissions import Permissions
 from dojo.filters import QuestionFilter, QuestionnaireFilter
 from dojo.forms import (
     Add_Questionnaire_Form,
@@ -102,7 +101,7 @@ def answer_questionnaire(request, eid, sid):
         auth = user_has_permission(
             request.user,
             engagement,
-            Permissions.Engagement_Edit)
+            "edit")
         if not auth:
             messages.add_message(
                 request,
@@ -814,7 +813,7 @@ def engagement_empty_survey(request, esid):
         form = AddEngagementForm(request.POST)
         if form.is_valid():
             product = form.cleaned_data.get("product")
-            user_has_permission_or_403(request.user, product, Permissions.Engagement_Add)
+            user_has_permission_or_403(request.user, product, "add")
             engagement = Engagement(
                 product_id=product.id,
                 target_start=tz.now().date(),
@@ -845,7 +844,7 @@ class ExistingEngagementEmptySurveyView(View):
         survey = get_object_or_404(Answered_Survey, id=esid)
         if survey.engagement:
             # If the questionnaire is already linked to a survey, ensure the user has permission to edit it
-            user_has_permission_or_403(request.user, survey.engagement, Permissions.Engagement_Edit)
+            user_has_permission_or_403(request.user, survey.engagement, "edit")
             # Prepopulate the form with the current engagement
             form = self.get_form_class()({"engagement": survey.engagement})
         else:
@@ -859,10 +858,10 @@ class ExistingEngagementEmptySurveyView(View):
         if form.is_valid():
             # Validate perms on the target engagement
             engagement = form.cleaned_data.get("engagement")
-            user_has_permission_or_403(request.user, engagement, Permissions.Engagement_Edit)
+            user_has_permission_or_403(request.user, engagement, "edit")
             # If we're moving a questionnaire, make sure the user can edit the 'source' engagement too
             if survey.engagement:
-                user_has_permission_or_403(request.user, survey.engagement, Permissions.Engagement_Edit)
+                user_has_permission_or_403(request.user, survey.engagement, "edit")
             # Link and save
             survey.engagement = engagement
             survey.save()

@@ -6,7 +6,6 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
 
-from dojo.authorization.roles_permissions import Permissions
 from dojo.cred.queries import get_authorized_cred_mappings_for_queryset
 from dojo.decorators import deprecated_view
 from dojo.forms import CredMappingForm, CredMappingFormProd, CredUserForm, NoteForm
@@ -85,7 +84,7 @@ def view_cred_details(request, ttid):
     notes = cred.notes.all()
     cred_products = Cred_Mapping.objects.select_related("product").filter(
         product_id__isnull=False, cred_id=ttid).order_by("product__name")
-    cred_products = get_authorized_cred_mappings_for_queryset(Permissions.Product_View, cred_products)
+    cred_products = get_authorized_cred_mappings_for_queryset("view", cred_products)
 
     if request.method == "POST":
         form = NoteForm(request.POST)

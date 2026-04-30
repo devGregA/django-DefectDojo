@@ -5,7 +5,6 @@ from dojo.authorization.models import (
     Product_Type_Group,
     Product_Type_Member,
 )
-from dojo.authorization.roles_permissions import Permissions
 from dojo.models import (
     App_Analysis,
     Cred_Mapping,
@@ -28,8 +27,8 @@ from dojo.models import (
 # Each value is a list of check tuples. ALL checks in the list must pass.
 #
 # Check tuple formats:
-#   ("object",  ModelClass, Permissions.Perm, "kwarg_name")
-#   ("global",  Permissions.Perm)
+#   ("object",  ModelClass, "view", "kwarg_name")
+#   ("global",  "view")
 #   ("config",  "permission.string")
 # ---------------------------------------------------------------------------
 
@@ -37,142 +36,142 @@ URL_PERMISSIONS = {
     # -----------------------------------------------------------------------
     # Product Type (dojo/product_type/views.py  ->  dojo/organization/urls.py)
     # -----------------------------------------------------------------------
-    "add_product_type": [("global", Permissions.Product_Type_Add)],
-    "view_product_type": [("object", Product_Type, Permissions.Product_Type_View, "ptid")],
-    "edit_product_type": [("object", Product_Type, Permissions.Product_Type_Edit, "ptid")],
-    "delete_product_type": [("object", Product_Type, Permissions.Product_Type_Delete, "ptid")],
-    "add_product_type_member": [("object", Product_Type, Permissions.Product_Type_Manage_Members, "ptid")],
-    "edit_product_type_member": [("object", Product_Type_Member, Permissions.Product_Type_Manage_Members, "memberid")],
-    "delete_product_type_member": [("object", Product_Type_Member, Permissions.Product_Type_Member_Delete, "memberid")],
-    "add_product_type_group": [("object", Product_Type, Permissions.Product_Type_Group_Add, "ptid")],
-    "edit_product_type_group": [("object", Product_Type_Group, Permissions.Product_Type_Group_Edit, "groupid")],
-    "delete_product_type_group": [("object", Product_Type_Group, Permissions.Product_Type_Group_Delete, "groupid")],
+    "add_product_type": [("global", "add")],
+    "view_product_type": [("object", Product_Type, "view", "ptid")],
+    "edit_product_type": [("object", Product_Type, "edit", "ptid")],
+    "delete_product_type": [("object", Product_Type, "delete", "ptid")],
+    "add_product_type_member": [("object", Product_Type, "staff_only", "ptid")],
+    "edit_product_type_member": [("object", Product_Type_Member, "staff_only", "memberid")],
+    "delete_product_type_member": [("object", Product_Type_Member, "delete", "memberid")],
+    "add_product_type_group": [("object", Product_Type, "add", "ptid")],
+    "edit_product_type_group": [("object", Product_Type_Group, "edit", "groupid")],
+    "delete_product_type_group": [("object", Product_Type_Group, "delete", "groupid")],
 
     # -----------------------------------------------------------------------
     # Product (dojo/product/views.py  ->  dojo/asset/urls.py)
     # -----------------------------------------------------------------------
-    "view_product": [("object", Product, Permissions.Product_View, "pid")],
-    "view_product_components": [("object", Product, Permissions.Component_View, "pid")],
-    "view_product_metrics": [("object", Product, Permissions.Product_View, "pid")],
-    "async_burndown_metrics": [("object", Product, Permissions.Product_View, "pid")],
-    "view_engagements": [("object", Product, Permissions.Engagement_View, "pid")],
-    "edit_product": [("object", Product, Permissions.Product_Edit, "pid")],
-    "delete_product": [("object", Product, Permissions.Product_Delete, "pid")],
-    "new_eng_for_prod": [("object", Product, Permissions.Engagement_Add, "pid")],
-    "new_eng_for_prod_cicd": [("object", Product, Permissions.Engagement_Add, "pid")],
-    "new_tech_for_prod": [("object", Product, Permissions.Technology_Add, "pid")],
-    "edit_technology": [("object", App_Analysis, Permissions.Technology_Edit, "tid")],
-    "delete_technology": [("object", App_Analysis, Permissions.Technology_Delete, "tid")],
-    "add_meta_data": [("object", Product, Permissions.Product_Edit, "pid")],
-    "edit_meta_data": [("object", Product, Permissions.Product_Edit, "pid")],
-    "edit_notifications": [("object", Product, Permissions.Product_View, "pid")],
-    "engagement_presets": [("object", Product, Permissions.Product_View, "pid")],
-    "edit_engagement_presets": [("object", Product, Permissions.Product_Edit, "pid")],
-    "add_engagement_presets": [("object", Product, Permissions.Product_Edit, "pid")],
-    "delete_engagement_presets": [("object", Product, Permissions.Product_Edit, "pid")],
-    "add_product_member": [("object", Product, Permissions.Product_Manage_Members, "pid")],
-    "edit_product_member": [("object", Product_Member, Permissions.Product_Manage_Members, "memberid")],
-    "delete_product_member": [("object", Product_Member, Permissions.Product_Member_Delete, "memberid")],
-    "add_api_scan_configuration": [("object", Product, Permissions.Product_API_Scan_Configuration_Add, "pid")],
-    "view_api_scan_configurations": [("object", Product, Permissions.Product_View, "pid")],
-    "edit_api_scan_configuration": [("object", Product_API_Scan_Configuration, Permissions.Product_API_Scan_Configuration_Edit, "pascid")],
-    "delete_api_scan_configuration": [("object", Product_API_Scan_Configuration, Permissions.Product_API_Scan_Configuration_Delete, "pascid")],
-    "add_product_group": [("object", Product, Permissions.Product_Group_Add, "pid")],
-    "edit_product_group": [("object", Product_Group, Permissions.Product_Group_Edit, "groupid")],
-    "delete_product_group": [("object", Product_Group, Permissions.Product_Group_Delete, "groupid")],
+    "view_product": [("object", Product, "view", "pid")],
+    "view_product_components": [("object", Product, "view", "pid")],
+    "view_product_metrics": [("object", Product, "view", "pid")],
+    "async_burndown_metrics": [("object", Product, "view", "pid")],
+    "view_engagements": [("object", Product, "view", "pid")],
+    "edit_product": [("object", Product, "edit", "pid")],
+    "delete_product": [("object", Product, "delete", "pid")],
+    "new_eng_for_prod": [("object", Product, "add", "pid")],
+    "new_eng_for_prod_cicd": [("object", Product, "add", "pid")],
+    "new_tech_for_prod": [("object", Product, "add", "pid")],
+    "edit_technology": [("object", App_Analysis, "edit", "tid")],
+    "delete_technology": [("object", App_Analysis, "delete", "tid")],
+    "add_meta_data": [("object", Product, "edit", "pid")],
+    "edit_meta_data": [("object", Product, "edit", "pid")],
+    "edit_notifications": [("object", Product, "view", "pid")],
+    "engagement_presets": [("object", Product, "view", "pid")],
+    "edit_engagement_presets": [("object", Product, "edit", "pid")],
+    "add_engagement_presets": [("object", Product, "edit", "pid")],
+    "delete_engagement_presets": [("object", Product, "edit", "pid")],
+    "add_product_member": [("object", Product, "staff_only", "pid")],
+    "edit_product_member": [("object", Product_Member, "staff_only", "memberid")],
+    "delete_product_member": [("object", Product_Member, "delete", "memberid")],
+    "add_api_scan_configuration": [("object", Product, "add", "pid")],
+    "view_api_scan_configurations": [("object", Product, "view", "pid")],
+    "edit_api_scan_configuration": [("object", Product_API_Scan_Configuration, "edit", "pascid")],
+    "delete_api_scan_configuration": [("object", Product_API_Scan_Configuration, "delete", "pascid")],
+    "add_product_group": [("object", Product, "add", "pid")],
+    "edit_product_group": [("object", Product_Group, "edit", "groupid")],
+    "delete_product_group": [("object", Product_Group, "delete", "groupid")],
 
     # -----------------------------------------------------------------------
     # Engagement (dojo/engagement/views.py  ->  dojo/engagement/urls.py)
     # -----------------------------------------------------------------------
-    "edit_engagement": [("object", Engagement, Permissions.Engagement_Edit, "eid")],
-    "delete_engagement": [("object", Engagement, Permissions.Engagement_Delete, "eid")],
-    "copy_engagement": [("object", Engagement, Permissions.Engagement_Edit, "eid")],
-    "add_tests": [("object", Engagement, Permissions.Test_Add, "eid")],
-    "close_engagement": [("object", Engagement, Permissions.Engagement_Edit, "eid")],
-    "engagement_unlink_jira": [("object", Engagement, Permissions.Engagement_Edit, "eid")],
-    "reopen_engagement": [("object", Engagement, Permissions.Engagement_Edit, "eid")],
-    "complete_checklist": [("object", Engagement, Permissions.Engagement_Edit, "eid")],
-    "add_risk_acceptance": [("object", Engagement, Permissions.Risk_Acceptance, "eid")],
-    "view_risk_acceptance": [("object", Engagement, Permissions.Engagement_View, "eid")],
-    "edit_risk_acceptance": [("object", Engagement, Permissions.Risk_Acceptance, "eid")],
-    "expire_risk_acceptance": [("object", Engagement, Permissions.Risk_Acceptance, "eid")],
-    "reinstate_risk_acceptance": [("object", Engagement, Permissions.Risk_Acceptance, "eid")],
-    "delete_risk_acceptance": [("object", Engagement, Permissions.Risk_Acceptance, "eid")],
-    "download_risk_acceptance": [("object", Engagement, Permissions.Engagement_View, "eid")],
-    "upload_threatmodel": [("object", Engagement, Permissions.Engagement_Edit, "eid")],
-    "view_threatmodel": [("object", Engagement, Permissions.Engagement_View, "eid")],
-    "engagement_ics": [("object", Engagement, Permissions.Engagement_View, "eid")],
+    "edit_engagement": [("object", Engagement, "edit", "eid")],
+    "delete_engagement": [("object", Engagement, "delete", "eid")],
+    "copy_engagement": [("object", Engagement, "edit", "eid")],
+    "add_tests": [("object", Engagement, "add", "eid")],
+    "close_engagement": [("object", Engagement, "edit", "eid")],
+    "engagement_unlink_jira": [("object", Engagement, "edit", "eid")],
+    "reopen_engagement": [("object", Engagement, "edit", "eid")],
+    "complete_checklist": [("object", Engagement, "edit", "eid")],
+    "add_risk_acceptance": [("object", Engagement, "edit", "eid")],
+    "view_risk_acceptance": [("object", Engagement, "view", "eid")],
+    "edit_risk_acceptance": [("object", Engagement, "edit", "eid")],
+    "expire_risk_acceptance": [("object", Engagement, "edit", "eid")],
+    "reinstate_risk_acceptance": [("object", Engagement, "edit", "eid")],
+    "delete_risk_acceptance": [("object", Engagement, "edit", "eid")],
+    "download_risk_acceptance": [("object", Engagement, "view", "eid")],
+    "upload_threatmodel": [("object", Engagement, "edit", "eid")],
+    "view_threatmodel": [("object", Engagement, "view", "eid")],
+    "engagement_ics": [("object", Engagement, "view", "eid")],
 
     # -----------------------------------------------------------------------
     # Test (dojo/test/views.py  ->  dojo/test/urls.py)
     # -----------------------------------------------------------------------
-    "edit_test": [("object", Test, Permissions.Test_Edit, "tid")],
-    "delete_test": [("object", Test, Permissions.Test_Delete, "tid")],
-    "copy_test": [("object", Test, Permissions.Test_Edit, "tid")],
-    "test_ics": [("object", Test, Permissions.Test_View, "tid")],
-    "add_finding_from_template": [("object", Test, Permissions.Finding_Add, "tid")],
-    "search": [("object", Test, Permissions.Test_View, "tid")],
+    "edit_test": [("object", Test, "edit", "tid")],
+    "delete_test": [("object", Test, "delete", "tid")],
+    "copy_test": [("object", Test, "edit", "tid")],
+    "test_ics": [("object", Test, "view", "tid")],
+    "add_finding_from_template": [("object", Test, "add", "tid")],
+    "search": [("object", Test, "view", "tid")],
 
     # -----------------------------------------------------------------------
     # Finding (dojo/finding/views.py  ->  dojo/finding/urls.py)
     # -----------------------------------------------------------------------
-    "close_finding": [("object", Finding, Permissions.Finding_Edit, "fid")],
-    "verify_finding": [("object", Finding, Permissions.Finding_Edit, "fid")],
-    "defect_finding_review": [("object", Finding, Permissions.Finding_Edit, "fid")],
-    "reopen_finding": [("object", Finding, Permissions.Finding_Edit, "fid")],
-    "copy_finding": [("object", Finding, Permissions.Finding_Edit, "fid")],
-    "remediation_date": [("object", Finding, Permissions.Finding_Edit, "fid")],
-    "touch_finding": [("object", Finding, Permissions.Finding_Edit, "fid")],
-    "simple_risk_accept_finding": [("object", Finding, Permissions.Risk_Acceptance, "fid")],
-    "risk_unaccept_finding": [("object", Finding, Permissions.Risk_Acceptance, "fid")],
-    "request_finding_review": [("object", Finding, Permissions.Finding_View, "fid")],
-    "clear_finding_review": [("object", Finding, Permissions.Finding_Edit, "fid")],
-    "mktemplate": [("global", Permissions.Finding_Add)],
-    "find_template_to_apply": [("object", Finding, Permissions.Finding_Edit, "fid")],
-    "choose_finding_template_options": [("object", Finding, Permissions.Finding_Edit, "fid")],
-    "apply_template_to_finding": [("object", Finding, Permissions.Finding_Edit, "fid")],
-    "merge_finding": [("object", Product, Permissions.Finding_Edit, "pid")],
-    "merge_finding_product": [("object", Product, Permissions.Finding_Edit, "pid")],
-    "mark_finding_duplicate": [("object", Finding, Permissions.Finding_Edit, "original_id")],
-    "reset_finding_duplicate_status": [("object", Finding, Permissions.Finding_Edit, "duplicate_id")],
-    "set_finding_as_original": [("object", Finding, Permissions.Finding_Edit, "finding_id")],
-    "finding_unlink_jira": [("object", Finding, Permissions.Finding_Edit, "fid")],
-    "finding_push_to_jira": [("object", Finding, Permissions.Finding_Edit, "fid")],
+    "close_finding": [("object", Finding, "edit", "fid")],
+    "verify_finding": [("object", Finding, "edit", "fid")],
+    "defect_finding_review": [("object", Finding, "edit", "fid")],
+    "reopen_finding": [("object", Finding, "edit", "fid")],
+    "copy_finding": [("object", Finding, "edit", "fid")],
+    "remediation_date": [("object", Finding, "edit", "fid")],
+    "touch_finding": [("object", Finding, "edit", "fid")],
+    "simple_risk_accept_finding": [("object", Finding, "edit", "fid")],
+    "risk_unaccept_finding": [("object", Finding, "edit", "fid")],
+    "request_finding_review": [("object", Finding, "view", "fid")],
+    "clear_finding_review": [("object", Finding, "edit", "fid")],
+    "mktemplate": [("global", "add")],
+    "find_template_to_apply": [("object", Finding, "edit", "fid")],
+    "choose_finding_template_options": [("object", Finding, "edit", "fid")],
+    "apply_template_to_finding": [("object", Finding, "edit", "fid")],
+    "merge_finding": [("object", Product, "edit", "pid")],
+    "merge_finding_product": [("object", Product, "edit", "pid")],
+    "mark_finding_duplicate": [("object", Finding, "edit", "original_id")],
+    "reset_finding_duplicate_status": [("object", Finding, "edit", "duplicate_id")],
+    "set_finding_as_original": [("object", Finding, "edit", "finding_id")],
+    "finding_unlink_jira": [("object", Finding, "edit", "fid")],
+    "finding_push_to_jira": [("object", Finding, "edit", "fid")],
 
     # Finding templates
-    "templates": [("global", Permissions.Finding_Edit)],
-    "export_template": [("global", Permissions.Finding_Edit)],
-    "add_template": [("global", Permissions.Finding_Add)],
-    "edit_template": [("global", Permissions.Finding_Edit)],
-    "delete_template": [("global", Permissions.Finding_Delete)],
+    "templates": [("global", "edit")],
+    "export_template": [("global", "edit")],
+    "add_template": [("global", "add")],
+    "edit_template": [("global", "edit")],
+    "delete_template": [("global", "delete")],
 
     # Stub findings
-    "add_stub_finding": [("object", Test, Permissions.Finding_Add, "tid")],
-    "delete_stub_finding": [("object", Stub_Finding, Permissions.Finding_Delete, "fid")],
-    "promote_to_finding": [("object", Stub_Finding, Permissions.Finding_Edit, "fid")],
+    "add_stub_finding": [("object", Test, "add", "tid")],
+    "delete_stub_finding": [("object", Stub_Finding, "delete", "fid")],
+    "promote_to_finding": [("object", Stub_Finding, "edit", "fid")],
 
     # -----------------------------------------------------------------------
     # Finding Group (dojo/finding_group/views.py  ->  dojo/finding_group/urls.py)
     # -----------------------------------------------------------------------
-    "view_finding_group": [("object", Finding_Group, Permissions.Finding_Group_View, "fgid")],
-    "delete_finding_group": [("object", Finding_Group, Permissions.Finding_Group_Delete, "fgid")],
-    "finding_group_push_to_jira": [("object", Finding_Group, Permissions.Finding_Group_Edit, "fgid")],
-    "finding_group_unlink_jira": [("object", Finding_Group, Permissions.Finding_Group_Edit, "fgid")],
+    "view_finding_group": [("object", Finding_Group, "view", "fgid")],
+    "delete_finding_group": [("object", Finding_Group, "delete", "fgid")],
+    "finding_group_push_to_jira": [("object", Finding_Group, "edit", "fgid")],
+    "finding_group_unlink_jira": [("object", Finding_Group, "edit", "fgid")],
 
     # -----------------------------------------------------------------------
     # Endpoint (dojo/endpoint/views.py  ->  dojo/endpoint/urls.py)
     # -----------------------------------------------------------------------
-    "view_endpoint": [("object", Endpoint, Permissions.Location_View, "eid")],
-    "view_endpoint_host": [("object", Endpoint, Permissions.Location_View, "eid")],
-    "edit_endpoint": [("object", Endpoint, Permissions.Location_Edit, "eid")],
-    "add_endpoint": [("object", Product, Permissions.Location_Add, "pid")],
-    "delete_endpoint": [("object", Endpoint, Permissions.Location_Delete, "eid")],
-    "add_endpoint_meta_data": [("object", Endpoint, Permissions.Location_Edit, "eid")],
-    "edit_endpoint_meta_data": [("object", Endpoint, Permissions.Location_Edit, "eid")],
-    "endpoints_status_bulk": [("object", Finding, Permissions.Finding_Edit, "fid")],
-    "import_endpoint_meta": [("object", Product, Permissions.Location_Edit, "pid")],
-    "endpoint_report": [("object", Endpoint, Permissions.Location_View, "eid")],
-    "endpoint_host_report": [("object", Endpoint, Permissions.Location_View, "eid")],
+    "view_endpoint": [("object", Endpoint, "view", "eid")],
+    "view_endpoint_host": [("object", Endpoint, "view", "eid")],
+    "edit_endpoint": [("object", Endpoint, "edit", "eid")],
+    "add_endpoint": [("object", Product, "add", "pid")],
+    "delete_endpoint": [("object", Endpoint, "delete", "eid")],
+    "add_endpoint_meta_data": [("object", Endpoint, "edit", "eid")],
+    "edit_endpoint_meta_data": [("object", Endpoint, "edit", "eid")],
+    "endpoints_status_bulk": [("object", Finding, "edit", "fid")],
+    "import_endpoint_meta": [("object", Product, "edit", "pid")],
+    "endpoint_report": [("object", Endpoint, "view", "eid")],
+    "endpoint_host_report": [("object", Endpoint, "view", "eid")],
 
     # -----------------------------------------------------------------------
     # URL / Location UI (dojo/url/ui/views.py  ->  dojo/url/ui/urls.py)
@@ -186,83 +185,83 @@ URL_PERMISSIONS = {
     #
     # Unique URL names from url/ui:
     # -----------------------------------------------------------------------
-    "add_endpoint_to_product": [("object", Product, Permissions.Location_Add, "product_id")],
-    "add_endpoint_to_finding": [("object", Product, Permissions.Location_Add, "finding_id")],
+    "add_endpoint_to_product": [("object", Product, "add", "product_id")],
+    "add_endpoint_to_finding": [("object", Product, "add", "finding_id")],
 
     # -----------------------------------------------------------------------
     # Credential (dojo/cred/views.py  ->  dojo/cred/urls.py)
     # -----------------------------------------------------------------------
-    "add_cred": [("config", Permissions.Credential_Add)],
-    "view_cred_details": [("config", Permissions.Credential_View)],
-    "edit_cred": [("config", Permissions.Credential_Edit)],
-    "delete_cred": [("config", Permissions.Credential_Delete)],
-    "cred": [("config", Permissions.Credential_View)],
-    "all_cred_product": [("object", Product, Permissions.Product_Edit, "pid")],
-    "new_cred_product": [("object", Product, Permissions.Product_Edit, "pid")],
+    "add_cred": [("config", "add")],
+    "view_cred_details": [("config", "view")],
+    "edit_cred": [("config", "edit")],
+    "delete_cred": [("config", "delete")],
+    "cred": [("config", "view")],
+    "all_cred_product": [("object", Product, "edit", "pid")],
+    "new_cred_product": [("object", Product, "edit", "pid")],
     "view_cred_product": [
-        ("object", Product, Permissions.Product_View, "pid"),
-        ("object", Cred_Mapping, Permissions.Credential_View, "ttid"),
+        ("object", Product, "view", "pid"),
+        ("object", Cred_Mapping, "view", "ttid"),
     ],
     "edit_cred_product": [
-        ("object", Product, Permissions.Product_Edit, "pid"),
-        ("object", Cred_Mapping, Permissions.Credential_Edit, "ttid"),
+        ("object", Product, "edit", "pid"),
+        ("object", Cred_Mapping, "edit", "ttid"),
     ],
     "delete_cred_product": [
-        ("object", Product, Permissions.Product_Edit, "pid"),
-        ("object", Cred_Mapping, Permissions.Credential_Delete, "ttid"),
+        ("object", Product, "edit", "pid"),
+        ("object", Cred_Mapping, "delete", "ttid"),
     ],
-    "new_cred_product_engagement": [("object", Engagement, Permissions.Engagement_Edit, "eid")],
+    "new_cred_product_engagement": [("object", Engagement, "edit", "eid")],
     "view_cred_product_engagement": [
-        ("object", Engagement, Permissions.Engagement_View, "eid"),
-        ("object", Cred_Mapping, Permissions.Credential_View, "ttid"),
+        ("object", Engagement, "view", "eid"),
+        ("object", Cred_Mapping, "view", "ttid"),
     ],
     "delete_cred_engagement": [
-        ("object", Engagement, Permissions.Engagement_Edit, "eid"),
-        ("object", Cred_Mapping, Permissions.Credential_Delete, "ttid"),
+        ("object", Engagement, "edit", "eid"),
+        ("object", Cred_Mapping, "delete", "ttid"),
     ],
-    "new_cred_engagement_test": [("object", Test, Permissions.Test_Edit, "tid")],
+    "new_cred_engagement_test": [("object", Test, "edit", "tid")],
     "view_cred_engagement_test": [
-        ("object", Test, Permissions.Test_View, "tid"),
-        ("object", Cred_Mapping, Permissions.Credential_View, "ttid"),
+        ("object", Test, "view", "tid"),
+        ("object", Cred_Mapping, "view", "ttid"),
     ],
     "delete_cred_test": [
-        ("object", Test, Permissions.Test_Edit, "tid"),
-        ("object", Cred_Mapping, Permissions.Credential_Delete, "ttid"),
+        ("object", Test, "edit", "tid"),
+        ("object", Cred_Mapping, "delete", "ttid"),
     ],
-    "new_cred_finding": [("object", Finding, Permissions.Finding_Edit, "fid")],
+    "new_cred_finding": [("object", Finding, "edit", "fid")],
     "view_cred_finding": [
-        ("object", Finding, Permissions.Finding_View, "fid"),
-        ("object", Cred_Mapping, Permissions.Credential_View, "ttid"),
+        ("object", Finding, "view", "fid"),
+        ("object", Cred_Mapping, "view", "ttid"),
     ],
     "delete_cred_finding": [
-        ("object", Finding, Permissions.Finding_Edit, "fid"),
-        ("object", Cred_Mapping, Permissions.Credential_Delete, "ttid"),
+        ("object", Finding, "edit", "fid"),
+        ("object", Cred_Mapping, "delete", "ttid"),
     ],
 
     # -----------------------------------------------------------------------
     # Group (dojo/group/views.py  ->  dojo/group/urls.py)
     # -----------------------------------------------------------------------
-    "add_group_member": [("object", Dojo_Group, Permissions.Group_Manage_Members, "gid")],
-    "edit_group_member": [("object", Dojo_Group_Member, Permissions.Group_Manage_Members, "mid")],
-    "delete_group_member": [("object", Dojo_Group_Member, Permissions.Group_Member_Delete, "mid")],
+    "add_group_member": [("object", Dojo_Group, "staff_only", "gid")],
+    "edit_group_member": [("object", Dojo_Group_Member, "staff_only", "mid")],
+    "delete_group_member": [("object", Dojo_Group_Member, "delete", "mid")],
     "edit_group_permissions": [("config", "auth.change_permission")],
 
     # -----------------------------------------------------------------------
     # Reports (dojo/reports/views.py  ->  dojo/reports/urls.py)
     # -----------------------------------------------------------------------
-    "product_type_report": [("object", Product_Type, Permissions.Product_Type_View, "ptid")],
-    "product_report": [("object", Product, Permissions.Product_View, "pid")],
-    "product_endpoint_report": [("object", Product, Permissions.Product_View, "pid")],
-    "engagement_report": [("object", Engagement, Permissions.Engagement_View, "eid")],
-    "test_report": [("object", Test, Permissions.Test_View, "tid")],
+    "product_type_report": [("object", Product_Type, "view", "ptid")],
+    "product_report": [("object", Product, "view", "pid")],
+    "product_endpoint_report": [("object", Product, "view", "pid")],
+    "engagement_report": [("object", Engagement, "view", "eid")],
+    "test_report": [("object", Test, "view", "tid")],
 
     # -----------------------------------------------------------------------
     # Tool Product (dojo/tool_product/views.py  ->  dojo/tool_product/urls.py)
     # -----------------------------------------------------------------------
-    "new_tool_product": [("object", Product, Permissions.Product_Edit, "pid")],
-    "all_tool_product": [("object", Product, Permissions.Product_Edit, "pid")],
-    "edit_tool_product": [("object", Product, Permissions.Product_Edit, "pid")],
-    "delete_tool_product": [("object", Product, Permissions.Product_Edit, "pid")],
+    "new_tool_product": [("object", Product, "edit", "pid")],
+    "all_tool_product": [("object", Product, "edit", "pid")],
+    "edit_tool_product": [("object", Product, "edit", "pid")],
+    "delete_tool_product": [("object", Product, "edit", "pid")],
 
     # -----------------------------------------------------------------------
     # Tool Type (dojo/tool_type/views.py  ->  dojo/tool_type/urls.py)
@@ -281,19 +280,19 @@ URL_PERMISSIONS = {
     # -----------------------------------------------------------------------
     # Benchmark (dojo/benchmark/views.py  ->  dojo/benchmark/urls.py)
     # -----------------------------------------------------------------------
-    "view_product_benchmark": [("object", Product, Permissions.Benchmark_Edit, "pid")],
-    "edit_benchmark": [("object", Product, Permissions.Benchmark_Edit, "pid")],
-    "delete_product_benchmark": [("object", Product, Permissions.Benchmark_Delete, "pid")],
-    "update_product_benchmark": [("object", Product, Permissions.Benchmark_Edit, "pid")],
-    "update_product_benchmark_summary": [("object", Product, Permissions.Benchmark_Edit, "pid")],
+    "view_product_benchmark": [("object", Product, "edit", "pid")],
+    "edit_benchmark": [("object", Product, "edit", "pid")],
+    "delete_product_benchmark": [("object", Product, "delete", "pid")],
+    "update_product_benchmark": [("object", Product, "edit", "pid")],
+    "update_product_benchmark_summary": [("object", Product, "edit", "pid")],
 
     # -----------------------------------------------------------------------
     # Object / Tracked Files (dojo/object/views.py  ->  dojo/object/urls.py)
     # -----------------------------------------------------------------------
-    "new_object": [("object", Product, Permissions.Product_Tracking_Files_Add, "pid")],
-    "view_objects": [("object", Product, Permissions.Product_Tracking_Files_View, "pid")],
-    "edit_object": [("object", Product, Permissions.Product_Tracking_Files_Edit, "pid")],
-    "delete_object": [("object", Product, Permissions.Product_Tracking_Files_Delete, "pid")],
+    "new_object": [("object", Product, "add", "pid")],
+    "view_objects": [("object", Product, "view", "pid")],
+    "edit_object": [("object", Product, "edit", "pid")],
+    "delete_object": [("object", Product, "delete", "pid")],
 
     # -----------------------------------------------------------------------
     # Note Type (dojo/note_type/views.py  ->  dojo/note_type/urls.py)
@@ -360,10 +359,10 @@ URL_PERMISSIONS = {
     # Survey / Questionnaire (dojo/survey/views.py  ->  dojo/survey/urls.py)
     # -----------------------------------------------------------------------
     # Engagement-scoped questionnaire views
-    "delete_engagement_survey": [("object", Engagement, Permissions.Engagement_Edit, "eid")],
-    "assign_questionnaire": [("object", Engagement, Permissions.Engagement_Edit, "eid")],
-    "view_questionnaire": [("object", Engagement, Permissions.Engagement_View, "eid")],
-    "add_questionnaire": [("object", Engagement, Permissions.Engagement_Edit, "eid")],
+    "delete_engagement_survey": [("object", Engagement, "edit", "eid")],
+    "assign_questionnaire": [("object", Engagement, "edit", "eid")],
+    "view_questionnaire": [("object", Engagement, "view", "eid")],
+    "add_questionnaire": [("object", Engagement, "edit", "eid")],
 
     # Global questionnaire management
     "edit_questionnaire": [("config", "dojo.change_engagement_survey")],

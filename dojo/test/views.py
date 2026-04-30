@@ -24,7 +24,6 @@ from django.views.decorators.vary import vary_on_cookie
 
 import dojo.finding.helper as finding_helper
 from dojo.authorization.authorization import user_has_permission_or_403
-from dojo.authorization.roles_permissions import Permissions
 from dojo.celery_dispatch import dojo_dispatch_task
 from dojo.engagement.queries import get_authorized_engagements
 from dojo.filters import FindingFilter, FindingFilterWithoutObjectLookups, TemplateFindingFilter, TestImportFilter
@@ -93,7 +92,7 @@ deduplicationLogger = logging.getLogger("dojo.specific-loggers.deduplication")
 
 class ViewTest(View):
     def get_test(self, test_id: int):
-        test_prefetched = get_authorized_tests(Permissions.Test_View)
+        test_prefetched = get_authorized_tests("view")
         test_prefetched = test_prefetched.annotate(total_reimport_count=Count("test_import__id", distinct=True))
         return get_object_or_404(test_prefetched, pk=test_id)
 
@@ -226,9 +225,9 @@ class ViewTest(View):
         # Get the initial objects
         test = self.get_test(test_id)
         # Make sure the user is authorized
-        user_has_permission_or_403(request.user, test, Permissions.Test_View)
+        user_has_permission_or_403(request.user, test, "view")
         # Quick perms check to determine if the user has access to add a note to the test
-        user_has_permission_or_403(request.user, test, Permissions.Note_Add)
+        user_has_permission_or_403(request.user, test, "add")
         # Set up the initial context
         context = self.get_initial_context(request, test)
         # Render the form
@@ -238,9 +237,9 @@ class ViewTest(View):
         # Get the initial objects
         test = self.get_test(test_id)
         # Make sure the user is authorized
-        user_has_permission_or_403(request.user, test, Permissions.Test_View)
+        user_has_permission_or_403(request.user, test, "view")
         # Quick perms check to determine if the user has access to add a note to the test
-        user_has_permission_or_403(request.user, test, Permissions.Note_Add)
+        user_has_permission_or_403(request.user, test, "add")
         # Set up the initial context
         context = self.get_initial_context(request, test)
         # Determine the validity of the form
@@ -332,7 +331,7 @@ def delete_test(request, tid):
 def copy_test(request, tid):
     test = get_object_or_404(Test, id=tid)
     product = test.engagement.product
-    engagement_list = get_authorized_engagements(Permissions.Engagement_Edit).filter(product=product)
+    engagement_list = get_authorized_engagements("edit").filter(product=product)
     form = CopyTestForm(engagements=engagement_list)
 
     if request.method == "POST":
@@ -379,7 +378,7 @@ def test_calendar(request):
         raise Resolver404
 
     if "lead" not in request.GET or "0" in request.GET.getlist("lead"):
-        tests = get_authorized_tests(Permissions.Test_View)
+        tests = get_authorized_tests("view")
     else:
         filters = []
         leads = request.GET.getlist("lead", "")
@@ -387,7 +386,7 @@ def test_calendar(request):
             leads.remove("-1")
             filters.append(Q(lead__isnull=True))
         filters.append(Q(lead__in=leads))
-        tests = get_authorized_tests(Permissions.Test_View).filter(reduce(operator.or_, filters))
+        tests = get_authorized_tests("view").filter(reduce(operator.or_, filters))
 
     tests = tests.prefetch_related("test_type", "lead", "engagement__product")
 
@@ -399,7 +398,7 @@ def test_calendar(request):
         "caltype": "tests",
         "leads": request.GET.getlist("lead", ""),
         "tests": tests,
-        "users": get_authorized_users(Permissions.Test_View)})
+        "users": get_authorized_users("view")})
 
 
 def test_ics(request, tid):
@@ -630,7 +629,7 @@ class AddFindingView(View):
         # Get the initial objects
         test = self.get_test(test_id)
         # Make sure the user is authorized
-        user_has_permission_or_403(request.user, test, Permissions.Finding_Add)
+        user_has_permission_or_403(request.user, test, "add")
         # Set up the initial context
         context = self.get_initial_context(request, test)
         # Render the form
@@ -640,7 +639,7 @@ class AddFindingView(View):
         # Get the initial objects
         test = self.get_test(test_id)
         # Make sure the user is authorized
-        user_has_permission_or_403(request.user, test, Permissions.Finding_Add)
+        user_has_permission_or_403(request.user, test, "add")
         # Set up the initial context
         context = self.get_initial_context(request, test)
         # Process the form
@@ -658,7 +657,7 @@ class AddFindingView(View):
 def add_finding_from_template(request, tid, fid):
     jform = None
     test = get_object_or_404(Test, id=tid)
-    user_has_permission_or_403(request.user, test, Permissions.Finding_Add)
+    user_has_permission_or_403(request.user, test, "add")
     template = get_object_or_404(Finding_Template, id=fid)
     findings = Finding_Template.objects.all()
     push_all_jira_issues = jira_services.is_push_all_issues(template)
@@ -893,7 +892,7 @@ class ReImportScanResultsView(View):
         # Get the test object
         test = get_object_or_404(Test, id=test_id)
         # Ensure the supplied user has access to import to the engagement or product
-        user_has_permission_or_403(request.user, test, Permissions.Import_Scan_Result)
+        user_has_permission_or_403(request.user, test, "import")
         # by default we keep a trace of the scan_type used to create the test
         # if it's not here, we use the "name" of the test type
         # this feature exists to provide custom label for tests for some parsers

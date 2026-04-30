@@ -56,7 +56,6 @@ from dojo.authorization.models import (
     Product_Type_Member,
     Role,
 )
-from dojo.authorization.roles_permissions import Permissions
 from dojo.celery_dispatch import dojo_dispatch_task
 from dojo.cred.queries import get_authorized_cred_mappings
 from dojo.endpoint.queries import (
@@ -287,7 +286,7 @@ class DojoGroupViewSet(
     )
 
     def get_queryset(self):
-        return get_authorized_groups(Permissions.Group_View).distinct()
+        return get_authorized_groups("view").distinct()
 
 
 # Authorization: object-based
@@ -305,7 +304,7 @@ class DojoGroupMemberViewSet(
     )
 
     def get_queryset(self):
-        return get_authorized_group_members(Permissions.Group_View).distinct()
+        return get_authorized_group_members("view").distinct()
 
     @extend_schema(
         exclude=True,
@@ -352,7 +351,7 @@ class EndPointViewSet(
             Finding.objects.filter(endpoints=OuterRef("pk"), active=True),
             group_field="endpoints",
         )
-        return get_authorized_endpoints(Permissions.Location_View).annotate(
+        return get_authorized_endpoints("view").annotate(
             active_finding_count=Coalesce(active_finding_subquery, Value(0)),
         ).distinct()
 
@@ -424,7 +423,7 @@ class EndpointStatusViewSet(
 
     def get_queryset(self):
         return get_authorized_endpoint_status(
-            Permissions.Location_View,
+            "view",
         ).distinct()
 
 
@@ -461,7 +460,7 @@ class EngagementViewSet(
 
     def get_queryset(self):
         return (
-            get_authorized_engagements(Permissions.Engagement_View)
+            get_authorized_engagements("view")
             .prefetch_related("notes", "risk_acceptance", "files")
             .distinct()
         )
@@ -764,7 +763,7 @@ class RiskAcceptanceViewSet(
 
     def get_queryset(self):
         return (
-            get_authorized_risk_acceptances(Permissions.Risk_Acceptance)
+            get_authorized_risk_acceptances("edit")
             .prefetch_related(
                 "notes", "engagement_set", "owner", "accepted_findings",
             )
@@ -880,7 +879,7 @@ class AppAnalysisViewSet(
     )
 
     def get_queryset(self):
-        return get_authorized_app_analysis(Permissions.Product_View)
+        return get_authorized_app_analysis("view")
 
 
 # Authorization: object-based
@@ -962,7 +961,7 @@ class CredentialsMappingViewSet(
     )
 
     def get_queryset(self):
-        return get_authorized_cred_mappings(Permissions.Credential_View)
+        return get_authorized_cred_mappings("view")
 
     @extend_schema(
         deprecated=True,
@@ -1095,7 +1094,7 @@ class FindingViewSet(
     def get_queryset(self):
         if settings.V3_FEATURE_LOCATIONS:
             findings = get_authorized_findings(
-                Permissions.Finding_View,
+                "view",
             ).prefetch_related(
                 "locations__location__url",
                 "reviewers",
@@ -1119,7 +1118,7 @@ class FindingViewSet(
         else:
             # TODO: Delete this after the move to Locations
             findings = get_authorized_findings(
-                Permissions.Finding_View,
+                "view",
             ).prefetch_related(
                 "endpoints",
                 "reviewers",
@@ -1831,7 +1830,7 @@ class ProductAPIScanConfigurationViewSet(
 
     def get_queryset(self):
         return get_authorized_product_api_scan_configurations(
-            Permissions.Product_API_Scan_Configuration_View,
+            "view",
         )
 
 
@@ -1851,7 +1850,7 @@ class DojoMetaViewSet(
     )
 
     def get_queryset(self):
-        return get_authorized_dojo_meta(Permissions.Product_View)
+        return get_authorized_dojo_meta("view")
 
     @extend_schema(
         methods=["post", "patch"],
@@ -1888,9 +1887,9 @@ class DojoMetaViewSet(
     def process_post(self, request):
         data = request.data
         parents = self._fetch_and_authorize_parents(request, {
-            "product": (Product, Permissions.Product_Edit),
-            "finding": (Finding, Permissions.Finding_Edit),
-            "endpoint": (Endpoint, Permissions.Location_Edit),
+            "product": (Product, "edit"),
+            "finding": (Finding, "edit"),
+            "endpoint": (Endpoint, "edit"),
         })
         metalist = data.get("metadata")
         for metadata in metalist:
@@ -1908,9 +1907,9 @@ class DojoMetaViewSet(
     def process_patch(self, request):
         data = request.data
         parents = self._fetch_and_authorize_parents(request, {
-            "product": (Product, Permissions.Product_Edit),
-            "finding": (Finding, Permissions.Finding_Edit),
-            "endpoint": (Endpoint, Permissions.Location_Edit),
+            "product": (Product, "edit"),
+            "finding": (Finding, "edit"),
+            "endpoint": (Endpoint, "edit"),
         })
         metalist = data.get("metadata")
         for metadata in metalist:
@@ -1948,7 +1947,7 @@ class ProductViewSet(
     )
 
     def get_queryset(self):
-        return get_authorized_products(Permissions.Product_View).distinct()
+        return get_authorized_products("view").distinct()
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -2023,7 +2022,7 @@ class ProductMemberViewSet(
 
     def get_queryset(self):
         return get_authorized_product_members(
-            Permissions.Product_View,
+            "view",
         ).distinct()
 
     @extend_schema(
@@ -2051,7 +2050,7 @@ class ProductGroupViewSet(
 
     def get_queryset(self):
         return get_authorized_product_groups(
-            Permissions.Product_Group_View,
+            "view",
         ).distinct()
 
     @extend_schema(
@@ -2086,7 +2085,7 @@ class ProductTypeViewSet(
 
     def get_queryset(self):
         return get_authorized_product_types(
-            Permissions.Product_Type_View,
+            "view",
         ).distinct()
 
     # Overwrite perfom_create of CreateModelMixin to add current user as owner
@@ -2168,7 +2167,7 @@ class ProductTypeMemberViewSet(
 
     def get_queryset(self):
         return get_authorized_product_type_members(
-            Permissions.Product_Type_View,
+            "view",
         ).distinct()
 
     def destroy(self, request, *args, **kwargs):
@@ -2210,7 +2209,7 @@ class ProductTypeGroupViewSet(
 
     def get_queryset(self):
         return get_authorized_product_type_groups(
-            Permissions.Product_Type_Group_View,
+            "view",
         ).distinct()
 
     @extend_schema(
@@ -2242,7 +2241,7 @@ class StubFindingsViewSet(
 
     def get_queryset(self):
         return get_authorized_stub_findings(
-            Permissions.Finding_View,
+            "view",
         ).distinct()
 
     def get_serializer_class(self):
@@ -2325,7 +2324,7 @@ class TestsViewSet(
 
     def get_queryset(self):
         return (
-            get_authorized_tests(Permissions.Test_View)
+            get_authorized_tests("view")
             .prefetch_related("notes", "files")
             .distinct()
         )
@@ -2560,7 +2559,7 @@ class TestImportViewSet(
 
     def get_queryset(self):
         return get_authorized_test_imports(
-            Permissions.Test_View,
+            "view",
         ).prefetch_related(
             "test_import_finding_action_set",
             "findings_affected",
@@ -2636,7 +2635,7 @@ class ToolProductSettingsViewSet(
     )
 
     def get_queryset(self):
-        return get_authorized_tool_product_settings(Permissions.Product_View)
+        return get_authorized_tool_product_settings("view")
 
 
 # Authorization: configuration
@@ -2822,7 +2821,7 @@ class ImportScanView(mixins.CreateModelMixin, viewsets.GenericViewSet):
             pghistory.context(test_id=test_id)
 
     def get_queryset(self):
-        return get_authorized_tests(Permissions.Import_Scan_Result)
+        return get_authorized_tests("import")
 
 
 # Authorization: authenticated users, DjangoModelPermissions
@@ -2854,7 +2853,7 @@ class EndpointMetaImporterView(
         serializer.save()
 
     def get_queryset(self):
-        return get_authorized_products(Permissions.Location_Edit)
+        return get_authorized_products("edit")
 
 
 # Authorization: configuration
@@ -2886,7 +2885,7 @@ class LanguageViewSet(
     )
 
     def get_queryset(self):
-        return get_authorized_languages(Permissions.Language_View).distinct()
+        return get_authorized_languages("view").distinct()
 
 
 # Authorization: object-based
@@ -2900,7 +2899,7 @@ class ImportLanguagesView(mixins.CreateModelMixin, viewsets.GenericViewSet):
     )
 
     def get_queryset(self):
-        return get_authorized_products(Permissions.Language_Add)
+        return get_authorized_products("add")
 
 
 # Authorization: object-based
@@ -2942,7 +2941,7 @@ class ReImportScanView(mixins.CreateModelMixin, viewsets.GenericViewSet):
     )
 
     def get_queryset(self):
-        return get_authorized_tests(Permissions.Import_Scan_Result)
+        return get_authorized_tests("import")
 
     def perform_create(self, serializer):
         auto_create = AutoCreateContextManager()
@@ -3022,7 +3021,7 @@ class BurpRawRequestResponseViewSet(
         return (
             BurpRawRequestResponse.objects.filter(
                 finding__in=get_authorized_findings(
-                    Permissions.Finding_View,
+                    "view",
                 ),
             )
             .exclude(
@@ -3437,7 +3436,7 @@ class EngagementPresetsViewset(
     )
 
     def get_queryset(self):
-        return get_authorized_engagement_presets(Permissions.Product_View)
+        return get_authorized_engagement_presets("view")
 
 
 class NetworkLocationsViewset(
@@ -3630,7 +3629,7 @@ class QuestionnaireEngagementSurveyViewSet(
         # Safely get the engagement
         engagement = get_object_or_404(Engagement.objects, pk=engagement_id)
         # Verify the user has permission to edit the engagement
-        user_has_permission_or_403(request.user, engagement, Permissions.Engagement_Edit)
+        user_has_permission_or_403(request.user, engagement, "edit")
         # Link the engagement
         answered_survey, _ = Answered_Survey.objects.get_or_create(engagement=engagement, survey=engagement_survey)
         # Send a favorable response
