@@ -58,8 +58,6 @@ from dojo.api_v2.views import (
     LanguageViewSet,
     NotesViewSet,
     NoteTypeViewSet,
-    NotificationsViewSet,
-    NotificationWebhooksViewSet,
     ProductAPIScanConfigurationViewSet,
     ProductTypeViewSet,
     ProductViewSet,
@@ -132,6 +130,7 @@ from dojo.models import (
     User,
     UserContactInfo,
 )
+from dojo.notifications.api.views import NotificationsViewSet, NotificationWebhooksViewSet
 from dojo.organization.api.views import (
     OrganizationViewSet,
 )
