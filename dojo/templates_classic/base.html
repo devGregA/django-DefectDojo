@@ -191,14 +191,6 @@
                                     </li>
                                 {% endblock %}
                                 {% if request.user.is_authenticated %}
-                                    {% if SAML2_LOGOUT_URL != '' %}
-                                        <li>
-                                            <a href="{{ SAML2_LOGOUT_URL }}">
-                                                <i class="fa-solid fa-right-from-bracket fa-fw"></i>
-                                                {% trans "SAML Logout" %}
-                                            </a>
-                                        </li>
-                                    {% endif %}
                                     {% if SHOW_PLG_LINK %}
                                         <li>
                                             <a href="https://cloud.defectdojo.com/accounts/onboarding/plg_step_1">
