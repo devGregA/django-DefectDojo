@@ -15,10 +15,7 @@
             <legend>{% trans "Additional Contact Information" %}</legend>
             {% include "dojo/form_fields.html" with form=contact_form %}
         </fieldset>
-        <fieldset>
-            <legend>{% trans "Global Role" %}</legend>
-            {% include "dojo/form_fields.html" with form=global_role_form %}
-        </fieldset>
+        {% block global_role_form %}{% endblock %}
         <div class="form-group">
             <div class="col-sm-offset-2 col-sm-10">
                 <input class="btn btn-primary" type="submit" name="add_user" value="{% trans "Submit" %}"/>
