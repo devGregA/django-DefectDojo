@@ -30,7 +30,7 @@ from rest_framework.exceptions import PermissionDenied as RFPermissionDenied
 from rest_framework.exceptions import ValidationError as RFValidationError
 
 from dojo.authorization.authorization import user_is_superuser_or_global_owner
-from dojo.authorization.models import Dojo_Group_Member, Product_Member, Product_Type_Member
+from dojo.authorization.models import Dojo_Group_Member, Global_Role, Product_Member, Product_Type_Member
 from dojo.decorators import dojo_ratelimit
 from dojo.filters import UserFilter
 from dojo.forms import (
@@ -257,7 +257,10 @@ def view_profile(request):
     user_contact = user.usercontactinfo if hasattr(user, "usercontactinfo") else None
     contact_form = UserContactInfoForm(user=user) if user_contact is None else UserContactInfoForm(instance=user_contact, user=user)
 
-    global_role = user.global_role if hasattr(user, "global_role") else None
+    # Global_Role.user uses related_name="+", so user.global_role is not a
+    # reverse accessor — look it up via the forward FK so we update the
+    # existing row instead of trying to insert a duplicate.
+    global_role = Global_Role.objects.filter(user=user).first()
     if global_role is None:
         previous_global_role = None
         global_role_form = GlobalRoleForm()
@@ -422,7 +425,9 @@ def edit_user(request, uid):
     user_contact = user.usercontactinfo if hasattr(user, "usercontactinfo") else None
     contact_form = UserContactInfoForm(user=user) if user_contact is None else UserContactInfoForm(instance=user_contact, user=user)
 
-    global_role = user.global_role if hasattr(user, "global_role") else None
+    # Look up Global_Role via the forward FK; user.global_role is not a
+    # reverse accessor (related_name="+").
+    global_role = Global_Role.objects.filter(user=user).first()
     global_role_form = GlobalRoleForm() if global_role is None else GlobalRoleForm(instance=global_role)
 
     if request.method == "POST":
@@ -521,7 +526,9 @@ def delete_user(request, uid):
                                         messages.ERROR,
                                         _("Only superusers are allowed to delete superusers. User was not removed."),
                                         extra_tags="alert-danger")
-                elif not request.user.is_superuser and hasattr(user, "global_role") and user.global_role.role:
+                elif (not request.user.is_superuser
+                      and (existing_global_role := Global_Role.objects.filter(user=user).first())
+                      and existing_global_role.role):
                     messages.add_message(request,
                                         messages.ERROR,
                                         _("Only superusers are allowed to delete users with a global role. User was not removed."),

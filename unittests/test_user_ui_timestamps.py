@@ -102,3 +102,32 @@ class TestUserUITimestamps(TestCase):
         self.client.force_login(admin)
         resp = self.client.get(reverse("users"))
         self.assertEqual(resp.status_code, 200)
+
+    def test_profile_save_does_not_duplicate_global_role(self):
+        # Regression: /profile POST previously did
+        #   global_role = user.global_role if hasattr(user, "global_role") else None
+        # Under legacy authorization Global_Role.user uses related_name="+"
+        # so the hasattr always returned False, the form bound to a fresh
+        # Global_Role with no PK, and global_role.save() INSERTed a second
+        # row that violated the unique(user_id) constraint and 500'd. The
+        # forward-FK lookup must find the existing row and UPDATE it.
+        from dojo.authorization.models import Global_Role, Role
+
+        admin = Dojo_User.objects.get(username="admin")
+        # Seed an existing Global_Role row for this user (mirrors a Pro
+        # snapshot or a stale legacy backfill).
+        owner_role = Role.objects.filter(name="Owner").first()
+        Global_Role.objects.update_or_create(user=admin, defaults={"role": owner_role})
+
+        self.client.force_login(admin)
+        resp = self.client.post(reverse("view_profile"), data={
+            "username": admin.username,
+            "first_name": admin.first_name,
+            "last_name": admin.last_name,
+            "email": admin.email,
+            "role": owner_role.id if owner_role else "",
+        })
+        # Must not 500. Either the form bounces back (200) or saves (302).
+        self.assertIn(resp.status_code, (200, 302))
+        # And there must still be exactly one Global_Role row for admin.
+        self.assertEqual(Global_Role.objects.filter(user=admin).count(), 1)

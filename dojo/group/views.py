@@ -134,8 +134,10 @@ class EditGroup(View):
         return get_object_or_404(Dojo_Group, id=group_id)
 
     def get_global_role(self, group: Dojo_Group):
-        # Try to pull the global role from the group object
-        return group.global_role if hasattr(group, "global_role") else None
+        # Global_Role.group uses related_name="+", so group.global_role is
+        # not a reverse accessor — look up via the forward FK so we update
+        # the existing row instead of inserting a duplicate.
+        return Global_Role.objects.filter(group=group).first()
 
     def get_group_form(self, request: HttpRequest, group: Dojo_Group):
         # Set up the args for the form
