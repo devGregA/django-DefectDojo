@@ -87,9 +87,13 @@ def user_has_permission(user: Dojo_User, obj: Model, permission) -> bool:
       3. action → mapped from Permissions / string / Action via permission_to_action
       4. SuperuserOnly action → deny (already handled superuser above)
       5. StaffOnly / Delete → require is_staff
-      6. View / Edit / Add / Import → user.is_staff for non-View, or membership
-         in the obj.authorized_users chain (climbing Product_Type ←
-         Product ← Engagement ← Test ← Finding when needed).
+      6. View / Edit / Add / Import → is_staff bypasses unconditionally,
+         otherwise check membership in the obj.authorized_users chain
+         (climbing Product_Type ← Product ← Engagement ← Test ← Finding).
+         This matches the pre-Auth-V2 (pre-2020) behavior where is_staff
+         was an absolute bypass on every perm_type — see
+         dojo/user/helper.py at commit e7805aa14~ for the historical
+         reference.
 
     The Member / Group / Cred_Mapping / etc. carrier objects don't expose
     authorized_users themselves; they delegate to their wrapped product
@@ -125,12 +129,12 @@ def _user_authorized_for(user: Dojo_User, obj: Model, action: Action) -> bool:
         return False
 
     if isinstance(obj, Product_Type):
-        if user.is_staff and action != Action.View:
+        if user.is_staff:
             return True
         return obj.authorized_users.filter(pk=user.pk).exists()
 
     if isinstance(obj, Product):
-        if user.is_staff and action != Action.View:
+        if user.is_staff:
             return True
         if obj.authorized_users.filter(pk=user.pk).exists():
             return True

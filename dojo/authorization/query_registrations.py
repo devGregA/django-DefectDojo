@@ -29,7 +29,7 @@ from dojo.authorization.models import (
     Product_Type_Member,
 )
 from dojo.authorization.query_filters import register_auth_filter
-from dojo.authorization.roles_permissions import Action, permission_to_action
+from dojo.authorization.roles_permissions import permission_to_action
 from dojo.location.models import Location, LocationFindingReference, LocationProductReference
 from dojo.models import (
     App_Analysis,
@@ -65,13 +65,16 @@ def _resolve_user(user):
 def _is_unrestricted(user, action):
     """
     Returns True if the user can see every object regardless of membership.
-    Superuser always; staff for non-View actions (legacy semantics).
+    Superuser and staff both bypass — matches pre-2020 behavior where
+    is_staff was an absolute bypass for every perm_type. The ``action``
+    arg is retained for callers that may want to gate StaffOnly /
+    SuperuserOnly differently in the future.
     """
     if not user or getattr(user, "is_anonymous", False):
         return False
     if user.is_superuser:
         return True
-    return bool(user.is_staff and action != Action.View)
+    return bool(user.is_staff)
 
 
 def _authorized_product_ids(user):
