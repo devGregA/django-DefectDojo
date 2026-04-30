@@ -92,3 +92,13 @@ class TestUserUITimestamps(TestCase):
         self.assertEqual(resp.status_code, 302)
         uci = UserContactInfo.objects.get(user=user)
         self.assertEqual(uci.password_last_reset, fixed)
+
+    def test_user_list_page_renders(self):
+        # Regression: /user previously called select_related("global_role"),
+        # but Global_Role.user uses related_name="+" under legacy
+        # authorization, so Dojo_User has no `global_role` reverse accessor.
+        # The select_related raised FieldError and 500'd the page.
+        admin = Dojo_User.objects.get(username="admin")
+        self.client.force_login(admin)
+        resp = self.client.get(reverse("users"))
+        self.assertEqual(resp.status_code, 200)

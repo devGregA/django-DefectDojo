@@ -330,7 +330,7 @@ def change_password(request):
 def user(request):
     page_name = _("All Users")
     users = Dojo_User.objects.all() \
-        .select_related("usercontactinfo", "global_role") \
+        .select_related("usercontactinfo") \
         .order_by("username", "last_name", "first_name")
     users = UserFilter(request.GET, queryset=users)
     paged_users = get_page_items(request, users.qs, 25)
