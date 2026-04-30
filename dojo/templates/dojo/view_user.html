@@ -101,8 +101,69 @@
                 </table>
             </div>
         </div>
-        {% block user_product_types_panel %}{% endblock %}
-        {% block user_products_panel %}{% endblock %}
+        {% block user_product_types_panel %}
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <div class="clearfix">
+                    <h4 class="pull-left">{{ labels.ORG_USERS_LABEL }}</h4>
+                </div>
+            </div>
+            {% if accessible_product_types %}
+            <div class="table-responsive">
+                <table class="tablesorter-bootstrap table table-condensed table-striped">
+                    <thead>
+                        <tr>
+                            <th>{{ labels.ORG_LABEL }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pt in accessible_product_types %}
+                        <tr>
+                            <td name="member_product_type"><a href="{% url 'view_product_type' pt.id %}">{{ pt.name }}</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="panel-body">
+                <small class="text-muted"><em>{{ labels.ORG_USERS_NO_ACCESS_MESSAGE }}</em></small>
+            </div>
+            {% endif %}
+        </div>
+        {% endblock user_product_types_panel %}
+        {% block user_products_panel %}
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <div class="clearfix">
+                    <h4 class="pull-left">{{ labels.ASSET_USERS_ACCESS_LABEL }}</h4>
+                </div>
+            </div>
+            {% if accessible_products %}
+            <div class="table-responsive">
+                <table class="tablesorter-bootstrap table table-condensed table-striped">
+                    <thead>
+                        <tr>
+                            <th>{{ labels.ASSET_LABEL }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in accessible_products %}
+                        <tr>
+                            <td name="member_product"><a href="{% url 'view_product' p.id %}">{{ p.name }}</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="panel-body">
+                <small class="text-muted"><em>{{ labels.ASSET_USERS_NO_ACCESS_MESSAGE }}</em></small>
+            </div>
+            {% endif %}
+        </div>
+        {% endblock user_products_panel %}
+
         {% block user_groups_panel %}{% endblock %}
     </div>
     <div class="col-md-4">

@@ -49,7 +49,7 @@ from dojo.forms import (
 )
 from dojo.group.queries import get_authorized_group_members_for_user
 from dojo.labels import get_labels
-from dojo.models import Alerts, Dojo_User, UserContactInfo
+from dojo.models import Alerts, Dojo_User, Product, Product_Type, UserContactInfo
 from dojo.product.queries import get_authorized_product_members_for_user
 from dojo.product_type.queries import get_authorized_product_type_members_for_user
 from dojo.user.authentication import reset_token_for_user
@@ -408,6 +408,16 @@ def add_user(request):
 
 def view_user(request, uid):
     user = get_object_or_404(Dojo_User, id=uid)
+    # Legacy access lists: Product / Product_Type the user is on
+    # via authorized_users (with cascade Product_Type → Product).
+    accessible_product_types = Product_Type.objects.filter(
+        authorized_users=user,
+    ).order_by("name")
+    accessible_products = Product.objects.filter(
+        Q(authorized_users=user) | Q(prod_type__authorized_users=user),
+    ).distinct().order_by("name")
+    # kept for Pro template override `{% block user_product_types_panel %}` /
+    # `{% block user_products_panel %}` at pro/templates/dojo/view_user.html
     product_members = get_authorized_product_members_for_user(user, "view")
     product_type_members = get_authorized_product_type_members_for_user(user, "view")
     group_members = get_authorized_group_members_for_user(user)
@@ -416,6 +426,8 @@ def view_user(request, uid):
     add_breadcrumb(title=_("View User"), top_level=False, request=request)
     return render(request, "dojo/view_user.html", {
         "user": user,
+        "accessible_product_types": accessible_product_types,
+        "accessible_products": accessible_products,
         "product_members": product_members,
         "product_type_members": product_type_members,
         "group_members": group_members,
