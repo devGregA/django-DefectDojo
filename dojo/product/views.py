@@ -31,6 +31,7 @@ from dojo.authorization.models import (
     Product_Group,
     Product_Member,
 )
+from dojo.authorization.roles_permissions import Permissions
 from dojo.components.sql_group_concat import Sql_GroupConcat
 from dojo.filters import (
     EngagementFilter,
@@ -46,6 +47,7 @@ from dojo.filters import (
     ProductFilterWithoutObjectLookups,
 )
 from dojo.forms import (
+    Add_Product_AuthorizedUsersForm,
     Add_Product_GroupForm,
     Add_Product_MemberForm,
     AdHocFindingForm,
@@ -78,6 +80,7 @@ from dojo.models import (
     Benchmark_Product_Summary,
     Benchmark_Type,
     BurpRawRequestResponse,
+    Dojo_User,
     DojoMeta,
     Endpoint,
     Endpoint_Status,
@@ -252,6 +255,9 @@ def view_product(request, pid):
                                       .prefetch_related("members") \
                                       .prefetch_related("prod_type__members")
     prod = get_object_or_404(prod_query, id=pid)
+    authorized_users = prod.authorized_users.order_by("first_name", "last_name", "username")
+    # kept for Pro template override `{% block rbac_members_panel %}` /
+    # `{% block rbac_groups_panel %}` at pro/templates/dojo/view_product_details.html
     product_members = get_authorized_members_for_product(prod, "view")
     global_product_members = get_authorized_global_members_for_product(prod, "view")
     product_type_members = get_authorized_members_for_product_type(prod.prod_type, "view")
@@ -333,6 +339,7 @@ def view_product(request, pid):
         "benchmarks_percents": benchAndPercent,
         "benchmarks": benchmarks,
         "benchmark_type": product_tab.benchmark_type,
+        "authorized_users": authorized_users,
         "product_members": product_members,
         "global_product_members": global_product_members,
         "product_type_members": product_type_members,
@@ -1776,6 +1783,46 @@ def delete_product_member(request, memberid):
         "form": memberform,
         "product_tab": product_tab,
     })
+
+
+def add_product_authorized_users(request, pid):
+    product = get_object_or_404(Product, pk=pid)
+    user_has_permission_or_403(request.user, product, Permissions.Product_Manage_Members)
+    page_name = _("Add Authorized Users")
+    form = Add_Product_AuthorizedUsersForm(product=product)
+    if request.method == "POST":
+        form = Add_Product_AuthorizedUsersForm(request.POST, product=product)
+        if form.is_valid():
+            users = form.cleaned_data["users"]
+            product.authorized_users.add(*users)
+            messages.add_message(
+                request, messages.SUCCESS,
+                _("Added %(count)d user(s) to authorized users.") % {"count": len(users)},
+                extra_tags="alert-success",
+            )
+            return HttpResponseRedirect(reverse("view_product", args=(pid,)))
+    product_tab = Product_Tab(product, title=page_name, tab="settings")
+    return render(request, "dojo/new_product_authorized_users.html", {
+        "name": page_name,
+        "product": product,
+        "form": form,
+        "product_tab": product_tab,
+    })
+
+
+def delete_product_authorized_user(request, pid, user_id):
+    product = get_object_or_404(Product, pk=pid)
+    user_has_permission_or_403(request.user, product, Permissions.Product_Manage_Members)
+    if request.method != "POST":
+        raise PermissionDenied
+    user = get_object_or_404(Dojo_User, pk=user_id)
+    product.authorized_users.remove(user)
+    messages.add_message(
+        request, messages.SUCCESS,
+        _("Removed %(username)s from authorized users.") % {"username": user.username},
+        extra_tags="alert-success",
+    )
+    return HttpResponseRedirect(reverse("view_product", args=(pid,)))
 
 
 def add_api_scan_configuration(request, pid):

@@ -272,24 +272,28 @@
 </div>
 {% endif %}
 
+    {# Authorized Users panel — source of truth for access under legacy
+       authorization. The rbac_members_panel / rbac_groups_panel hooks
+       below are empty here; Pro overrides them at
+       pro/templates/dojo/view_product_details.html to render Members /
+       Groups panels driven by Pro's RBAC tables. #}
+    {% block authorized_users_panel %}
     <div class="panel panel-default">
         <div class="panel-heading">
             <div class="clearfix">
-                <h4 class="pull-left">{% trans "Members" %}</h4>
+                <h4 class="pull-left">{% trans "Authorized Users" %}</h4>
                 &nbsp;
-                <a href="https://docs.defectdojo.com/en/customize_dojo/user_management/about_perms_and_roles/#productproduct-type-membership--roles" target="_blank">
-                    <i class="fa-solid fa-circle-question"></i></a>
                 {% if prod|has_object_permission:"Product_Manage_Members" %}
                 <div class="dropdown pull-right">
-                    <button class="btn btn-primary dropdown-toggle" label="Actions" type="button" id="dropdownMenuAddProductMember"
-                            data-toggle="dropdown" aria-expanded="true" aria-label="Add Product Member">
+                    <button class="btn btn-primary dropdown-toggle" label="Actions" type="button" id="dropdownMenuAddAuthorizedUsers"
+                            data-toggle="dropdown" aria-expanded="true" aria-label="Add Authorized Users">
                         <span class="fa-solid fa-bars"></span>
                         <span class="caret"></span>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-right" role="menu" aria-labelledby="dropdownMenu1">
+                    <ul class="dropdown-menu dropdown-menu-right" role="menu" aria-labelledby="dropdownMenuAddAuthorizedUsers">
                         <li role="presentation">
-                            <a id="addProductMember" href="{% url 'add_product_member' prod.id %}">
-                                <i class="fa-solid fa-plus"></i>{% trans "Add Users" %}
+                            <a id="addAuthorizedUser" href="{% url 'add_product_authorized_users' prod.id %}">
+                                <i class="fa-solid fa-user-plus"></i>{% trans "Add Users" %}
                             </a>
                         </li>
                     </ul>
@@ -297,66 +301,34 @@
                 {% endif %}
             </div>
         </div>
-        {% if product_members or product_type_members or global_product_members %}
+        {% if authorized_users %}
             <div class="table-responsive">
                 <table class="tablesorter-bootstrap table table-condensed table-striped">
                     <thead>
                     <tr>
+                        {% if prod|has_object_permission:"Product_Manage_Members" %}
                         <th label="Actions"></th>
+                        {% endif %}
                         <th>{% trans "User" %}</th>
-                        <th>{% trans "Source" %}</th>
-                        <th>{% trans "Role" %}</th>
+                        <th>{% trans "Email" %}</th>
                     </tr>
                     </thead>
                     <tbody>
-                    {% for member in product_members %}
+                    {% for u in authorized_users %}
                         <tr>
+                            {% if prod|has_object_permission:"Product_Manage_Members" %}
                             <td>
-                                <ul>
-                                <li class="dropdown" style="list-style:none;position:absolute">
-                                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true" label="Actions" name="dropdownManageProductMember">&nbsp;<b class="fa-solid fa-ellipsis-vertical"></b>&nbsp;</a>
-                                    <ul class="dropdown-menu">
-                                        {% if prod|has_object_permission:"Product_Manage_Members" %}
-                                        <li>
-                                            <a name="editProductMember" href="{% url 'edit_product_member' member.id %}">
-                                            <i class="fa-solid fa-pen-to-square"></i>{% trans "Edit" %}</a>
-                                        </li>
-                                        {% endif %}
-                                        {% if member|has_object_permission:"Product_Member_Delete" %}
-                                        <li>
-                                            <a name="deleteProductMember" href="{% url 'delete_product_member' member.id %}">
-                                            <i class="fa-solid fa-trash"></i>{% trans "Delete" %}</a>
-                                        </li>
-                                        {% endif %}
-                                    </ul>
-                                </li>
-                                </ul>
+                                <form method="post" action="{% url 'delete_product_authorized_user' prod.id u.id %}"
+                                      onsubmit="return confirm('{% blocktrans with username=u.username %}Remove {{ username }} from authorized users?{% endblocktrans %}');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger" aria-label="Remove">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
                             </td>
-                            <td name="member_user">{{ member.user.get_full_name }}</td>
-                            <td>{{ labels.ASSET_USERS_MEMBER_LABEL }}</td>
-                            <td name="member_role">{{ member.role }}</td>
-                        </tr>
-                    {% endfor %}
-                    {% for member in product_type_members %}
-                        <tr>
-                            <td>
-                            </td>
-                            <td>{{ member.user.get_full_name }}</td>
-                            <td>
-                                <a class="" href="{% url 'view_product_type' member.product_type.id %}">
-                                    {{ labels.ORG_LABEL }}: {{ member.product_type }}
-                                </a>
-                            </td>
-                            <td>{{ member.role }}</td>
-                        </tr>
-                    {% endfor %}
-                    {% for member in global_product_members %}
-                        <tr>
-                            <td>
-                            </td>
-                            <td>{{ member.user.get_full_name }}</td>
-                            <td>Global role</td>
-                            <td>{{ member.role }}</td>
+                            {% endif %}
+                            <td name="authorized_user_username">{{ u.username }}</td>
+                            <td>{{ u.email|default:"" }}</td>
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -364,105 +336,14 @@
             </div>
         {% else %}
             <div class="panel-body">
-                <small class="text-muted"><em>{% trans "No members found." %}</em></small>
+                <small class="text-muted"><em>{% trans "No authorized users." %}</em></small>
             </div>
         {% endif %}
     </div>
+    {% endblock authorized_users_panel %}
 
-      <div class="panel panel-default">
-          <div class="panel-heading">
-              <div class="clearfix">
-                  <h4 class="pull-left">{% trans "Groups" %}</h4>
-                  &nbsp;
-                  <a href="https://docs.defectdojo.com/en/customize_dojo/user_management/about_perms_and_roles/#group-memberships" target="_blank">
-                      <i class="fa-solid fa-circle-question"></i></a>
-                  {% if prod|has_object_permission:"Product_Group_Add" %}
-                  <div class="dropdown pull-right">
-                      <button class="btn btn-primary dropdown-toggle" label="Actions" type="button" id="dropdownMenuAddProductGroup"
-                              data-toggle="dropdown" aria-expanded="true" aria-label="Add Product Group">
-                          <span class="fa-solid fa-bars"></span>
-                          <span class="caret"></span>
-                      </button>
-                      <ul class="dropdown-menu dropdown-menu-right" role="menu" aria-labelledby="dropdownMenu1">
-                          <li role="presentation">
-                              <a id="addProductGroup" href="{% url 'add_product_group' prod.id %}">
-                                  <i class="fa-solid fa-plus"></i>{% trans "Add Groups" %}
-                              </a>
-                          </li>
-                      </ul>
-                  </div>
-                  {% endif %}
-              </div>
-          </div>
-          {% if product_groups or product_type_groups or global_product_groups %}
-          <div class="table-responsive">
-              <table class="tablesorter-bootstrap table table-condensed table-striped">
-                  <thead>
-                  <tr>
-                      <th label="Actions"></th>
-                      <th>{% trans "Group" %}</th>
-                      <th>{% trans "Source" %}</th>
-                      <th>{% trans "Role" %}</th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  {% for group in product_groups %}
-                  <tr>
-                      <td>
-                          <ul>
-                              <li class="dropdown" style="list-style:none;position:absolute">
-                                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true" label="Actions" name="dropdownManageProductGroup">&nbsp;<b class="fa-solid fa-ellipsis-vertical"></b>&nbsp;</a>
-                                  <ul class="dropdown-menu">
-                                      {% if prod|has_object_permission:"Product_Group_Edit" %}
-                                      <li>
-                                          <a name="editProductGroup" href="{% url 'edit_product_group' group.id %}">
-                                              <i class="fa-solid fa-pen-to-square"></i>{% trans "Edit" %}</a>
-                                      </li>
-                                      {% endif %}
-                                      {% if group|has_object_permission:"Product_Group_Delete" %}
-                                      <li>
-                                          <a name="deleteProductGroup" href="{% url 'delete_product_group' group.id %}">
-                                              <i class="fa-solid fa-trash"></i>{% trans "Delete" %}</a>
-                                      </li>
-                                      {% endif %}
-                                  </ul>
-                              </li>
-                          </ul>
-                      </td>
-                      <td name="group_name">{{ group.group.name }}</td>
-                      <td name="group_source">{{ labels.ASSET_GROUPS_MEMBER_LABEL }}</td>
-                      <td name="group_role">{{ group.role }}</td>
-                  </tr>
-                  {% endfor %}
-                  {% for type_group in product_type_groups %}
-                  <tr>
-                      <td></td>
-                      <td>{{ type_group.group.name }}</td>
-                      <td>
-                          <a class="" href="{% url 'view_product_type' type_group.product_type.id %}">
-                              {{ type_group.product_type }}
-                          </a>
-                      </td>
-                      <td>{{ type_group.role }}</td>
-                  </tr>
-                  {% endfor %}
-                  {% for type_group in global_product_groups %}
-                  <tr>
-                      <td></td>
-                      <td>{{ type_group.group.name }}</td>
-                      <td>Global role</td>
-                      <td>{{ type_group.role }}</td>
-                  </tr>
-                  {% endfor %}
-                  </tbody>
-              </table>
-          </div>
-          {% else %}
-          <div class="panel-body">
-              <small class="text-muted"><em>{% trans "No groups found." %}</em></small>
-          </div>
-          {% endif %}
-      </div>
+    {% block rbac_members_panel %}{% endblock %}
+    {% block rbac_groups_panel %}{% endblock %}
 
 </div>
 <!-- Meta Data -->

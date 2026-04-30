@@ -3,6 +3,7 @@ from functools import partial
 
 from django.contrib import messages
 from django.contrib.admin.utils import NestedObjects
+from django.core.exceptions import PermissionDenied
 from django.db import DEFAULT_DB_ALIAS
 from django.db.models import OuterRef, Value
 from django.db.models.functions import Coalesce
@@ -12,10 +13,12 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
 
-from dojo.authorization.authorization import user_has_permission
+from dojo.authorization.authorization import user_has_permission, user_has_permission_or_403
 from dojo.authorization.models import Product_Type_Group, Product_Type_Member, Role
+from dojo.authorization.roles_permissions import Permissions
 from dojo.filters import ProductFilter, ProductFilterWithoutObjectLookups, ProductTypeFilter
 from dojo.forms import (
+    Add_Product_Type_AuthorizedUsersForm,
     Add_Product_Type_GroupForm,
     Add_Product_Type_MemberForm,
     Delete_Product_Type_GroupForm,
@@ -26,7 +29,7 @@ from dojo.forms import (
     Product_TypeForm,
 )
 from dojo.labels import get_labels
-from dojo.models import Finding, Product, Product_Type
+from dojo.models import Dojo_User, Finding, Product, Product_Type
 from dojo.product.queries import get_authorized_products
 from dojo.product_type.queries import (
     get_authorized_global_groups_for_product_type,
@@ -125,6 +128,9 @@ def add_product_type(request):
 def view_product_type(request, ptid):
     page_name = str(labels.ORG_READ_LABEL)
     pt = get_object_or_404(Product_Type, pk=ptid)
+    authorized_users = pt.authorized_users.order_by("first_name", "last_name", "username")
+    # kept for Pro template override `{% block rbac_members_panel %}` /
+    # `{% block rbac_groups_panel %}` at pro/templates/dojo/view_product_type.html
     members = get_authorized_members_for_product_type(pt, "view")
     global_members = get_authorized_global_members_for_product_type(pt, "view")
     groups = get_authorized_groups_for_product_type(pt, "view")
@@ -141,6 +147,7 @@ def view_product_type(request, ptid):
         "pt": pt,
         "products": products,
         "prod_filter": prod_filter,
+        "authorized_users": authorized_users,
         "groups": groups,
         "members": members,
         "global_groups": global_groups,
@@ -317,6 +324,45 @@ def delete_product_type_member(request, memberid):
         "memberid": memberid,
         "form": memberform,
     })
+
+
+def add_product_type_authorized_users(request, ptid):
+    pt = get_object_or_404(Product_Type, pk=ptid)
+    user_has_permission_or_403(request.user, pt, Permissions.Product_Type_Manage_Members)
+    page_name = _("Add Authorized Users")
+    form = Add_Product_Type_AuthorizedUsersForm(product_type=pt)
+    if request.method == "POST":
+        form = Add_Product_Type_AuthorizedUsersForm(request.POST, product_type=pt)
+        if form.is_valid():
+            users = form.cleaned_data["users"]
+            pt.authorized_users.add(*users)
+            messages.add_message(
+                request, messages.SUCCESS,
+                _("Added %(count)d user(s) to authorized users.") % {"count": len(users)},
+                extra_tags="alert-success",
+            )
+            return HttpResponseRedirect(reverse("view_product_type", args=(ptid,)))
+    add_breadcrumb(title=page_name, top_level=False, request=request)
+    return render(request, "dojo/new_product_type_authorized_users.html", {
+        "name": page_name,
+        "pt": pt,
+        "form": form,
+    })
+
+
+def delete_product_type_authorized_user(request, ptid, user_id):
+    pt = get_object_or_404(Product_Type, pk=ptid)
+    user_has_permission_or_403(request.user, pt, Permissions.Product_Type_Manage_Members)
+    if request.method != "POST":
+        raise PermissionDenied
+    user = get_object_or_404(Dojo_User, pk=user_id)
+    pt.authorized_users.remove(user)
+    messages.add_message(
+        request, messages.SUCCESS,
+        _("Removed %(username)s from authorized users.") % {"username": user.username},
+        extra_tags="alert-success",
+    )
+    return HttpResponseRedirect(reverse("view_product_type", args=(ptid,)))
 
 
 def add_product_type_group(request, ptid):

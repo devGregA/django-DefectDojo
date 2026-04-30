@@ -306,6 +306,23 @@ class Add_Product_Type_MemberForm(forms.ModelForm):
         fields = ["product_type", "users", "role"]
 
 
+class Add_Product_Type_AuthorizedUsersForm(forms.Form):
+    users = forms.ModelMultipleChoiceField(
+        queryset=Dojo_User.objects.none(), required=True, label="Users",
+    )
+
+    def __init__(self, *args, product_type=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.product_type = product_type
+        current = product_type.authorized_users.values_list("pk", flat=True)
+        self.fields["users"].queryset = (
+            Dojo_User.objects.filter(is_active=True)
+            .exclude(is_superuser=True)
+            .exclude(pk__in=current)
+            .order_by("first_name", "last_name")
+        )
+
+
 class Add_Product_Type_Member_UserForm(forms.ModelForm):
     product_types = forms.ModelMultipleChoiceField(queryset=Product_Type.objects.none(), required=True,
                                                    label=labels.ORG_PLURAL_LABEL)
@@ -474,6 +491,23 @@ class Add_Product_MemberForm(forms.ModelForm):
     class Meta:
         model = Product_Member
         fields = ["product", "users", "role"]
+
+
+class Add_Product_AuthorizedUsersForm(forms.Form):
+    users = forms.ModelMultipleChoiceField(
+        queryset=Dojo_User.objects.none(), required=True, label="Users",
+    )
+
+    def __init__(self, *args, product=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.product = product
+        current = product.authorized_users.values_list("pk", flat=True)
+        self.fields["users"].queryset = (
+            Dojo_User.objects.filter(is_active=True)
+            .exclude(is_superuser=True)
+            .exclude(pk__in=current)
+            .order_by("first_name", "last_name")
+        )
 
 
 class Add_Product_Member_UserForm(forms.ModelForm):

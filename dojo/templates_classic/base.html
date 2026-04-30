@@ -474,7 +474,7 @@
                                             </ul>
                                             <!-- /.nav-second-level -->
                                         </li>
-                                        {% if "auth.view_user"|has_configuration_permission:request or "auth.view_group"|has_configuration_permission:request %}
+                                        {% if "auth.view_user"|has_configuration_permission:request %}
                                             <li>
                                                 <a href="{% url 'users' %}" aria-disabled="true" aria-expanded="false" aria-label="Users" id="id_user_menu">
                                                     <i class="fa-solid fa-user fa-fw"></i>
@@ -489,13 +489,8 @@
                                                             </a>
                                                         </li>
                                                     {% endif %}
-                                                    {% if "auth.view_group"|has_configuration_permission:request %}
-                                                        <li>
-                                                            <a href="{% url 'groups' %}"  id="id_group_menu">
-                                                                {% trans "Groups" %}
-                                                            </a>
-                                                        </li>
-                                                    {% endif %}
+                                                    {# Pro restores the Groups link by overriding this block. #}
+                                                    {% block groups_submenu_link %}{% endblock %}
                                                 </ul>
                                             </li>
                                         {% endif %}
