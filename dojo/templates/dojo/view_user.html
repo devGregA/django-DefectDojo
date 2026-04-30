@@ -130,7 +130,7 @@
                     <thead>
                         <tr>
                             {% if request.user.is_staff %}<th></th>{% endif %}
-                            <th>{{ labels.ORG_LABEL }}</th>
+                            <th style="width: 100%;">{{ labels.ORG_LABEL }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -138,13 +138,22 @@
                         <tr>
                             {% if request.user.is_staff %}
                             <td>
-                                <form method="post" action="{% url 'revoke_user_from_product_type' user.id pt.id %}" style="display:inline"
-                                      onsubmit="return confirm('{% blocktrans with username=user.username pt=pt.name %}Revoke {{ username }} from {{ pt }}?{% endblocktrans %}');">
+                                <form method="post" action="{% url 'revoke_user_from_product_type' user.id pt.id %}" id="revoke-product-type-{{ pt.id }}" style="display:none;">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-danger" aria-label="Revoke">
-                                        <i class="fa-solid fa-trash" style="color:#fff"></i>
-                                    </button>
                                 </form>
+                                <ul>
+                                    <li class="dropdown" style="list-style:none">
+                                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true" label="Actions" name="dropdownProductTypeActions">&nbsp;<b class="fa-solid fa-ellipsis-vertical"></b>&nbsp;</a>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a name="revokeProductType" href="#"
+                                                   onclick="if (confirm('{% blocktrans with username=user.username pt=pt.name %}Revoke {{ username }} from {{ pt }}?{% endblocktrans %}')) { document.getElementById('revoke-product-type-{{ pt.id }}').submit(); } return false;">
+                                                    <i class="fa-solid fa-trash"></i> {% trans "Revoke" %}
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                </ul>
                             </td>
                             {% endif %}
                             <td name="member_product_type"><a href="{% url 'view_product_type' pt.id %}">{{ pt.name }}</a></td>
@@ -189,7 +198,7 @@
                     <thead>
                         <tr>
                             {% if request.user.is_staff %}<th></th>{% endif %}
-                            <th>{{ labels.ASSET_LABEL }}</th>
+                            <th style="width: 100%;">{{ labels.ASSET_LABEL }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -197,13 +206,22 @@
                         <tr>
                             {% if request.user.is_staff %}
                             <td>
-                                <form method="post" action="{% url 'revoke_user_from_product' user.id p.id %}" style="display:inline"
-                                      onsubmit="return confirm('{% blocktrans with username=user.username product=p.name %}Revoke {{ username }} from {{ product }}?{% endblocktrans %}');">
+                                <form method="post" action="{% url 'revoke_user_from_product' user.id p.id %}" id="revoke-product-{{ p.id }}" style="display:none;">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-danger" aria-label="Revoke">
-                                        <i class="fa-solid fa-trash" style="color:#fff"></i>
-                                    </button>
                                 </form>
+                                <ul>
+                                    <li class="dropdown" style="list-style:none">
+                                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true" label="Actions" name="dropdownProductActions">&nbsp;<b class="fa-solid fa-ellipsis-vertical"></b>&nbsp;</a>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a name="revokeProduct" href="#"
+                                                   onclick="if (confirm('{% blocktrans with username=user.username product=p.name %}Revoke {{ username }} from {{ product }}?{% endblocktrans %}')) { document.getElementById('revoke-product-{{ p.id }}').submit(); } return false;">
+                                                    <i class="fa-solid fa-trash"></i> {% trans "Revoke" %}
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                </ul>
                             </td>
                             {% endif %}
                             <td name="member_product"><a href="{% url 'view_product' p.id %}">{{ p.name }}</a></td>
