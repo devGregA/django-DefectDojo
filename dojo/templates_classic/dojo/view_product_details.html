@@ -313,11 +313,11 @@
                         <tr>
                             {% if prod|has_object_permission:"Product_Manage_Members" %}
                             <td>
-                                <form method="post" action="{% url 'delete_product_authorized_user' prod.id u.id %}"
+                                <form method="post" action="{% url 'delete_product_authorized_user' prod.id u.id %}" style="display:inline"
                                       onsubmit="return confirm('{% blocktrans with username=u.username %}Remove {{ username }} from authorized users?{% endblocktrans %}');">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-sm btn-danger" aria-label="Remove">
-                                        <i class="fa-solid fa-trash"></i>
+                                        <i class="fa-solid fa-trash" style="color:#fff"></i>
                                     </button>
                                 </form>
                             </td>

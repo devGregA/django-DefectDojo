@@ -175,7 +175,7 @@
             <tr>
                 <td>
                     <ul>
-                    <li class="dropdown" style="list-style:none;position:absolute">
+                    <li class="dropdown" style="list-style:none">
                         <a href="#" class="dropdown-toggle pull-left" data-toggle="dropdown" aria-expanded="true" label="Actions" name="dropdownManageTechnologies"><b class="fa-solid fa-ellipsis-vertical"></b>&nbsp;</a>
                         <ul class="dropdown-menu">
                             {% if prod|has_object_permission:"edit" %}
@@ -313,11 +313,11 @@
                         <tr>
                             {% if prod|has_object_permission:"staff_only" %}
                             <td>
-                                <form method="post" action="{% url 'delete_product_authorized_user' prod.id u.id %}"
+                                <form method="post" action="{% url 'delete_product_authorized_user' prod.id u.id %}" style="display:inline"
                                       onsubmit="return confirm('{% blocktrans with username=u.username %}Remove {{ username }} from authorized users?{% endblocktrans %}');">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-sm btn-danger" aria-label="Remove">
-                                        <i class="fa-solid fa-trash"></i>
+                                        <i class="fa-solid fa-trash" style="color:#fff"></i>
                                     </button>
                                 </form>
                             </td>
