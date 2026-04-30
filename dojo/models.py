@@ -833,6 +833,7 @@ class Product_Type(BaseModel):
     key_product = models.BooleanField(default=False)
     members = models.ManyToManyField(Dojo_User, through="Product_Type_Member", related_name="prod_type_members", blank=True)
     authorization_groups = models.ManyToManyField(Dojo_Group, through="Product_Type_Group", related_name="product_type_groups", blank=True)
+    authorized_users = models.ManyToManyField(Dojo_User, related_name="authorized_product_types", blank=True)
 
     class Meta:
         ordering = ("name",)
@@ -1169,6 +1170,7 @@ class Product(BaseModel):
     tid = models.IntegerField(default=0, editable=False)
     members = models.ManyToManyField(Dojo_User, through="Product_Member", related_name="product_members", blank=True)
     authorization_groups = models.ManyToManyField(Dojo_Group, through="Product_Group", related_name="product_groups", blank=True)
+    authorized_users = models.ManyToManyField(Dojo_User, related_name="authorized_products", blank=True)
     prod_numeric_grade = models.IntegerField(null=True, blank=True)
 
     # Metadata
