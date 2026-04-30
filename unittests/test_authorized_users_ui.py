@@ -93,6 +93,31 @@ class TestProductAuthorizedUsersUI(AuthorizedUsersUIBaseTestCase):
         self.assertNotIn(">Members</h4>", body)
         self.assertNotIn(">Groups</h4>", body)
 
+    def test_unauthorized_user_locked_out_of_detail(self):
+        self.client.force_login(self.bystander)
+        response = self.client.get(reverse("view_product", args=(self.product.id,)))
+        # custom_unauthorized_view (handler403) renders with status=400.
+        self.assertEqual(response.status_code, 400)
+
+    def test_authorized_user_can_view_detail(self):
+        self.product.authorized_users.add(self.target)
+        self.client.force_login(self.target)
+        response = self.client.get(reverse("view_product", args=(self.product.id,)))
+        self.assertEqual(response.status_code, 200)
+
+    def test_unauthorized_user_does_not_see_product_in_list(self):
+        self.client.force_login(self.bystander)
+        response = self.client.get(reverse("product"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(self.product.name, response.content.decode("utf-8"))
+
+    def test_authorized_user_sees_product_in_list(self):
+        self.product.authorized_users.add(self.target)
+        self.client.force_login(self.target)
+        response = self.client.get(reverse("product"))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(self.product.name, response.content.decode("utf-8"))
+
 
 class TestProductTypeAuthorizedUsersUI(AuthorizedUsersUIBaseTestCase):
 
@@ -144,3 +169,28 @@ class TestProductTypeAuthorizedUsersUI(AuthorizedUsersUIBaseTestCase):
         self.assertIn(self.target.username, body)
         self.assertNotIn(">Members</h4>", body)
         self.assertNotIn(">Groups</h4>", body)
+
+    def test_unauthorized_user_locked_out_of_detail(self):
+        self.client.force_login(self.bystander)
+        response = self.client.get(reverse("view_product_type", args=(self.pt.id,)))
+        self.assertEqual(response.status_code, 400)
+
+    def test_authorized_user_can_view_detail(self):
+        self.pt.authorized_users.add(self.target)
+        self.client.force_login(self.target)
+        response = self.client.get(reverse("view_product_type", args=(self.pt.id,)))
+        self.assertEqual(response.status_code, 200)
+
+    def test_authorized_user_sees_cascading_product_in_list(self):
+        # cascade: membership on the product_type grants access to its products
+        self.pt.authorized_users.add(self.target)
+        self.client.force_login(self.target)
+        response = self.client.get(reverse("product"))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(self.product.name, response.content.decode("utf-8"))
+
+    def test_unauthorized_user_does_not_see_product_type_in_list(self):
+        self.client.force_login(self.bystander)
+        response = self.client.get(reverse("product_type"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(self.pt.name, response.content.decode("utf-8"))
