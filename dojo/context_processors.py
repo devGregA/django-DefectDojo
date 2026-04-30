@@ -13,7 +13,6 @@ from dojo.models import System_Settings, UserAnnouncement
 def globalize_vars(request):
     # return the value you want as a dictionnary. you may add multiple values in there.
     context = {
-        "SHOW_LOGIN_FORM": settings.SHOW_LOGIN_FORM,
         "FORGOT_PASSWORD": settings.FORGOT_PASSWORD,
         "FORGOT_USERNAME": settings.FORGOT_USERNAME,
         "CLASSIC_AUTH_ENABLED": settings.CLASSIC_AUTH_ENABLED,

@@ -274,12 +274,6 @@ if hasattr(settings, "DJANGO_METRICS_ENABLED"):
     if settings.DJANGO_METRICS_ENABLED:
         urlpatterns += [re_path(r"^{}django_metrics/".format(get_system_setting("url_prefix")), include("django_prometheus.urls"))]
 
-try:
-    from dojo.sso.urls import urlpatterns as sso_urlpatterns
-    urlpatterns += sso_urlpatterns
-except ImportError:
-    pass
-
 if hasattr(settings, "DJANGO_ADMIN_ENABLED"):
     if settings.DJANGO_ADMIN_ENABLED:
         #  django admin

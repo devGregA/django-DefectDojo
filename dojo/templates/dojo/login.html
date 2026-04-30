@@ -81,44 +81,6 @@
     .login-btn:active {
         transform: translateY(1px);
     }
-    .login-sso-divider {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin: 1.5rem 0;
-        color: #666666;
-        font-size: 0.8125rem;
-    }
-    .login-sso-divider::before,
-    .login-sso-divider::after {
-        content: '';
-        flex: 1;
-        height: 1px;
-        background: #DCDCDC;
-    }
-    .login-sso-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 2.625rem;
-        font-size: 0.875rem;
-        font-weight: 500;
-        border: 1px solid #DCDCDC;
-        border-radius: 0.5rem;
-        background: white;
-        color: #191919;
-        text-decoration: none;
-        transition: background-color 150ms, border-color 150ms, box-shadow 150ms;
-        margin-bottom: 0.5rem;
-    }
-    .login-sso-btn:hover {
-        background: #f7f8f9;
-        border-color: #82B0D9;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        color: #191919;
-        text-decoration: none;
-    }
     .login-links {
         display: flex;
         justify-content: center;
@@ -152,90 +114,27 @@
             {% endif %}
 
             <form method="POST" autocomplete="off"> {% csrf_token %}
-                {% if SHOW_LOGIN_FORM or 'force_login_form' in request.GET %}
-                    {% include "dojo/form_fields.html" with form=form %}
+                {% include "dojo/form_fields.html" with form=form %}
 
-                    {% if CLASSIC_AUTH_ENABLED and SHOW_LOGIN_FORM or 'force_login_form' in request.GET %}
-                        <div class="form-group" style="margin-top: 0.25rem; margin-bottom: 0.75rem;">
-                            <button class="btn" id="toggleBox" onclick="togglePassVisibility()" type="button" style="font-size: 0.8125rem; padding: 0.25rem 0;">
-                                <i class="fa-solid fa-eye"></i> {% trans "Show Password" %}
-                            </button>
+                {% if CLASSIC_AUTH_ENABLED %}
+                    <div class="form-group" style="margin-top: 0.25rem; margin-bottom: 0.75rem;">
+                        <button class="btn" id="toggleBox" onclick="togglePassVisibility()" type="button" style="font-size: 0.8125rem; padding: 0.25rem 0;">
+                            <i class="fa-solid fa-eye"></i> {% trans "Show Password" %}
+                        </button>
+                    </div>
+
+                    <button class="btn btn-primary login-btn" type="submit">{% trans "Login" %}</button>
+
+                    {% if FORGOT_PASSWORD or FORGOT_USERNAME %}
+                        <div class="login-links">
+                            {% if FORGOT_PASSWORD %}
+                                <a id="reset-password" href="{% url 'password_reset' %}">{% trans "Forgot password?" %}</a>
+                            {% endif %}
+                            {% if FORGOT_USERNAME %}
+                                <a id="forgot-username" href="{% url 'forgot_username' %}">{% trans "Forgot username?" %}</a>
+                            {% endif %}
                         </div>
-
-                        <button class="btn btn-primary login-btn" type="submit">{% trans "Login" %}</button>
-
-                        {% if FORGOT_PASSWORD or FORGOT_USERNAME %}
-                            <div class="login-links">
-                                {% if FORGOT_PASSWORD %}
-                                    <a id="reset-password" href="{% url 'password_reset' %}">{% trans "Forgot password?" %}</a>
-                                {% endif %}
-                                {% if FORGOT_USERNAME %}
-                                    <a id="forgot-username" href="{% url 'forgot_username' %}">{% trans "Forgot username?" %}</a>
-                                {% endif %}
-                            </div>
-                        {% endif %}
                     {% endif %}
-                {% endif %}
-
-                {# SSO buttons — only show divider if login form AND at least one SSO #}
-                {% if SHOW_LOGIN_FORM or 'force_login_form' in request.GET %}
-                    {% if OIDC_ENABLED or GOOGLE_ENABLED or OKTA_ENABLED or AZUREAD_TENANT_OAUTH2_ENABLED or GITLAB_ENABLED or AUTH0_ENABLED or KEYCLOAK_ENABLED or GITHUB_ENTERPRISE_ENABLED or SAML2_ENABLED %}
-                        <div class="login-sso-divider">{% trans "or continue with" %}</div>
-                    {% endif %}
-                {% endif %}
-
-                {% if OIDC_ENABLED is True %}
-                    <a href="{% url 'social:begin' 'oidc' %}?next={{ request.GET.next }}" class="login-sso-btn">
-                        <i class="fa-solid fa-key" style="margin-right: 0.5rem;"></i> {{ SOCIAL_AUTH_OIDC_LOGIN_BUTTON_TEXT }}
-                    </a>
-                {% endif %}
-
-                {% if GOOGLE_ENABLED is True %}
-                    <a href="{% url 'social:begin' 'google-oauth2' %}?next={{ request.GET.next }}" class="login-sso-btn">
-                        <i class="fa-brands fa-google" style="margin-right: 0.5rem;"></i> {% trans "Login with Google" %}
-                    </a>
-                {% endif %}
-
-                {% if OKTA_ENABLED is True %}
-                    <a href="{% url 'social:begin' 'okta-oauth2' %}?next={{ request.GET.next }}" class="login-sso-btn">
-                        <i class="fa-solid fa-shield-halved" style="margin-right: 0.5rem;"></i> {% trans "Login with OKTA" %}
-                    </a>
-                {% endif %}
-
-                {% if AZUREAD_TENANT_OAUTH2_ENABLED is True %}
-                    <a href="{% url 'social:begin' 'azuread-tenant-oauth2' %}?next={{ request.GET.next }}" class="login-sso-btn">
-                        <i class="fa-brands fa-microsoft" style="margin-right: 0.5rem;"></i> {% trans "Login with Azure AD" %}
-                    </a>
-                {% endif %}
-
-                {% if GITLAB_ENABLED is True %}
-                    <a href="{% url 'social:begin' 'gitlab' %}?next={{ request.GET.next }}" class="login-sso-btn">
-                        <i class="fa-brands fa-gitlab" style="margin-right: 0.5rem;"></i> {% trans "Login with Gitlab" %}
-                    </a>
-                {% endif %}
-
-                {% if AUTH0_ENABLED is True %}
-                    <a href="{% url 'social:begin' 'auth0' %}?next={{ request.GET.next }}" class="login-sso-btn">
-                        <i class="fa-solid fa-lock" style="margin-right: 0.5rem;"></i> {% trans "Login with Auth0" %}
-                    </a>
-                {% endif %}
-
-                {% if KEYCLOAK_ENABLED is True %}
-                    <a href="{% url 'social:begin' 'keycloak' %}?next={{ request.GET.next }}" class="login-sso-btn">
-                        <i class="fa-solid fa-key" style="margin-right: 0.5rem;"></i> {{ SOCIAL_AUTH_KEYCLOAK_LOGIN_BUTTON_TEXT }}
-                    </a>
-                {% endif %}
-
-                {% if GITHUB_ENTERPRISE_ENABLED is True %}
-                    <a href="{% url 'social:begin' 'github-enterprise' %}?next={{ request.GET.next }}" class="login-sso-btn">
-                        <i class="fa-brands fa-github" style="margin-right: 0.5rem;"></i> {% trans "Login with GitHub Enterprise" %}
-                    </a>
-                {% endif %}
-
-                {% if SAML2_ENABLED is True %}
-                    <a id="oauth-login-saml" rel="nofollow" data-method="post" href="/saml2/login?next={{ request.GET.next }}" class="login-sso-btn">
-                        <i class="fa-solid fa-shield-halved" style="margin-right: 0.5rem;"></i> {{ SAML2_LOGIN_BUTTON_TEXT }}
-                    </a>
                 {% endif %}
             </form>
         </div>

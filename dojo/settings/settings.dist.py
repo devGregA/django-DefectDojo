@@ -30,16 +30,8 @@ logger = logging.getLogger(__name__)
 
 root = environ.Path(__file__) - 3  # Three folders back
 
-# SSO env schema is merged in if dojo.sso is available
-_sso_env_schema = {}
-try:
-    from dojo.sso.settings import SSO_ENV_SCHEMA
-    _sso_env_schema = SSO_ENV_SCHEMA
-except ImportError:
-    pass
-
 # reference: https://pypi.org/project/django-environ/
-env = environ.FileAwareEnv(**{**dict(
+env = environ.FileAwareEnv(
     # Set casting and default values
     DD_SITE_URL=(str, "http://localhost:8080"),
     DD_DEBUG=(bool, False),
@@ -140,8 +132,6 @@ env = environ.FileAwareEnv(**{**dict(
     DD_FORGOT_PASSWORD=(bool, True),  # do we show link "I forgot my password" on login screen
     DD_PASSWORD_RESET_TIMEOUT=(int, 259200),  # 3 days, in seconds (the deafult)
     DD_FORGOT_USERNAME=(bool, True),  # do we show link "I forgot my username" on login screen
-    DD_SOCIAL_AUTH_SHOW_LOGIN_FORM=(bool, True),  # do we show user/pass input
-    DD_SOCIAL_LOGIN_AUTO_REDIRECT=(bool, False),  # auto-redirect if there is only one social login method
     # Some security policies require allowing users to have only one active session
     DD_SINGLE_USER_SESSION=(bool, False),
     # if somebody is using own documentation how to use DefectDojo in his own company
@@ -246,7 +236,6 @@ env = environ.FileAwareEnv(**{**dict(
     # possible to create new and it will not be possible to use exising.
     DD_API_TOKENS_ENABLED=(bool, True),
     # Enable endpoint which allow user to get API token when user+pass is provided
-    # It is useful to disable when non-local authentication (like SAML, Azure, ...) is in place
     DD_API_TOKEN_AUTH_ENDPOINT_ENABLED=(bool, True),
     # You can set extra Jira headers by suppling a dictionary in header: value format (pass as env var like "headr_name=value,another_header=anohter_value")
     DD_ADDITIONAL_HEADERS=(dict, {}),
@@ -273,7 +262,7 @@ env = environ.FileAwareEnv(**{**dict(
     DD_ENABLE_V3_ORGANIZATION_ASSET_RELABEL=(bool, False),
     # Notification env-vars (SLA notify, alert refresh/counter/cap, system-level trump). Defined in dojo.notifications.settings.
     **NOTIFICATIONS_ENV_DEFAULTS,
-), **_sso_env_schema})
+)
 
 
 def generate_url(scheme, double_slashes, user, password, host, port, path, params):
@@ -479,9 +468,6 @@ FORGOT_PASSWORD = env("DD_FORGOT_PASSWORD")
 REQUIRE_PASSWORD_ON_USER = env("DD_REQUIRE_PASSWORD_ON_USER")
 FORGOT_USERNAME = env("DD_FORGOT_USERNAME")
 PASSWORD_RESET_TIMEOUT = env("DD_PASSWORD_RESET_TIMEOUT")
-# Showing login form (form is not needed for external auth: OKTA, Google Auth, etc.)
-SHOW_LOGIN_FORM = env("DD_SOCIAL_AUTH_SHOW_LOGIN_FORM")
-SOCIAL_LOGIN_AUTO_REDIRECT = env("DD_SOCIAL_LOGIN_AUTO_REDIRECT")
 
 DOCUMENTATION_URL = env("DD_DOCUMENTATION_URL")
 
@@ -708,10 +694,10 @@ if not env("DD_DEFAULT_SWAGGER_UI"):
 # UIPreferenceLoader; see dojo/template_loaders.py.
 _DOJO_TAILWIND_TEMPLATES_DIR = root("dojo/templates")
 _DOJO_CLASSIC_TEMPLATES_DIR = root("dojo/templates_classic")
-# Sub-package template dirs (dojo/notifications, dojo/github, dojo/sso, ...)
-# share a single list that the FilesystemLoader below reads by reference, so
-# late-binding appenders like dojo/sso/settings.py:apply_sso_settings can add
-# their template dir at startup and have it picked up at render time.
+# Sub-package template dirs (dojo/notifications, dojo/github, ...) share a
+# single list that the FilesystemLoader below reads by reference, so any
+# late-binding settings can append a template dir at startup and have it
+# picked up at render time.
 _DOJO_EXTRA_TEMPLATE_DIRS = [
     root("dojo/notifications/templates"),
     root("dojo/github/templates"),
@@ -725,7 +711,7 @@ TEMPLATES = [
         "DIRS": _DOJO_EXTRA_TEMPLATE_DIRS,
         # APP_DIRS is False because dojo's templates are loaded explicitly via
         # UIPreferenceLoader; the FilesystemLoader entry below picks up
-        # template dirs from the dojo/notifications, dojo/github, and dojo/sso
+        # template dirs from the dojo/notifications and dojo/github
         # consolidations; other apps' templates are loaded via the
         # app_directories.Loader entry.
         "APP_DIRS": False,
@@ -838,15 +824,6 @@ EMAIL_CONFIG = env.email_url(
     "DD_EMAIL_URL", default="smtp://user@:password@localhost:25")
 
 vars().update(EMAIL_CONFIG)
-
-# ------------------------------------------------------------------------------
-# SSO (loaded from dojo.sso if available)
-# ------------------------------------------------------------------------------
-try:
-    from dojo.sso.settings import apply_sso_settings
-    apply_sso_settings(env, globals())
-except ImportError:
-    pass
 
 # ------------------------------------------------------------------------------
 # SINGLE_USER_SESSION
@@ -1517,11 +1494,6 @@ LOGGING = {
             "propagate": False,
         },
         "dojo.specific-loggers.deduplication": {
-            "handlers": [rf"{LOGGING_HANDLER}"],
-            "level": str(LOG_LEVEL),
-            "propagate": False,
-        },
-        "saml2": {
             "handlers": [rf"{LOGGING_HANDLER}"],
             "level": str(LOG_LEVEL),
             "propagate": False,
