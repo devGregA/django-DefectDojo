@@ -304,8 +304,8 @@
                         {% if prod|has_object_permission:"staff_only" %}
                         <th label="Actions"></th>
                         {% endif %}
-                        <th>{% trans "User" %}</th>
-                        <th>{% trans "Email" %}</th>
+                        <th style="width: 50%;">{% trans "User" %}</th>
+                        <th style="width: 50%;">{% trans "Email" %}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -313,13 +313,22 @@
                         <tr>
                             {% if prod|has_object_permission:"staff_only" %}
                             <td>
-                                <form method="post" action="{% url 'delete_product_authorized_user' prod.id u.id %}" style="display:inline"
-                                      onsubmit="return confirm('{% blocktrans with username=u.username %}Remove {{ username }} from authorized users?{% endblocktrans %}');">
+                                <form method="post" action="{% url 'delete_product_authorized_user' prod.id u.id %}" id="remove-authorized-user-{{ u.id }}" style="display:none;">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-danger" aria-label="Remove">
-                                        <i class="fa-solid fa-trash" style="color:#fff"></i>
-                                    </button>
                                 </form>
+                                <ul>
+                                    <li class="dropdown" style="list-style:none">
+                                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true" label="Actions" name="dropdownAuthorizedUserActions">&nbsp;<b class="fa-solid fa-ellipsis-vertical"></b>&nbsp;</a>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a name="removeAuthorizedUser" href="#"
+                                                   onclick="if (confirm('{% blocktrans with username=u.username %}Remove {{ username }} from authorized users?{% endblocktrans %}')) { document.getElementById('remove-authorized-user-{{ u.id }}').submit(); } return false;">
+                                                    <i class="fa-solid fa-trash"></i> {% trans "Remove" %}
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                </ul>
                             </td>
                             {% endif %}
                             <td name="authorized_user_username">{{ u.username }}</td>
