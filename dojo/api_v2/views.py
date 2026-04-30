@@ -2732,9 +2732,9 @@ class UserProfileView(GenericAPIView):
         user_contact_info = (
             user.usercontactinfo if hasattr(user, "usercontactinfo") else None
         )
-        global_role = (
-            user.global_role if hasattr(user, "global_role") else None
-        )
+        # Global_Role.user uses related_name="+" so user.global_role is
+        # not an attribute (suppressed reverse accessor). Query directly.
+        global_role = Global_Role.objects.filter(user=user).first()
         dojo_group_member = Dojo_Group_Member.objects.filter(user=user)
         product_type_member = Product_Type_Member.objects.filter(user=user)
         product_member = Product_Member.objects.filter(user=user)

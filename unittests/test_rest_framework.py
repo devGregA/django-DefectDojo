@@ -8,6 +8,7 @@ from datetime import timedelta
 from enum import Enum
 from json import dumps
 from pathlib import Path
+from unittest import skip
 from unittest.mock import ANY, MagicMock, PropertyMock, call, patch
 
 from django.conf import settings
@@ -859,6 +860,14 @@ class BaseClass:
             self.assertEqual(200, response.status_code, response.content[:1000])
 
     class RelatedObjectsTest(BaseClassTest):
+        @skip(
+            "Legacy authorization: Global_Role(Reader) is inert and the test "
+            "user has no Product_Member / authorized_users entry, so the "
+            "list endpoint returns no objects. The test asserts the RBAC-era "
+            "claim that 'Reader can view + add notes' which doesn't translate "
+            "to legacy semantics (membership is single-bit; non-members are "
+            "hidden via 404).",
+        )
         def test_notes_can_be_added_by_users_with_read_only_permissions(self):
             self.setUp_global_reader()
             response = self.client.get(self.url, format="json")
@@ -883,6 +892,11 @@ class BaseClass:
             engagement edit permissions since that is what is defined in the
             UserHasEngagementRelatedObjectPermission class
             """
+            # Legacy authorization collapses Reader/Writer per-product, so
+            # the RBAC distinction this test asserts (Reader 403 / Writer 200)
+            # doesn't exist. Cross-product IDOR is still covered by
+            # test_permissions_audit.
+            self.skipTest("Obsolete under legacy: Reader/Writer collapse to single-bit membership.")
             self.setUp_global_reader()
             # Skip tags for engagement and tests
             if related_object_path == "tags" and self.endpoint_model in {Engagement, Test}:
