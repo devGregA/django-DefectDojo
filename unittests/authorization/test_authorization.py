@@ -291,7 +291,11 @@ class TestUserHasGlobalPermissionLegacy(LegacyAuthorizationBaseTestCase):
 
 class TestUserHasConfigurationPermission(LegacyAuthorizationBaseTestCase):
 
-    """Configuration permissions delegate to Django's user.has_perm()."""
+    """
+    Configuration permissions reduce to is_superuser / is_staff under
+    legacy authorization, with Django's ``user.has_perm`` consulted as
+    a fallback for explicit grants on non-staff users.
+    """
 
     def test_anonymous_denied(self):
         self.assertFalse(user_has_configuration_permission(None, "dojo.add_product_type"))
@@ -303,6 +307,21 @@ class TestUserHasConfigurationPermission(LegacyAuthorizationBaseTestCase):
     def test_user_without_perm(self):
         self.member.has_perm = Mock(return_value=False)
         self.assertFalse(user_has_configuration_permission(self.member, "dojo.add_product_type"))
+
+    def test_staff_bypasses_without_django_perm(self):
+        # is_staff is the legacy bypass for configuration permissions —
+        # mirrors the pre-2020 behavior where staff was an absolute
+        # bypass on every perm_type. has_perm is not consulted here.
+        self.staff.has_perm = Mock(return_value=False)
+        self.assertTrue(user_has_configuration_permission(self.staff, "auth.view_user"))
+        self.assertTrue(user_has_configuration_permission(self.staff, "auth.delete_user"))
+        self.assertTrue(user_has_configuration_permission(self.staff, "auth.view_group"))
+        self.staff.has_perm.assert_not_called()
+
+    def test_superuser_bypasses_without_django_perm(self):
+        self.superuser.has_perm = Mock(return_value=False)
+        self.assertTrue(user_has_configuration_permission(self.superuser, "auth.view_user"))
+        self.superuser.has_perm.assert_not_called()
 
 
 class TestRoleHelpersAreInertUnderLegacy(DojoTestCase):

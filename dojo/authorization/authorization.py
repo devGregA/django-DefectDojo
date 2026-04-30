@@ -59,10 +59,21 @@ from dojo.models import (
 
 
 def user_has_configuration_permission(user: Dojo_User, permission: str):
+    """
+    Legacy: configuration permissions reduce to is_superuser / is_staff,
+    matching the rest of the legacy auth model. ``user.has_perm`` is
+    still consulted as a fallback so explicit Django permission grants
+    (e.g. ``auth.add_user`` granted via Django Admin) keep working for
+    non-staff users. Pro overrides this function at runtime via
+    pro/apps.py:_shadow_authorization_symbols, so this OS bypass does
+    not affect Pro deployments.
+    """
     if not user:
         return False
     if user.is_anonymous:
         return False
+    if user.is_superuser or user.is_staff:
+        return True
     return user.has_perm(permission)
 
 
