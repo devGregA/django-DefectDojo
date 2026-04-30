@@ -14,7 +14,7 @@ For Open Source release notes, please see the [Releases page on GitHub](https://
 
 ### May 4, 2026: v2.58.0
 
-* **(Authorization)** Pro deployments are **not impacted** by the OS UI rework that replaces the Product/Product Type Members/Groups panels with an Authorized Users panel. Pro retains full RBAC: the Members and Groups management panels and the Groups left-nav link continue to render unchanged, driven by Pro's RBAC tables via Pro template overrides.
+* **(Authorization)** Pro deployments are **not impacted** by the OS legacy authorization rewrite. Pro retains full RBAC: the Members / Groups panels on Product and Product Type detail, the Groups panel + Global Role fieldset on the user view / profile / add user pages, the Group Members panel on the user view, the Groups link in the left-nav, and the System Settings default-group fields all continue to render unchanged, driven by Pro RBAC via template overrides at `pro/templates/dojo/`. The eight RBAC v2 API endpoints (`/api/v2/dojo_groups/`, `/api/v2/dojo_group_members/`, `/api/v2/global_roles/`, `/api/v2/product_groups/`, `/api/v2/product_members/`, `/api/v2/product_type_groups/`, `/api/v2/product_type_members/`, `/api/v2/roles/`) are re-registered by Pro's `add_*_urls` hooks. Pro's runtime authorization shadowing in `pro/apps.py:DojoProConfig.ready()` continues to govern object, global, and configuration permissions, so the OS-side `is_staff` bypass for configuration permissions does not affect Pro semantics.
 
 ## Apr 2026: v2.57
 
