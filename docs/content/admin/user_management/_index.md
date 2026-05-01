@@ -38,4 +38,4 @@ DefectDojo Pro uses a role-based system with Members, Groups, and Global Roles. 
 
 ## Migrating between editions
 
-If you're moving from open-source's Authorized Users to Pro's RBAC, or upgrading from a pre-2.58 open-source release that used RBAC into the current Authorized Users model, see the [2.58 upgrade notes](/releases/os_upgrading/2.58/#authorized-users-panel-replaces-membersgroups-under-legacy-authorization). Existing access is preserved automatically.
+If you're moving from open-source's Authorized Users to Pro's RBAC, or upgrading from a pre-2.59 open-source release that used RBAC into the current Authorized Users model, see the [2.59 upgrade notes](/releases/os_upgrading/2.59/#authorized-users-panel-replaces-membersgroups-under-legacy-authorization). Existing access is preserved automatically.
