@@ -31,9 +31,7 @@ from dojo.authorization.authorization import user_has_configuration_permission, 
 from dojo.authorization.models import (
     Global_Role,
     Product_Group,
-    Product_Member,
     Product_Type_Group,
-    Product_Type_Member,
 )
 from dojo.endpoint.utils import endpoint_filter, endpoint_get_or_create, validate_endpoints_to_add
 from dojo.engagement.queries import get_authorized_engagements
