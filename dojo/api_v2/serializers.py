@@ -26,10 +26,6 @@ from rest_framework.fields import DictField
 import dojo.finding.helper as finding_helper
 import dojo.risk_acceptance.helper as ra_helper
 from dojo.authorization.authorization import user_has_permission
-from dojo.authorization.models import (
-    Product_Member,
-    Product_Type_Member,
-)
 from dojo.celery_dispatch import dojo_dispatch_task
 from dojo.endpoint.utils import endpoint_filter, endpoint_meta_import
 from dojo.finding.helper import (
@@ -735,100 +731,6 @@ class RiskAcceptanceProofSerializer(serializers.ModelSerializer):
     class Meta:
         model = Risk_Acceptance
         fields = ["path"]
-
-
-class ProductMemberSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Product_Member
-        fields = "__all__"
-
-    def validate(self, data):
-        if (
-            self.instance is not None
-            and data.get("product") != self.instance.product
-            and not user_has_permission(
-                self.context["request"].user,
-                data.get("product"),
-                "staff_only",
-            )
-        ):
-            msg = "You are not permitted to add a member to this product"
-            raise PermissionDenied(msg)
-
-        if (
-            self.instance is None
-            or data.get("product") != self.instance.product
-            or data.get("user") != self.instance.user
-        ):
-            members = Product_Member.objects.filter(
-                product=data.get("product"), user=data.get("user"),
-            )
-            if members.count() > 0:
-                msg = "Product_Member already exists"
-                raise ValidationError(msg)
-
-        if data.get("role").is_owner and not user_has_permission(
-            self.context["request"].user,
-            data.get("product"),
-            "staff_only",
-        ):
-            msg = "You are not permitted to add a member as Owner to this product"
-            raise PermissionDenied(msg)
-
-        return data
-
-
-class ProductTypeMemberSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Product_Type_Member
-        fields = "__all__"
-
-    def validate(self, data):
-        if (
-            self.instance is not None
-            and data.get("product_type") != self.instance.product_type
-            and not user_has_permission(
-                self.context["request"].user,
-                data.get("product_type"),
-                "staff_only",
-            )
-        ):
-            msg = "You are not permitted to add a member to this product type"
-            raise PermissionDenied(msg)
-
-        if (
-            self.instance is None
-            or data.get("product_type") != self.instance.product_type
-            or data.get("user") != self.instance.user
-        ):
-            members = Product_Type_Member.objects.filter(
-                product_type=data.get("product_type"), user=data.get("user"),
-            )
-            if members.count() > 0:
-                msg = "Product_Type_Member already exists"
-                raise ValidationError(msg)
-
-        if self.instance is not None and not data.get("role").is_owner:
-            owners = (
-                Product_Type_Member.objects.filter(
-                    product_type=data.get("product_type"), role__is_owner=True,
-                )
-                .exclude(id=self.instance.id)
-                .count()
-            )
-            if owners < 1:
-                msg = "There must be at least one owner"
-                raise ValidationError(msg)
-
-        if data.get("role").is_owner and not user_has_permission(
-            self.context["request"].user,
-            data.get("product_type"),
-            "staff_only",
-        ):
-            msg = "You are not permitted to add a member as Owner to this product type"
-            raise PermissionDenied(msg)
-
-        return data
 
 
 class ProductTypeSerializer(serializers.ModelSerializer):
@@ -2819,8 +2721,6 @@ class SLAConfigurationSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.Serializer):
     user = UserSerializer(many=False)
     user_contact_info = UserContactInfoSerializer(many=False, required=False)
-    product_type_member = ProductTypeMemberSerializer(many=True)
-    product_member = ProductMemberSerializer(many=True)
 
 
 class DeletePreviewSerializer(serializers.Serializer):

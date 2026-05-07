@@ -535,22 +535,6 @@ class UserHasAssetPermission(permissions.BasePermission):
         )
 
 
-class UserHasProductMemberPermission(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return check_post_permission(
-            request, Product, "product", "staff_only",
-        )
-
-    def has_object_permission(self, request, view, obj):
-        return check_object_permission(
-            request,
-            obj,
-            "view",
-            "staff_only",
-            "delete",
-        )
-
-
 class UserHasAssetMemberPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
@@ -615,25 +599,6 @@ class UserHasOrganizationPermission(permissions.BasePermission):
             obj,
             "view",
             "edit",
-            "delete",
-        )
-
-
-class UserHasProductTypeMemberPermission(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return check_post_permission(
-            request,
-            Product_Type,
-            "product_type",
-            "staff_only",
-        )
-
-    def has_object_permission(self, request, view, obj):
-        return check_object_permission(
-            request,
-            obj,
-            "view",
-            "staff_only",
             "delete",
         )
 
