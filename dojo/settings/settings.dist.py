@@ -15,10 +15,16 @@ from email.utils import getaddresses
 from pathlib import Path
 
 import environ
-import pghistory
 from celery.schedules import crontab
 
 from dojo import __version__
+from dojo.auditlog.settings import (  # noqa: F401 -- re-exported as Django settings
+    AUDITLOG_DISABLE_ON_RAW_SAVE,
+    PGHISTORY_CONTEXT_FIELD,
+    PGHISTORY_FOREIGN_KEY_FIELD,
+    PGHISTORY_OBJ_FIELD,
+)
+from dojo.auditlog.settings import ENV_SCHEMA as AUDITLOG_ENV_SCHEMA
 from dojo.notifications.settings import (
     NOTIFICATIONS_ENV_DEFAULTS,
 )
@@ -93,7 +99,7 @@ env = environ.FileAwareEnv(
     DD_CELERY_RESULT_BACKEND=(str, "django-db"),
     DD_CELERY_RESULT_EXPIRES=(int, 86400),
     DD_CELERY_BEAT_SCHEDULE_FILENAME=(str, root("dojo.celery.beat.db")),
-    DD_CELERY_TASK_SERIALIZER=(str, "pickle"),
+    DD_CELERY_TASK_SERIALIZER=(str, "json"),
     DD_CELERY_LOG_LEVEL=(str, "INFO"),
     # Hard ceiling on task runtime. When reached, the worker process is sent SIGKILL — no cleanup
     # code runs. Always set higher than DD_CELERY_TASK_SOFT_TIME_LIMIT. (0 = disabled, no limit)
@@ -191,21 +197,15 @@ env = environ.FileAwareEnv(
     DD_CELERY_QUEUE_PURGE_BATCH_SIZE=(int, 1000),
     # Maximum number of tasks to purge in a single per-task purge action
     DD_CELERY_QUEUE_PURGE_MAX_TASKS=(int, 10000),
-    # Delete Auditlogs older than x month; -1 to keep all logs
-    DD_AUDITLOG_FLUSH_RETENTION_PERIOD=(int, -1),
-    # Batch size for flushing audit logs per task run
-    DD_AUDITLOG_FLUSH_BATCH_SIZE=(int, 1000),
-    # Maximum number of batches to process per task run
-    DD_AUDITLOG_FLUSH_MAX_BATCHES=(int, 100),
+    # Audit-log env-var schema (DD_ENABLE_AUDITLOG, DD_AUDITLOG_FLUSH_*) sourced
+    # from dojo/auditlog/settings.py.
+    **AUDITLOG_ENV_SCHEMA,
     # Allow grouping of findings in the same test, for example to group findings per dependency
     # DD_FEATURE_FINDING_GROUPS feature is moved to system_settings, will be removed from settings file
     DD_FEATURE_FINDING_GROUPS=(bool, True),
     DD_JIRA_TEMPLATE_ROOT=(str, "dojo/templates/issue-trackers"),
     DD_TEMPLATE_DIR_PREFIX=(str, "dojo/templates/"),
-    # Initial behaviour in Defect Dojo was to delete all duplicates when an original was deleted
-    # New behaviour is to leave the duplicates in place, but set the oldest of duplicates as new original
-    # Set to True to revert to the old behaviour where all duplicates are deleted
-    DD_DUPLICATE_CLUSTER_CASCADE_DELETE=(bool, True),
+    DD_DUPLICATE_CLUSTER_CASCADE_DELETE=(bool, False),
     # Enable Rate Limiting for the login page
     DD_RATE_LIMITER_ENABLED=(bool, False),
     # Examples include 5/m 100/h and more https://django-ratelimit.readthedocs.io/en/stable/rates.html#simple-rates
@@ -243,9 +243,6 @@ env = environ.FileAwareEnv(
     DD_HASHCODE_FIELDS_PER_SCANNER=(str, ""),
     # Set deduplication algorithms per parser, via en env variable that contains a JSON string
     DD_DEDUPLICATION_ALGORITHM_PER_PARSER=(str, ""),
-    # With this setting turned on, Dojo maintains an audit log of changes made to entities (Findings, Tests, Engagements, Products, ...)
-    # If you run big import you may want to disable this because there's a performance hit during (re-)imports.
-    DD_ENABLE_AUDITLOG=(bool, True),
     # Specifies whether the "first seen" date of a given report should be used over the "last seen" date
     DD_USE_FIRST_SEEN=(bool, False),
     # When set to True, use the older version of the qualys parser that is a more heavy handed in setting severity
@@ -699,6 +696,7 @@ _DOJO_CLASSIC_TEMPLATES_DIR = root("dojo/templates_classic")
 # late-binding settings can append a template dir at startup and have it
 # picked up at render time.
 _DOJO_EXTRA_TEMPLATE_DIRS = [
+    root("dojo/auditlog/templates"),
     root("dojo/notifications/templates"),
     root("dojo/github/templates"),
 ]
@@ -711,8 +709,8 @@ TEMPLATES = [
         "DIRS": _DOJO_EXTRA_TEMPLATE_DIRS,
         # APP_DIRS is False because dojo's templates are loaded explicitly via
         # UIPreferenceLoader; the FilesystemLoader entry below picks up
-        # template dirs from the dojo/notifications and dojo/github
-        # consolidations; other apps' templates are loaded via the
+        # template dirs from the dojo/auditlog, dojo/notifications and
+        # dojo/github consolidations; other apps' templates are loaded via the
         # app_directories.Loader entry.
         "APP_DIRS": False,
         "OPTIONS": {
@@ -853,8 +851,9 @@ CELERY_RESULT_BACKEND = env("DD_CELERY_RESULT_BACKEND")
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_RESULT_EXPIRES = env("DD_CELERY_RESULT_EXPIRES")
 CELERY_BEAT_SCHEDULE_FILENAME = env("DD_CELERY_BEAT_SCHEDULE_FILENAME")
-CELERY_ACCEPT_CONTENT = ["pickle", "json", "msgpack", "yaml"]
+CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = env("DD_CELERY_TASK_SERIALIZER")
+CELERY_RESULT_SERIALIZER = "json"
 CELERY_LOG_LEVEL = env("DD_CELERY_LOG_LEVEL")
 
 if env("DD_CELERY_TASK_TIME_LIMIT") > 0:
@@ -878,7 +877,6 @@ CELERY_BEAT_SCHEDULE = {
     "add-alerts": {
         "task": "dojo.notifications.tasks.add_alerts",
         "schedule": timedelta(hours=1),
-        "args": [timedelta(hours=1)],
         "options": {
             "expires": int(60 * 60 * 1 * 1.2),  # If a task is not executed within 72 minutes, it should be dropped from the queue. Two more tasks should be scheduled in the meantime.
         },
@@ -1099,6 +1097,7 @@ HASHCODE_FIELDS_PER_SCANNER = {
     "n0s1 Scanner": ["description"],
     "IriusRisk Threats Scan": ["title", "component_name"],
     "Orca Security Alerts": ["title", "component_name"],
+    "Qualys VMDR": ["title", "component_name", "vuln_id_from_tool"],
 }
 
 # Override the hardcoded settings here via the env var
@@ -1368,6 +1367,7 @@ DEDUPLICATION_ALGORITHM_PER_PARSER = {
     "OpenReports": DEDUPE_ALGO_HASH_CODE,
     "IriusRisk Threats Scan": DEDUPE_ALGO_HASH_CODE,
     "Orca Security Alerts": DEDUPE_ALGO_HASH_CODE,
+    "Qualys VMDR": DEDUPE_ALGO_UNIQUE_ID_FROM_TOOL_OR_HASH_CODE,
 }
 
 # Override the hardcoded settings here via the env var
@@ -1661,8 +1661,7 @@ FILE_UPLOAD_TYPES = env("DD_FILE_UPLOAD_TYPES")
 # List of acceptable file types that can be (re)imported
 FILE_IMPORT_TYPES = env("DD_FILE_IMPORT_TYPES")
 # Fixes error
-# AttributeError: Problem installing fixture '/app/dojo/fixtures/defect_dojo_sample_data.json': 'Settings' object has no attribute 'AUDITLOG_DISABLE_ON_RAW_SAVE'
-AUDITLOG_DISABLE_ON_RAW_SAVE = False
+# AUDITLOG_DISABLE_ON_RAW_SAVE is imported from dojo.auditlog.settings at the top of this file.
 #  You can set extra Jira headers by suppling a dictionary in header: value format (pass as env var like "headr_name=value,another_header=anohter_value")
 ADDITIONAL_HEADERS = env("DD_ADDITIONAL_HEADERS")
 # ------------------------------------------------------------------------------
@@ -1761,9 +1760,8 @@ if DEBUG:
 # Auditlog configuration                                                                                #
 #########################################################################################################
 
-PGHISTORY_FOREIGN_KEY_FIELD = pghistory.ForeignKey(db_index=False)
-PGHISTORY_CONTEXT_FIELD = pghistory.ContextForeignKey(db_index=True)
-PGHISTORY_OBJ_FIELD = pghistory.ObjForeignKey(db_index=True)
+# PGHISTORY_FOREIGN_KEY_FIELD, PGHISTORY_CONTEXT_FIELD, and PGHISTORY_OBJ_FIELD
+# are imported from dojo.auditlog.settings at the top of this file.
 
 #########################################################################################################
 # End of Auditlog configuration                                                                          #
