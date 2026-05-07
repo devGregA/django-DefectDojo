@@ -31,7 +31,6 @@ urlpatterns = [
             views.revoke_user_from_product, name="revoke_user_from_product"),
     re_path(r"^user/(?P<uid>\d+)/revoke_product_type/(?P<ptid>\d+)$",
             views.revoke_user_from_product_type, name="revoke_user_from_product_type"),
-    re_path(r"^user/(?P<uid>\d+)/add_group_member$", views.add_group_member, name="add_group_member_user"),
     re_path(r"^user/(?P<uid>\d+)/edit_permissions$", views.edit_permissions, name="edit_user_permissions"),
 ]
 if settings.FORGOT_PASSWORD:

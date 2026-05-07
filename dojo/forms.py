@@ -2424,21 +2424,6 @@ class MetricsFilterForm(forms.Form):
             del self.fields["exclude_product_types"]
 
 
-class Add_Group_Member_UserForm(forms.ModelForm):
-    groups = forms.ModelMultipleChoiceField(queryset=Dojo_Group.objects.none(), required=True, label="Groups")
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["user"].disabled = True
-        current_groups = Dojo_Group_Member.objects.filter(user=self.initial["user"]).values_list("group", flat=True)
-        self.fields["groups"].queryset = Dojo_Group.objects.exclude(id__in=current_groups)
-        self.fields["role"].queryset = get_group_member_roles()
-
-    class Meta:
-        model = Dojo_Group_Member
-        fields = ["groups", "user", "role"]
-
-
 class Add_Product_Group_GroupForm(forms.ModelForm):
     products = forms.ModelMultipleChoiceField(queryset=Product.objects.none(), required=True,
                                               label=labels.ASSET_PLURAL_LABEL)

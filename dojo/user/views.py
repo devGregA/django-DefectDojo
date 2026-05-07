@@ -3,7 +3,6 @@ import logging
 from datetime import timedelta
 
 import hyperlink
-from crum import get_current_user
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.utils import NestedObjects
@@ -29,11 +28,10 @@ from rest_framework.exceptions import PermissionDenied as RFPermissionDenied
 from rest_framework.exceptions import ValidationError as RFValidationError
 
 from dojo.authorization.authorization import user_is_superuser_or_global_owner
-from dojo.authorization.models import Dojo_Group_Member, Global_Role, Product_Member, Product_Type_Member
+from dojo.authorization.models import Global_Role, Product_Member, Product_Type_Member
 from dojo.decorators import dojo_ratelimit
 from dojo.filters import UserFilter
 from dojo.forms import (
-    Add_Group_Member_UserForm,
     Add_Product_Member_UserForm,
     Add_Product_Type_Member_UserForm,
     AddDojoUserForm,
@@ -45,10 +43,8 @@ from dojo.forms import (
     DeleteUserForm,
     DojoUserForm,
     EditDojoUserForm,
-    GlobalRoleForm,
     UserContactInfoForm,
 )
-from dojo.group.queries import get_authorized_group_members_for_user
 from dojo.labels import get_labels
 from dojo.models import Alerts, Dojo_User, Product, Product_Type, UserContactInfo
 from dojo.product.queries import get_authorized_product_members_for_user
@@ -215,41 +211,18 @@ def alerts_partial(request):
 def view_profile(request):
     user = get_object_or_404(Dojo_User, pk=request.user.id)
     form = DojoUserForm(instance=user)
-    group_members = get_authorized_group_members_for_user(user)
 
     user_contact = user.usercontactinfo if hasattr(user, "usercontactinfo") else None
     contact_form = UserContactInfoForm(user=user) if user_contact is None else UserContactInfoForm(instance=user_contact, user=user)
 
-    # Global_Role.user uses related_name="+", so user.global_role is not a
-    # reverse accessor — look it up via the forward FK so we update the
-    # existing row instead of trying to insert a duplicate.
-    global_role = Global_Role.objects.filter(user=user).first()
-    if global_role is None:
-        previous_global_role = None
-        global_role_form = GlobalRoleForm()
-    else:
-        previous_global_role = global_role.role
-        global_role_form = GlobalRoleForm(instance=global_role)
-
     if request.method == "POST":
         form = DojoUserForm(request.POST, instance=user)
         contact_form = UserContactInfoForm(request.POST, instance=user_contact, user=user)
-        global_role_form = GlobalRoleForm(request.POST, instance=global_role)
-        if form.is_valid() and contact_form.is_valid() and global_role_form.is_valid():
+        if form.is_valid() and contact_form.is_valid():
             form.save()
             contact = contact_form.save(commit=False)
             contact.user = user
             contact.save()
-            request_user = get_current_user()
-            global_role = global_role_form.save(commit=False)
-            if global_role.role != previous_global_role and not request_user.is_superuser:
-                global_role.role = previous_global_role
-                messages.add_message(request,
-                                    messages.WARNING,
-                                    _("Only superusers are allowed to change their global role."),
-                                    extra_tags="alert-warning")
-            global_role.user = user
-            global_role.save()
 
             messages.add_message(request,
                                  messages.SUCCESS,
@@ -265,9 +238,7 @@ def view_profile(request):
     return render(request, "dojo/profile.html", {
         "user": user,
         "form": form,
-        "contact_form": contact_form,
-        "global_role_form": global_role_form,
-        "group_members": group_members})
+        "contact_form": contact_form})
 
 
 def change_password(request):
@@ -318,14 +289,12 @@ def add_user(request):
     page_name = _("Add User")
     form = AddDojoUserForm()
     contact_form = UserContactInfoForm()
-    global_role_form = GlobalRoleForm()
     user = None
 
     if request.method == "POST":
         form = AddDojoUserForm(request.POST)
         contact_form = UserContactInfoForm(request.POST)
-        global_role_form = GlobalRoleForm(request.POST)
-        if form.is_valid() and contact_form.is_valid() and global_role_form.is_valid():
+        if form.is_valid() and contact_form.is_valid():
             if not request.user.is_superuser and form.cleaned_data["is_superuser"]:
                 messages.add_message(request,
                                     messages.ERROR,
@@ -335,11 +304,6 @@ def add_user(request):
                 messages.add_message(request,
                                     messages.ERROR,
                                     _("Only superusers are allowed to grant staff status. User was not saved."),
-                                    extra_tags="alert-danger")
-            elif not request.user.is_superuser and global_role_form.cleaned_data["role"]:
-                messages.add_message(request,
-                                    messages.ERROR,
-                                    _("Only superusers are allowed to add users with a global role. User was not saved."),
                                     extra_tags="alert-danger")
             else:
                 user = form.save(commit=False)
@@ -353,9 +317,6 @@ def add_user(request):
                 contact = contact_form.save(commit=False)
                 contact.user = user
                 contact.save()
-                global_role = global_role_form.save(commit=False)
-                global_role.user = user
-                global_role.save()
                 messages.add_message(request,
                                     messages.SUCCESS,
                                     _("User added successfully."),
@@ -371,7 +332,6 @@ def add_user(request):
         "name": page_name,
         "form": form,
         "contact_form": contact_form,
-        "global_role_form": global_role_form,
         "to_add": True})
 
 
@@ -389,7 +349,6 @@ def view_user(request, uid):
     # `{% block user_products_panel %}` at pro/templates/dojo/view_user.html
     product_members = get_authorized_product_members_for_user(user, "view")
     product_type_members = get_authorized_product_type_members_for_user(user, "view")
-    group_members = get_authorized_group_members_for_user(user)
     configuration_permission_form = ConfigurationPermissionsForm(user=user)
 
     add_breadcrumb(title=_("View User"), top_level=False, request=request)
@@ -399,7 +358,6 @@ def view_user(request, uid):
         "accessible_products": accessible_products,
         "product_members": product_members,
         "product_type_members": product_type_members,
-        "group_members": group_members,
         "configuration_permission_form": configuration_permission_form})
 
 
@@ -411,11 +369,6 @@ def edit_user(request, uid):
     user_contact = user.usercontactinfo if hasattr(user, "usercontactinfo") else None
     contact_form = UserContactInfoForm(user=user) if user_contact is None else UserContactInfoForm(instance=user_contact, user=user)
 
-    # Look up Global_Role via the forward FK; user.global_role is not a
-    # reverse accessor (related_name="+").
-    global_role = Global_Role.objects.filter(user=user).first()
-    global_role_form = GlobalRoleForm() if global_role is None else GlobalRoleForm(instance=global_role)
-
     if request.method == "POST":
         form = EditDojoUserForm(request.POST, instance=user)
         if user_contact is None:
@@ -423,12 +376,7 @@ def edit_user(request, uid):
         else:
             contact_form = UserContactInfoForm(request.POST, instance=user_contact, user=user)
 
-        if global_role is None:
-            global_role_form = GlobalRoleForm(request.POST)
-        else:
-            global_role_form = GlobalRoleForm(request.POST, instance=global_role)
-
-        if form.is_valid() and contact_form.is_valid() and global_role_form.is_valid():
+        if form.is_valid() and contact_form.is_valid():
             if not request.user.is_superuser and form.cleaned_data["is_superuser"]:
                 messages.add_message(request,
                                     messages.ERROR,
@@ -439,19 +387,11 @@ def edit_user(request, uid):
                                     messages.ERROR,
                                     _("Only superusers are allowed to change staff status. User was not saved."),
                                     extra_tags="alert-danger")
-            elif not request.user.is_superuser and global_role_form.cleaned_data["role"]:
-                messages.add_message(request,
-                                    messages.ERROR,
-                                    _("Only superusers are allowed to edit users with a global role. User was not saved."),
-                                    extra_tags="alert-danger")
             else:
                 form.save()
                 contact = contact_form.save(commit=False)
                 contact.user = user
                 contact.save()
-                global_role = global_role_form.save(commit=False)
-                global_role.user = user
-                global_role.save()
 
                 # Handle API token reset if checkbox is checked
                 # Only allow superusers or global owners to reset tokens
@@ -493,7 +433,6 @@ def edit_user(request, uid):
         "name": page_name,
         "form": form,
         "contact_form": contact_form,
-        "global_role_form": global_role_form,
         "to_edit": user})
 
 
@@ -699,36 +638,6 @@ def revoke_user_from_product_type(request, uid, ptid):
         extra_tags="alert-success",
     )
     return HttpResponseRedirect(reverse("view_user", args=(uid,)))
-
-
-@user_passes_test(lambda u: u.is_superuser)
-def add_group_member(request, uid):
-    user = get_object_or_404(Dojo_User, id=uid)
-    memberform = Add_Group_Member_UserForm(initial={"user": user.id})
-
-    if request.method == "POST":
-        memberform = Add_Group_Member_UserForm(request.POST, initial={"user": user.id})
-        if memberform.is_valid():
-            if "groups" in memberform.cleaned_data and len(memberform.cleaned_data["groups"]) > 0:
-                for group in memberform.cleaned_data["groups"]:
-                    existing_groups = Dojo_Group_Member.objects.filter(user=user, group=group)
-                    if existing_groups.count() == 0:
-                        group_member = Dojo_Group_Member()
-                        group_member.group = group
-                        group_member.user = user
-                        group_member.role = memberform.cleaned_data["role"]
-                        group_member.save()
-            messages.add_message(request,
-                                 messages.SUCCESS,
-                                 _("Groups added successfully."),
-                                 extra_tags="alert-success")
-            return HttpResponseRedirect(reverse("view_user", args=(uid,)))
-
-    add_breadcrumb(title=_("Add Group Member"), top_level=False, request=request)
-    return render(request, "dojo/new_group_member_user.html", {
-        "user": user,
-        "form": memberform,
-    })
 
 
 def edit_permissions(request, uid):
