@@ -29,10 +29,6 @@ from dojo.labels import get_labels
 from dojo.models import Dojo_User, Finding, Product, Product_Type
 from dojo.product.queries import get_authorized_products
 from dojo.product_type.queries import (
-    get_authorized_global_groups_for_product_type,
-    get_authorized_global_members_for_product_type,
-    get_authorized_groups_for_product_type,
-    get_authorized_members_for_product_type,
     get_authorized_product_types,
 )
 from dojo.query_utils import build_count_subquery
@@ -126,12 +122,6 @@ def view_product_type(request, ptid):
     page_name = str(labels.ORG_READ_LABEL)
     pt = get_object_or_404(Product_Type, pk=ptid)
     authorized_users = pt.authorized_users.order_by("first_name", "last_name", "username")
-    # kept for Pro template override `{% block rbac_members_panel %}` /
-    # `{% block rbac_groups_panel %}` at pro/templates/dojo/view_product_type.html
-    members = get_authorized_members_for_product_type(pt, "view")
-    global_members = get_authorized_global_members_for_product_type(pt, "view")
-    groups = get_authorized_groups_for_product_type(pt, "view")
-    global_groups = get_authorized_global_groups_for_product_type(pt, "view")
     products = get_authorized_products("view").filter(prod_type=pt)
     filter_string_matching = get_system_setting("filter_string_matching", False)
     filter_class = ProductFilterWithoutObjectLookups if filter_string_matching else ProductFilter
@@ -145,10 +135,6 @@ def view_product_type(request, ptid):
         "products": products,
         "prod_filter": prod_filter,
         "authorized_users": authorized_users,
-        "groups": groups,
-        "members": members,
-        "global_groups": global_groups,
-        "global_members": global_members,
     })
 
 
@@ -191,7 +177,6 @@ def delete_product_type(request, ptid):
 def edit_product_type(request, ptid):
     page_name = str(labels.ORG_UPDATE_LABEL)
     pt = get_object_or_404(Product_Type, pk=ptid)
-    members = get_authorized_members_for_product_type(pt, "staff_only")
     pt_form = Product_TypeForm(instance=pt)
     if request.method == "POST" and request.POST.get("edit_product_type"):
         pt_form = Product_TypeForm(request.POST, instance=pt)
@@ -210,8 +195,7 @@ def edit_product_type(request, ptid):
         "name": page_name,
         "label_edit_with_name": labels.ORG_UPDATE_WITH_NAME_LABEL % {"name": pt.name},
         "pt_form": pt_form,
-        "pt": pt,
-        "members": members})
+        "pt": pt})
 
 
 def add_product_type_member(request, ptid):

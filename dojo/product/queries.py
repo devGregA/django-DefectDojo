@@ -34,46 +34,11 @@ def get_authorized_products(permission, user=None):
     return Product.objects.all().order_by("name")
 
 
-def get_authorized_members_for_product(product, permission):
-    impl = get_auth_filter("product.get_authorized_members_for_product")
-    if impl:
-        return impl(product, permission)
-    return Product_Member.objects.filter(product=product).order_by("user__first_name", "user__last_name").select_related("role", "user")
-
-
-def get_authorized_global_members_for_product(product, permission):
-    impl = get_auth_filter("product.get_authorized_global_members_for_product")
-    if impl:
-        return impl(product, permission)
-    return Global_Role.objects.filter(group=None, role__isnull=False).order_by("user__first_name", "user__last_name").select_related("role", "user")
-
-
-def get_authorized_groups_for_product(product, permission):
-    impl = get_auth_filter("product.get_authorized_groups_for_product")
-    if impl:
-        return impl(product, permission)
-    return Product_Group.objects.filter(product=product).order_by("group__name").select_related("role")
-
-
-def get_authorized_global_groups_for_product(product, permission):
-    impl = get_auth_filter("product.get_authorized_global_groups_for_product")
-    if impl:
-        return impl(product, permission)
-    return Global_Role.objects.filter(user=None, role__isnull=False).order_by("group__name").select_related("role")
-
-
 def get_authorized_product_members(permission):
     impl = get_auth_filter("product.get_authorized_product_members")
     if impl:
         return impl(permission)
     return Product_Member.objects.all().order_by("id").select_related("role")
-
-
-def get_authorized_product_members_for_user(user, permission):
-    impl = get_auth_filter("product.get_authorized_product_members_for_user")
-    if impl:
-        return impl(user, permission)
-    return Product_Member.objects.filter(user=user).select_related("role", "product")
 
 
 def get_authorized_product_groups(permission):

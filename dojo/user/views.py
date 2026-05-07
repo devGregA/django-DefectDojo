@@ -47,8 +47,6 @@ from dojo.forms import (
 )
 from dojo.labels import get_labels
 from dojo.models import Alerts, Dojo_User, Product, Product_Type, UserContactInfo
-from dojo.product.queries import get_authorized_product_members_for_user
-from dojo.product_type.queries import get_authorized_product_type_members_for_user
 from dojo.user.authentication import reset_token_for_user
 from dojo.utils import add_breadcrumb, get_page_items, get_setting, get_system_setting
 
@@ -345,10 +343,6 @@ def view_user(request, uid):
     accessible_products = Product.objects.filter(
         Q(authorized_users=user) | Q(prod_type__authorized_users=user),
     ).distinct().order_by("name")
-    # kept for Pro template override `{% block user_product_types_panel %}` /
-    # `{% block user_products_panel %}` at pro/templates/dojo/view_user.html
-    product_members = get_authorized_product_members_for_user(user, "view")
-    product_type_members = get_authorized_product_type_members_for_user(user, "view")
     configuration_permission_form = ConfigurationPermissionsForm(user=user)
 
     add_breadcrumb(title=_("View User"), top_level=False, request=request)
@@ -356,8 +350,6 @@ def view_user(request, uid):
         "user": user,
         "accessible_product_types": accessible_product_types,
         "accessible_products": accessible_products,
-        "product_members": product_members,
-        "product_type_members": product_type_members,
         "configuration_permission_form": configuration_permission_form})
 
 

@@ -96,15 +96,9 @@ from dojo.models import (
     Test_Type,
 )
 from dojo.product.queries import (
-    get_authorized_global_groups_for_product,
-    get_authorized_global_members_for_product,
-    get_authorized_groups_for_product,
-    get_authorized_members_for_product,
     get_authorized_products,
 )
 from dojo.product_type.queries import (
-    get_authorized_groups_for_product_type,
-    get_authorized_members_for_product_type,
     get_authorized_product_types,
 )
 from dojo.query_utils import build_count_subquery
@@ -252,14 +246,6 @@ def view_product(request, pid):
                                       .prefetch_related("prod_type__members")
     prod = get_object_or_404(prod_query, id=pid)
     authorized_users = prod.authorized_users.order_by("first_name", "last_name", "username")
-    # kept for Pro template override `{% block rbac_members_panel %}` /
-    # `{% block rbac_groups_panel %}` at pro/templates/dojo/view_product_details.html
-    product_members = get_authorized_members_for_product(prod, "view")
-    global_product_members = get_authorized_global_members_for_product(prod, "view")
-    product_type_members = get_authorized_members_for_product_type(prod.prod_type, "view")
-    product_groups = get_authorized_groups_for_product(prod, "view")
-    global_product_groups = get_authorized_global_groups_for_product(prod, "view")
-    product_type_groups = get_authorized_groups_for_product_type(prod.prod_type, "view")
     personal_notifications_form = ProductNotificationsForm(
         instance=Notifications.objects.filter(user=request.user).filter(product=prod).first())
     langSummary = Languages.objects.filter(product=prod).aggregate(Sum("files"), Sum("code"), Count("files"))
@@ -336,12 +322,6 @@ def view_product(request, pid):
         "benchmarks": benchmarks,
         "benchmark_type": product_tab.benchmark_type,
         "authorized_users": authorized_users,
-        "product_members": product_members,
-        "global_product_members": global_product_members,
-        "product_type_members": product_type_members,
-        "product_groups": product_groups,
-        "global_product_groups": global_product_groups,
-        "product_type_groups": product_type_groups,
         "personal_notifications_form": personal_notifications_form,
         "enabled_notifications": get_enabled_notifications_list(),
         "sla": sla})
