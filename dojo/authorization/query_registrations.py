@@ -1,40 +1,26 @@
 """
-Legacy authorization queryset filters.
+OS authorization queryset filters.
 
-The RBAC role-aware querysets have been replaced with the simpler legacy
-model: each filter restricts results to objects whose underlying Product /
+Each filter restricts results to objects whose underlying Product /
 Product_Type the user is a member of (via ``authorized_users``), with
-``is_superuser`` and ``is_staff`` bypasses.
+``is_superuser`` and ``is_staff`` bypasses. RBAC carrier queries (Member,
+Group, Global_Role) are not registered here — Pro registers its own
+implementations at startup that consult those tables.
 
 The dojo/authorization/queries entry-point names (e.g. ``product.get_
 authorized_products``) are preserved so the per-app queries.py modules and
 the API filter classes that look them up via ``get_auth_filter()`` keep
-working without code changes. Track B step #13 will simplify those callers.
-
-RBAC-carrier queries (``product.get_authorized_members_for_product`` and
-similar) return empty querysets for non-staff users — the membership tables
-still exist on disk but legacy authorization does not consult them. The
-dojo-pro plugin re-registers Pro implementations of these filters at startup
-that DO consult the tables.
+working without code changes.
 """
 from crum import get_current_user
 from django.db.models import Q
 
-from dojo.authorization.models import (
-    Dojo_Group_Member,
-    Global_Role,
-    Product_Group,
-    Product_Member,
-    Product_Type_Group,
-    Product_Type_Member,
-)
 from dojo.authorization.query_filters import register_auth_filter
 from dojo.authorization.roles_permissions import permission_to_action
 from dojo.location.models import Location, LocationFindingReference, LocationProductReference
 from dojo.models import (
     App_Analysis,
     Cred_Mapping,
-    Dojo_Group,
     Dojo_User,
     DojoMeta,
     Endpoint,
@@ -100,18 +86,6 @@ def _filter_by_authorized_products(queryset, product_path, permission, user=None
     if _is_unrestricted(user, action):
         return queryset
     return queryset.filter(**{f"{product_path}__id__in": _authorized_product_ids(user)})
-
-
-def _carrier_queryset(qs, user, action):
-    """
-    Visibility for RBAC carrier rows under legacy: staff/superuser see
-    every row; everyone else sees nothing.
-    """
-    if user is None or getattr(user, "is_anonymous", False):
-        return qs.none()
-    if _is_unrestricted(user, action) or user.is_staff:
-        return qs
-    return qs.none()
 
 
 # ---------------------------------------------------------------------------
@@ -433,166 +407,7 @@ register_auth_filter("finding.get_authorized_vulnerability_ids", _get_authorized
 
 
 # ---------------------------------------------------------------------------
-# RBAC carrier queries — staff/superuser see all rows, others see none
-# ---------------------------------------------------------------------------
-
-
-def _get_authorized_members_for_product(product, permission):
-    return _carrier_queryset(
-        Product_Member.objects.filter(product=product).select_related("role", "user"),
-        get_current_user(),
-        permission_to_action(permission),
-    )
-
-
-register_auth_filter("product.get_authorized_members_for_product", _get_authorized_members_for_product)
-
-
-def _get_authorized_global_members_for_product(product, permission):
-    return _carrier_queryset(
-        Global_Role.objects.filter(group=None, role__isnull=False).select_related("role", "user"),
-        get_current_user(),
-        permission_to_action(permission),
-    )
-
-
-register_auth_filter("product.get_authorized_global_members_for_product", _get_authorized_global_members_for_product)
-
-
-def _get_authorized_groups_for_product(product, permission):
-    return _carrier_queryset(
-        Product_Group.objects.filter(product=product).select_related("role"),
-        get_current_user(),
-        permission_to_action(permission),
-    )
-
-
-register_auth_filter("product.get_authorized_groups_for_product", _get_authorized_groups_for_product)
-
-
-def _get_authorized_global_groups_for_product(product, permission):
-    return _carrier_queryset(
-        Global_Role.objects.filter(user=None, role__isnull=False).select_related("role"),
-        get_current_user(),
-        permission_to_action(permission),
-    )
-
-
-register_auth_filter("product.get_authorized_global_groups_for_product", _get_authorized_global_groups_for_product)
-
-
-def _get_authorized_product_members(permission):
-    return _carrier_queryset(
-        Product_Member.objects.all().select_related("role"),
-        get_current_user(),
-        permission_to_action(permission),
-    )
-
-
-register_auth_filter("product.get_authorized_product_members", _get_authorized_product_members)
-
-
-def _get_authorized_product_members_for_user(user, permission):
-    return _carrier_queryset(
-        Product_Member.objects.filter(user=user).select_related("role", "product"),
-        get_current_user(),
-        permission_to_action(permission),
-    )
-
-
-register_auth_filter("product.get_authorized_product_members_for_user", _get_authorized_product_members_for_user)
-
-
-def _get_authorized_product_groups(permission):
-    return _carrier_queryset(
-        Product_Group.objects.all().select_related("role"),
-        get_current_user(),
-        permission_to_action(permission),
-    )
-
-
-register_auth_filter("product.get_authorized_product_groups", _get_authorized_product_groups)
-
-
-def _get_authorized_members_for_product_type(product_type, permission):
-    return _carrier_queryset(
-        Product_Type_Member.objects.filter(product_type=product_type).select_related("role", "user"),
-        get_current_user(),
-        permission_to_action(permission),
-    )
-
-
-register_auth_filter("product_type.get_authorized_members_for_product_type", _get_authorized_members_for_product_type)
-
-
-def _get_authorized_global_members_for_product_type(product_type, permission):
-    return _carrier_queryset(
-        Global_Role.objects.filter(group=None, role__isnull=False).select_related("role", "user"),
-        get_current_user(),
-        permission_to_action(permission),
-    )
-
-
-register_auth_filter("product_type.get_authorized_global_members_for_product_type", _get_authorized_global_members_for_product_type)
-
-
-def _get_authorized_groups_for_product_type(product_type, permission):
-    return _carrier_queryset(
-        Product_Type_Group.objects.filter(product_type=product_type).select_related("role"),
-        get_current_user(),
-        permission_to_action(permission),
-    )
-
-
-register_auth_filter("product_type.get_authorized_groups_for_product_type", _get_authorized_groups_for_product_type)
-
-
-def _get_authorized_global_groups_for_product_type(product_type, permission):
-    return _carrier_queryset(
-        Global_Role.objects.filter(user=None, role__isnull=False).select_related("role"),
-        get_current_user(),
-        permission_to_action(permission),
-    )
-
-
-register_auth_filter("product_type.get_authorized_global_groups_for_product_type", _get_authorized_global_groups_for_product_type)
-
-
-def _get_authorized_product_type_members(permission):
-    return _carrier_queryset(
-        Product_Type_Member.objects.all().select_related("role"),
-        get_current_user(),
-        permission_to_action(permission),
-    )
-
-
-register_auth_filter("product_type.get_authorized_product_type_members", _get_authorized_product_type_members)
-
-
-def _get_authorized_product_type_members_for_user(user, permission):
-    return _carrier_queryset(
-        Product_Type_Member.objects.filter(user=user).select_related("role", "product_type"),
-        get_current_user(),
-        permission_to_action(permission),
-    )
-
-
-register_auth_filter("product_type.get_authorized_product_type_members_for_user", _get_authorized_product_type_members_for_user)
-
-
-def _get_authorized_product_type_groups(permission):
-    return _carrier_queryset(
-        Product_Type_Group.objects.all().select_related("role"),
-        get_current_user(),
-        permission_to_action(permission),
-    )
-
-
-register_auth_filter("product_type.get_authorized_product_type_groups", _get_authorized_product_type_groups)
-
-
-# ---------------------------------------------------------------------------
-# User / Group queries
+# User queries
 # ---------------------------------------------------------------------------
 
 
@@ -634,38 +449,3 @@ def _get_authorized_users_for_product_and_product_type(users, product, permissio
 
 
 register_auth_filter("user.get_authorized_users_for_product_and_product_type", _get_authorized_users_for_product_and_product_type)
-
-
-def _get_authorized_groups(permission):
-    user = get_current_user()
-    if user is None or getattr(user, "is_anonymous", False):
-        return Dojo_Group.objects.none()
-    if _is_unrestricted(user, permission_to_action(permission)) or user.is_staff:
-        return Dojo_Group.objects.all().order_by("name")
-    return Dojo_Group.objects.none()
-
-
-register_auth_filter("group.get_authorized_groups", _get_authorized_groups)
-
-
-def _get_authorized_group_members(permission):
-    return _carrier_queryset(
-        Dojo_Group_Member.objects.all().select_related("role", "group", "user"),
-        get_current_user(),
-        permission_to_action(permission),
-    )
-
-
-register_auth_filter("group.get_authorized_group_members", _get_authorized_group_members)
-
-
-def _get_authorized_group_members_for_user(user):
-    request_user = get_current_user()
-    if request_user is None or getattr(request_user, "is_anonymous", False):
-        return Dojo_Group_Member.objects.none()
-    if request_user.is_superuser or request_user.is_staff:
-        return Dojo_Group_Member.objects.filter(user=user).select_related("group", "role")
-    return Dojo_Group_Member.objects.none()
-
-
-register_auth_filter("group.get_authorized_group_members_for_user", _get_authorized_group_members_for_user)

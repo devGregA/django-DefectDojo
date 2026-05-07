@@ -1,39 +1,25 @@
 """
-Legacy authorization checks.
+OS authorization: is_superuser / is_staff / authorized_users.
 
-The hierarchical RBAC role system has been replaced with the simpler
-pre-2020 model: a user is authorized for an action on an object iff
+The hierarchical RBAC role system has been moved out of OS to the dojo-pro
+plugin. OS-only deployments authorize an action on an object iff
 
   * the user is a superuser, or
-  * the user is staff and the action is non-destructive
-    (View / Edit / Add / Import; Delete and member-management require explicit
-    staff confirmation but legacy treats every staff user as eligible), or
+  * the user is staff and the action is non-destructive (legacy treats
+    every staff user as eligible for staff-only and delete actions), or
   * the user is in the relevant ``authorized_users`` ManyToMany
     (climbing the Product_Type → Product → Engagement → Test → Finding
     hierarchy until an explicit membership is found).
 
 Per-product role granularity (Reader / Writer / Maintainer / Owner),
-group-level authorization, and configuration permissions per add/edit/delete
-codename are not present in this model. Deployments that need that fidelity
-should run the dojo-pro plugin, which keeps the RBAC layer alive and shadows
-this module's symbols at startup so the same code paths route through Pro.
-
-The public surface (function names + signatures) is preserved so existing
-callers in dojo/views.py, dojo/forms.py, etc. keep compiling. Track B step
-#13 simplifies callers to pass action strings directly; until that lands,
-the existing ``Permissions.X`` enum members are still accepted and reduced
-to a legacy Action via ``permission_to_action()``.
+group-level authorization, and Member/Group/Role tables are not consulted
+in this model. Deployments that need that fidelity should run the
+dojo-pro plugin, which keeps the RBAC layer alive and shadows this
+module's symbols at startup so the same code paths route through Pro.
 """
 from django.core.exceptions import PermissionDenied
-from django.db.models import Model, QuerySet
+from django.db.models import Model
 
-from dojo.authorization.models import (
-    Dojo_Group_Member,
-    Product_Group,
-    Product_Member,
-    Product_Type_Group,
-    Product_Type_Member,
-)
 from dojo.authorization.roles_permissions import (
     Action,
     permission_to_action,
@@ -42,7 +28,6 @@ from dojo.location.models import AbstractLocation, Location
 from dojo.models import (
     App_Analysis,
     Cred_Mapping,
-    Dojo_Group,
     Dojo_User,
     Endpoint,
     Engagement,
@@ -106,10 +91,8 @@ def user_has_permission(user: Dojo_User, obj: Model, permission) -> bool:
          dojo/user/helper.py at commit e7805aa14~ for the historical
          reference.
 
-    The Member / Group / Cred_Mapping / etc. carrier objects don't expose
-    authorized_users themselves; they delegate to their wrapped product
-    or product type, except for self-removal (a user is always allowed to
-    delete their own membership row).
+    Cred_Mapping and other carrier objects don't expose authorized_users
+    themselves; they delegate to their wrapped product or product type.
     """
     if not user or getattr(user, "is_anonymous", False):
         return False
@@ -123,10 +106,6 @@ def user_has_permission(user: Dojo_User, obj: Model, permission) -> bool:
 
     if action in {Action.StaffOnly, Action.Delete}:
         return bool(user.is_staff)
-
-    # Member/group self-deletion: any user can remove their own membership
-    if isinstance(obj, Product_Type_Member | Product_Member | Dojo_Group_Member) and obj.user_id == user.id:
-        return True
 
     return _user_authorized_for(user, obj, action)
 
@@ -181,16 +160,6 @@ def _user_authorized_for(user: Dojo_User, obj: Model, action: Action) -> bool:
     if isinstance(obj, Endpoint | Languages | App_Analysis | Product_API_Scan_Configuration):
         return _user_authorized_for(user, obj.product, action)
 
-    if isinstance(obj, Product_Type_Member | Product_Type_Group):
-        return _user_authorized_for(user, obj.product_type, action)
-
-    if isinstance(obj, Product_Member | Product_Group):
-        return _user_authorized_for(user, obj.product, action)
-
-    if isinstance(obj, Dojo_Group | Dojo_Group_Member):
-        # Group authorization is staff-only in legacy; non-staff already filtered out.
-        return bool(user.is_staff)
-
     if isinstance(obj, Cred_Mapping):
         if obj.product_id:
             return _user_authorized_for(user, obj.product, action)
@@ -244,25 +213,6 @@ def user_has_global_permission_or_403(user: Dojo_User, permission) -> None:
         raise PermissionDenied
 
 
-# ---------------------------------------------------------------------------
-# Backward-compat shims for the role hierarchy. Legacy authorization does not
-# branch on roles, but call sites still import these symbols. Returning empty
-# results keeps them harmless until Track B step #13 simplifies the callers.
-# ---------------------------------------------------------------------------
-
-
-def get_roles_for_permission(permission) -> set[int]:
-    return set()
-
-
-def role_has_permission(role: int, permission) -> bool:
-    return False
-
-
-def role_has_global_permission(role: int, permission) -> bool:
-    return False
-
-
 class NoAuthorizationImplementedError(Exception):
     def __init__(self, message):
         self.message = message
@@ -276,56 +226,3 @@ class PermissionDoesNotExistError(Exception):
 class RoleDoesNotExistError(Exception):
     def __init__(self, message):
         self.message = message
-
-
-# ---------------------------------------------------------------------------
-# RBAC member / group lookup helpers. These return empty/None under legacy —
-# the underlying tables (Product_Member, Product_Type_Member, etc.) still
-# exist in the database, but legacy authorization does not consult them.
-# Track B step #13 will remove call sites; until then these stubs prevent
-# AttributeError / TypeError in transitional code.
-# ---------------------------------------------------------------------------
-
-
-def get_product_member(user: Dojo_User, product: Product) -> Product_Member | None:
-    return None
-
-
-def get_product_member_dict(user: Dojo_User) -> dict[int, Product_Member]:
-    return {}
-
-
-def get_product_type_member(user: Dojo_User, product_type: Product_Type) -> Product_Type_Member | None:
-    return None
-
-
-def get_product_type_member_dict(user: Dojo_User) -> dict[int, Product_Type_Member]:
-    return {}
-
-
-def get_product_groups(user: Dojo_User, product: Product) -> list[Product_Group]:
-    return []
-
-
-def get_product_groups_dict(user: Dojo_User) -> dict[int, list[Product_Group]]:
-    return {}
-
-
-def get_product_type_groups(user: Dojo_User, product_type: Product_Type) -> list[Product_Type_Group]:
-    return []
-
-
-def get_product_type_groups_dict(user: Dojo_User) -> dict[int, list[Product_Type_Group]]:
-    return {}
-
-
-def get_groups(user: Dojo_User) -> QuerySet[Dojo_Group]:
-    return Dojo_Group.objects.none()
-
-
-def get_group_member(user: Dojo_User, group: Dojo_Group) -> Dojo_Group_Member | None:
-    return None
-
-
-def get_group_members_dict(user: Dojo_User) -> dict[int, Dojo_Group_Member]:
-    return {}
