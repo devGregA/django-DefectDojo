@@ -28,12 +28,10 @@ from rest_framework.exceptions import PermissionDenied as RFPermissionDenied
 from rest_framework.exceptions import ValidationError as RFValidationError
 
 from dojo.authorization.authorization import user_is_superuser_or_global_owner
-from dojo.authorization.models import Global_Role, Product_Member, Product_Type_Member
+from dojo.authorization.models import Global_Role
 from dojo.decorators import dojo_ratelimit
 from dojo.filters import UserFilter
 from dojo.forms import (
-    Add_Product_Member_UserForm,
-    Add_Product_Type_Member_UserForm,
     AddDojoUserForm,
     APIKeyForm,
     Authorize_User_For_ProductsForm,
@@ -482,66 +480,6 @@ def delete_user(request, uid):
                    "form": form,
                    "rels": rels,
                    })
-
-
-@user_passes_test(lambda u: u.is_superuser)
-def add_product_type_member(request, uid):
-    page_name = str(labels.ORG_USERS_ADD_LABEL)
-    user = get_object_or_404(Dojo_User, id=uid)
-    memberform = Add_Product_Type_Member_UserForm(initial={"user": user.id})
-    if request.method == "POST":
-        memberform = Add_Product_Type_Member_UserForm(request.POST, initial={"user": user.id})
-        if memberform.is_valid():
-            if "product_types" in memberform.cleaned_data and len(memberform.cleaned_data["product_types"]) > 0:
-                for product_type in memberform.cleaned_data["product_types"]:
-                    existing_members = Product_Type_Member.objects.filter(product_type=product_type, user=user)
-                    if existing_members.count() == 0:
-                        product_type_member = Product_Type_Member()
-                        product_type_member.product_type = product_type
-                        product_type_member.user = user
-                        product_type_member.role = memberform.cleaned_data["role"]
-                        product_type_member.save()
-                messages.add_message(request,
-                                    messages.SUCCESS,
-                                    labels.ORG_USERS_ADD_SUCCESS_MESSAGE,
-                                    extra_tags="alert-success")
-                return HttpResponseRedirect(reverse("view_user", args=(uid, )))
-    add_breadcrumb(title=page_name, top_level=False, request=request)
-    return render(request, "dojo/new_product_type_member_user.html", {
-        "name": page_name,
-        "user": user,
-        "form": memberform,
-    })
-
-
-@user_passes_test(lambda u: u.is_superuser)
-def add_product_member(request, uid):
-    page_name = str(labels.ASSET_USERS_MEMBER_ADD_LABEL)
-    user = get_object_or_404(Dojo_User, id=uid)
-    memberform = Add_Product_Member_UserForm(initial={"user": user.id})
-    if request.method == "POST":
-        memberform = Add_Product_Member_UserForm(request.POST, initial={"user": user.id})
-        if memberform.is_valid():
-            if "products" in memberform.cleaned_data and len(memberform.cleaned_data["products"]) > 0:
-                for product in memberform.cleaned_data["products"]:
-                    existing_members = Product_Member.objects.filter(product=product, user=user)
-                    if existing_members.count() == 0:
-                        product_member = Product_Member()
-                        product_member.product = product
-                        product_member.user = user
-                        product_member.role = memberform.cleaned_data["role"]
-                        product_member.save()
-            messages.add_message(request,
-                                messages.SUCCESS,
-                                labels.ASSET_USERS_MEMBER_ADD_SUCCESS_MESSAGE,
-                                extra_tags="alert-success")
-            return HttpResponseRedirect(reverse("view_user", args=(uid, )))
-    add_breadcrumb(title=page_name, top_level=False, request=request)
-    return render(request, "dojo/new_product_member_user.html", {
-        "name": page_name,
-        "user": user,
-        "form": memberform,
-    })
 
 
 @user_passes_test(lambda u: u.is_staff)

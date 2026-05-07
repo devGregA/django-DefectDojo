@@ -323,22 +323,6 @@ class Add_Product_Type_AuthorizedUsersForm(forms.Form):
         )
 
 
-class Add_Product_Type_Member_UserForm(forms.ModelForm):
-    product_types = forms.ModelMultipleChoiceField(queryset=Product_Type.objects.none(), required=True,
-                                                   label=labels.ORG_PLURAL_LABEL)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        current_members = Product_Type_Member.objects.filter(user=self.initial["user"]).values_list("product_type", flat=True)
-        self.fields["product_types"].queryset = get_authorized_product_types("staff_only") \
-            .exclude(id__in=current_members)
-        self.fields["user"].disabled = True
-
-    class Meta:
-        model = Product_Type_Member
-        fields = ["product_types", "user", "role"]
-
-
 class Delete_Product_Type_MemberForm(Edit_Product_Type_MemberForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -535,22 +519,6 @@ class Authorize_User_For_ProductTypesForm(forms.Form):
         self.fields["product_types"].queryset = (
             Product_Type.objects.exclude(authorized_users=user).order_by("name")
         )
-
-
-class Add_Product_Member_UserForm(forms.ModelForm):
-    products = forms.ModelMultipleChoiceField(queryset=Product.objects.none(), required=True,
-                                              label=labels.ASSET_PLURAL_LABEL)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        current_members = Product_Member.objects.filter(user=self.initial["user"]).values_list("product", flat=True)
-        self.fields["products"].queryset = get_authorized_products("staff_only") \
-            .exclude(id__in=current_members)
-        self.fields["user"].disabled = True
-
-    class Meta:
-        model = Product_Member
-        fields = ["products", "user", "role"]
 
 
 class Delete_Product_MemberForm(Edit_Product_MemberForm):

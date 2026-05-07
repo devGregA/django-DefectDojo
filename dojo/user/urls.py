@@ -21,8 +21,6 @@ urlpatterns = [
     re_path(r"^user/(?P<uid>\d+)$", views.view_user, name="view_user"),
     re_path(r"^user/(?P<uid>\d+)/edit$", views.edit_user, name="edit_user"),
     re_path(r"^user/(?P<uid>\d+)/delete", views.delete_user, name="delete_user"),
-    re_path(r"^user/(?P<uid>\d+)/add_product_type_member$", views.add_product_type_member, name="add_product_type_member_user"),
-    re_path(r"^user/(?P<uid>\d+)/add_product_member$", views.add_product_member, name="add_product_member_user"),
     re_path(r"^user/(?P<uid>\d+)/authorize_products$",
             views.authorize_user_for_products, name="authorize_user_for_products"),
     re_path(r"^user/(?P<uid>\d+)/authorize_product_types$",
