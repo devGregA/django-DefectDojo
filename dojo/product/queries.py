@@ -3,17 +3,6 @@ try:
 except ImportError:
     def get_auth_filter(key): return None
 
-try:
-    from dojo.authorization.models import (
-        Global_Role,
-        Product_Group,
-        Product_Member,
-    )
-except ImportError:
-    Global_Role = None
-    Product_Group = None
-    Product_Member = None
-
 from dojo.models import (
     App_Analysis,
     DojoMeta,
@@ -32,20 +21,6 @@ def get_authorized_products(permission, user=None):
     if impl:
         return impl(permission, user=user)
     return Product.objects.all().order_by("name")
-
-
-def get_authorized_product_members(permission):
-    impl = get_auth_filter("product.get_authorized_product_members")
-    if impl:
-        return impl(permission)
-    return Product_Member.objects.all().order_by("id").select_related("role")
-
-
-def get_authorized_product_groups(permission):
-    impl = get_auth_filter("product.get_authorized_product_groups")
-    if impl:
-        return impl(permission)
-    return Product_Group.objects.all().order_by("id").select_related("role")
 
 
 # Cached: all parameters are hashable, no dynamic queryset filtering
