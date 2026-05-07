@@ -446,37 +446,6 @@ class DeleteFindingGroupForm(forms.ModelForm):
         fields = ["id"]
 
 
-class Edit_Product_MemberForm(forms.ModelForm):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["product"].disabled = True
-        self.fields["product"].label = labels.ASSET_LABEL
-        self.fields["user"].queryset = Dojo_User.objects.order_by("first_name", "last_name")
-        self.fields["user"].disabled = True
-
-    class Meta:
-        model = Product_Member
-        fields = ["product", "user", "role"]
-
-
-class Add_Product_MemberForm(forms.ModelForm):
-    users = forms.ModelMultipleChoiceField(queryset=Dojo_User.objects.none(), required=True, label="Users")
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["product"].disabled = True
-        self.fields["product"].label = labels.ASSET_LABEL
-        current_members = Product_Member.objects.filter(product=self.initial["product"]).values_list("user", flat=True)
-        self.fields["users"].queryset = Dojo_User.objects.exclude(
-            Q(is_superuser=True)
-            | Q(id__in=current_members)).exclude(is_active=False).order_by("first_name", "last_name")
-
-    class Meta:
-        model = Product_Member
-        fields = ["product", "users", "role"]
-
-
 class Add_Product_AuthorizedUsersForm(forms.Form):
     users = forms.ModelMultipleChoiceField(
         queryset=Dojo_User.objects.none(), required=True, label="Users",
@@ -519,12 +488,6 @@ class Authorize_User_For_ProductTypesForm(forms.Form):
         self.fields["product_types"].queryset = (
             Product_Type.objects.exclude(authorized_users=user).order_by("name")
         )
-
-
-class Delete_Product_MemberForm(Edit_Product_MemberForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["role"].disabled = True
 
 
 class NoteTypeForm(forms.ModelForm):

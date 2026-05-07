@@ -26,10 +26,7 @@ from django.views import View
 from github import Github
 
 import dojo.finding.helper as finding_helper
-from dojo.authorization.authorization import user_has_permission, user_has_permission_or_403
-from dojo.authorization.models import (
-    Product_Member,
-)
+from dojo.authorization.authorization import user_has_permission_or_403
 from dojo.authorization.roles_permissions import Permissions
 from dojo.components.sql_group_concat import Sql_GroupConcat
 from dojo.filters import (
@@ -47,16 +44,13 @@ from dojo.filters import (
 )
 from dojo.forms import (
     Add_Product_AuthorizedUsersForm,
-    Add_Product_MemberForm,
     AdHocFindingForm,
     AppAnalysisForm,
-    Delete_Product_MemberForm,
     DeleteAppAnalysisForm,
     DeleteEngagementPresetsForm,
     DeleteProduct_API_Scan_ConfigurationForm,
     DeleteProductForm,
     DojoMetaFormSet,
-    Edit_Product_MemberForm,
     EngagementPresetsForm,
     EngForm,
     GITHUB_Product_Form,
@@ -1234,7 +1228,7 @@ def delete_technology(request, tid):
     technology = get_object_or_404(App_Analysis, id=tid)
     form = DeleteAppAnalysisForm(instance=technology)
     if request.method == "POST":
-        form = Delete_Product_MemberForm(request.POST, instance=technology)
+        form = DeleteAppAnalysisForm(request.POST, instance=technology)
         technology = form.instance
         technology.delete()
         messages.add_message(request,
@@ -1664,101 +1658,6 @@ def edit_notifications(request, pid):
                                  extra_tags="alert-success")
 
     return HttpResponseRedirect(reverse("view_product", args=(pid,)))
-
-
-def add_product_member(request, pid):
-    product = get_object_or_404(Product, pk=pid)
-    memberform = Add_Product_MemberForm(initial={"product": product.id})
-    page_name = str(labels.ASSET_USERS_MEMBER_ADD_LABEL)
-    if request.method == "POST":
-        memberform = Add_Product_MemberForm(request.POST, initial={"product": product.id})
-        if memberform.is_valid():
-            if memberform.cleaned_data["role"].is_owner and not user_has_permission(request.user, product,
-                                                                                    "staff_only"):
-                messages.add_message(request,
-                                     messages.WARNING,
-                                     _("You are not permitted to add users as owners."),
-                                     extra_tags="alert-warning")
-            else:
-                if "users" in memberform.cleaned_data and len(memberform.cleaned_data["users"]) > 0:
-                    for user in memberform.cleaned_data["users"]:
-                        existing_members = Product_Member.objects.filter(product=product, user=user)
-                        if existing_members.count() == 0:
-                            product_member = Product_Member()
-                            product_member.product = product
-                            product_member.user = user
-                            product_member.role = memberform.cleaned_data["role"]
-                            product_member.save()
-                messages.add_message(request,
-                                     messages.SUCCESS,
-                                     labels.ASSET_USERS_MEMBER_ADD_SUCCESS_MESSAGE,
-                                     extra_tags="alert-success")
-                return HttpResponseRedirect(reverse("view_product", args=(pid,)))
-    product_tab = Product_Tab(product, title=page_name, tab="settings")
-    return render(request, "dojo/new_product_member.html", {
-        "name": page_name,
-        "product": product,
-        "form": memberform,
-        "product_tab": product_tab,
-    })
-
-
-def edit_product_member(request, memberid):
-    member = get_object_or_404(Product_Member, pk=memberid)
-    memberform = Edit_Product_MemberForm(instance=member)
-    page_name = str(labels.ASSET_USERS_MEMBER_UPDATE_LABEL)
-    if request.method == "POST":
-        memberform = Edit_Product_MemberForm(request.POST, instance=member)
-        if memberform.is_valid():
-            if member.role.is_owner and not user_has_permission(request.user, member.product,
-                                                                "staff_only"):
-                messages.add_message(request,
-                                     messages.WARNING,
-                                     _("You are not permitted to make users to owners."),
-                                     extra_tags="alert-warning")
-            else:
-                memberform.save()
-                messages.add_message(request,
-                                     messages.SUCCESS,
-                                     labels.ASSET_USERS_MEMBER_UPDATE_SUCCESS_MESSAGE,
-                                     extra_tags="alert-success")
-                if is_title_in_breadcrumbs("View User"):
-                    return HttpResponseRedirect(reverse("view_user", args=(member.user.id,)))
-                return HttpResponseRedirect(reverse("view_product", args=(member.product.id,)))
-    product_tab = Product_Tab(member.product, title=page_name, tab="settings")
-    return render(request, "dojo/edit_product_member.html", {
-        "name": page_name,
-        "memberid": memberid,
-        "form": memberform,
-        "product_tab": product_tab,
-    })
-
-
-def delete_product_member(request, memberid):
-    member = get_object_or_404(Product_Member, pk=memberid)
-    memberform = Delete_Product_MemberForm(instance=member)
-    page_name = str(labels.ASSET_USERS_MEMBER_DELETE_LABEL)
-    if request.method == "POST":
-        memberform = Delete_Product_MemberForm(request.POST, instance=member)
-        member = memberform.instance
-        user = member.user
-        member.delete()
-        messages.add_message(request,
-                             messages.SUCCESS,
-                             labels.ASSET_USERS_MEMBER_DELETE_SUCCESS_MESSAGE,
-                             extra_tags="alert-success")
-        if is_title_in_breadcrumbs("View User"):
-            return HttpResponseRedirect(reverse("view_user", args=(member.user.id,)))
-        if user == request.user:
-            return HttpResponseRedirect(reverse("product"))
-        return HttpResponseRedirect(reverse("view_product", args=(member.product.id,)))
-    product_tab = Product_Tab(member.product, title=page_name, tab="settings")
-    return render(request, "dojo/delete_product_member.html", {
-        "name": page_name,
-        "memberid": memberid,
-        "form": memberform,
-        "product_tab": product_tab,
-    })
 
 
 def add_product_authorized_users(request, pid):
