@@ -28,11 +28,6 @@ from polymorphic.base import ManagerInheritanceWarning
 from tagulous.forms import TagField
 
 from dojo.authorization.authorization import user_has_configuration_permission, user_is_superuser_or_global_owner
-from dojo.authorization.models import (
-    Global_Role,
-    Product_Group,
-    Product_Type_Group,
-)
 from dojo.endpoint.utils import endpoint_filter, endpoint_get_or_create, validate_endpoints_to_add
 from dojo.engagement.queries import get_authorized_engagements
 from dojo.finding.queries import get_authorized_findings
@@ -2313,38 +2308,6 @@ class MetricsFilterForm(forms.Form):
             del self.fields["exclude_product_types"]
 
 
-class Add_Product_Group_GroupForm(forms.ModelForm):
-    products = forms.ModelMultipleChoiceField(queryset=Product.objects.none(), required=True,
-                                              label=labels.ASSET_PLURAL_LABEL)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        current_members = Product_Group.objects.filter(group=self.initial["group"]).values_list("product", flat=True)
-        self.fields["products"].queryset = get_authorized_products("staff_only") \
-            .exclude(id__in=current_members)
-        self.fields["group"].disabled = True
-
-    class Meta:
-        model = Product_Group
-        fields = ["products", "group", "role"]
-
-
-class Add_Product_Type_Group_GroupForm(forms.ModelForm):
-    product_types = forms.ModelMultipleChoiceField(queryset=Product_Type.objects.none(), required=True,
-                                                   label=labels.ORG_PLURAL_LABEL)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        current_members = Product_Type_Group.objects.filter(group=self.initial["group"]).values_list("product_type", flat=True)
-        self.fields["product_types"].queryset = get_authorized_product_types("staff_only") \
-            .exclude(id__in=current_members)
-        self.fields["group"].disabled = True
-
-    class Meta:
-        model = Product_Type_Group
-        fields = ["product_types", "group", "role"]
-
-
 class DojoUserForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -2487,19 +2450,6 @@ class UserContactInfoForm(forms.ModelForm):
         # Only show reset_api_token to superusers or global owners, and only if API tokens are enabled
         if not settings.API_TOKENS_ENABLED or not user_is_superuser_or_global_owner(current_user):
             self.fields.pop("reset_api_token", None)
-
-
-class GlobalRoleForm(forms.ModelForm):
-    class Meta:
-        model = Global_Role
-        exclude = ["user", "group"]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        current_user = get_current_user()
-        self.fields["role"].help_text = labels.ASSET_GLOBAL_ROLE_HELP
-        if not current_user.is_superuser:
-            self.fields["role"].disabled = True
 
 
 def get_years():
