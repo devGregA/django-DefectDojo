@@ -571,25 +571,6 @@ class UserHasOrganizationPermission(permissions.BasePermission):
         )
 
 
-class UserHasOrganizationMemberPermission(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return check_post_permission(
-            request,
-            Product_Type,
-            "organization",
-            "staff_only",
-        )
-
-    def has_object_permission(self, request, view, obj):
-        return check_object_permission(
-            request,
-            obj,
-            "view",
-            "staff_only",
-            "delete",
-        )
-
-
 class UserHasOrganizationGroupPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(

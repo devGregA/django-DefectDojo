@@ -10,18 +10,15 @@ from dojo.api_v2.views import PrefetchDojoModelViewSet, report_generate, schema_
 from dojo.authorization import api_permissions as permissions
 from dojo.authorization.models import (
     Product_Type_Group,
-    Product_Type_Member,
 )
 from dojo.models import Product_Type
 from dojo.organization.api import serializers
 from dojo.organization.api.filters import (
     OrganizationFilterSet,
     OrganizationGroupFilterSet,
-    OrganizationMemberFilterSet,
 )
 from dojo.product_type.queries import (
     get_authorized_product_type_groups,
-    get_authorized_product_type_members,
     get_authorized_product_types,
 )
 from dojo.utils import async_delete, get_setting
@@ -91,48 +88,6 @@ class OrganizationViewSet(
         data = report_generate(request, product_type, options)
         report = ReportGenerateSerializer(data)
         return Response(report.data)
-
-
-# Authorization: object-based
-@extend_schema_view(**schema_with_prefetch())
-class OrganizationMemberViewSet(
-    PrefetchDojoModelViewSet,
-):
-    serializer_class = serializers.OrganizationMemberSerializer
-    queryset = Product_Type_Member.objects.none()
-    filter_backends = (DjangoFilterBackend,)
-    filterset_class = OrganizationMemberFilterSet
-    permission_classes = (
-        IsAuthenticated,
-        permissions.UserHasOrganizationMemberPermission,
-    )
-
-    def get_queryset(self):
-        return get_authorized_product_type_members(
-            "view",
-        ).distinct()
-
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.role.is_owner:
-            owners = Product_Type_Member.objects.filter(
-                product_type=instance.product_type, role__is_owner=True,
-            ).count()
-            if owners <= 1:
-                return Response(
-                    "There must be at least one owner",
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    @extend_schema(
-        exclude=True,
-    )
-    def partial_update(self, request, pk=None):
-        # Object authorization won't work if not all data is provided
-        response = {"message": "Patch function is not offered in this path."}
-        return Response(response, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 # Authorization: object-based
