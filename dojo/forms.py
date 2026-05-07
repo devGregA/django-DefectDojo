@@ -2424,43 +2424,6 @@ class MetricsFilterForm(forms.Form):
             del self.fields["exclude_product_types"]
 
 
-class DojoGroupForm(forms.ModelForm):
-
-    name = forms.CharField(max_length=255, required=True)
-    description = forms.CharField(widget=forms.Textarea(attrs={}), required=False)
-
-    class Meta:
-        model = Dojo_Group
-        fields = ["name", "description"]
-        exclude = ["users"]
-
-
-class DeleteGroupForm(forms.ModelForm):
-    id = forms.IntegerField(required=True,
-                            widget=forms.widgets.HiddenInput())
-
-    class Meta:
-        model = Dojo_Group
-        fields = ["id"]
-
-
-class Add_Group_MemberForm(forms.ModelForm):
-    users = forms.ModelMultipleChoiceField(queryset=Dojo_Group_Member.objects.none(), required=True, label="Users")
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["group"].disabled = True
-        current_members = Dojo_Group_Member.objects.filter(group=self.initial["group"]).values_list("user", flat=True)
-        self.fields["users"].queryset = Dojo_User.objects.exclude(
-            Q(is_superuser=True)
-            | Q(id__in=current_members)).exclude(is_active=False).order_by("first_name", "last_name")
-        self.fields["role"].queryset = get_group_member_roles()
-
-    class Meta:
-        model = Dojo_Group_Member
-        fields = ["group", "users", "role"]
-
-
 class Add_Group_Member_UserForm(forms.ModelForm):
     groups = forms.ModelMultipleChoiceField(queryset=Dojo_Group.objects.none(), required=True, label="Groups")
 
@@ -2474,24 +2437,6 @@ class Add_Group_Member_UserForm(forms.ModelForm):
     class Meta:
         model = Dojo_Group_Member
         fields = ["groups", "user", "role"]
-
-
-class Edit_Group_MemberForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["group"].disabled = True
-        self.fields["user"].disabled = True
-        self.fields["role"].queryset = get_group_member_roles()
-
-    class Meta:
-        model = Dojo_Group_Member
-        fields = ["group", "user", "role"]
-
-
-class Delete_Group_MemberForm(Edit_Group_MemberForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["role"].disabled = True
 
 
 class Add_Product_GroupForm(forms.ModelForm):

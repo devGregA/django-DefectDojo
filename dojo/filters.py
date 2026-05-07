@@ -63,7 +63,6 @@ from dojo.models import (
     ChoiceQuestion,
     Cred_Mapping,
     Development_Environment,
-    Dojo_Group,
     Dojo_User,
     DojoMeta,
     Endpoint,
@@ -3692,16 +3691,6 @@ class UserFilter(DojoFilter):
     class Meta:
         model = Dojo_User
         fields = ["is_superuser", "is_staff", "is_active", "first_name", "last_name", "username", "email"]
-
-
-class GroupFilter(DojoFilter):
-    name = CharFilter(lookup_expr="icontains")
-    description = CharFilter(lookup_expr="icontains")
-
-    class Meta:
-        model = Dojo_Group
-        fields = ["name", "description"]
-        exclude = ["users"]
 
 
 # This class is used exclusively by Findings

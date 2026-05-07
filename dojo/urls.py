@@ -77,7 +77,6 @@ from dojo.engagement.urls import urlpatterns as eng_urls
 from dojo.finding.urls import urlpatterns as finding_urls
 from dojo.finding_group.urls import urlpatterns as finding_group_urls
 from dojo.github.ui.urls import urlpatterns as github_urls
-from dojo.group.urls import urlpatterns as group_urls
 from dojo.home.urls import urlpatterns as home_urls
 from dojo.jira.urls import urlpatterns as jira_urls
 from dojo.location.api.endpoint_compat import V3EndpointCompatibleViewSet, V3EndpointStatusCompatibleViewSet
@@ -204,7 +203,6 @@ ur += search_urls
 ur += test_type_urls
 ur += test_urls
 ur += user_urls
-ur += group_urls
 ur += jira_urls
 ur += github_urls
 ur += tool_type_urls
