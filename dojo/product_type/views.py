@@ -14,7 +14,7 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 
 from dojo.authorization.authorization import user_has_permission, user_has_permission_or_403
-from dojo.authorization.models import Product_Type_Group, Product_Type_Member, Role
+from dojo.authorization.models import Product_Type_Member, Role
 from dojo.authorization.roles_permissions import Permissions
 from dojo.filters import ProductFilter, ProductFilterWithoutObjectLookups, ProductTypeFilter
 from dojo.forms import (

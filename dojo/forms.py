@@ -29,7 +29,6 @@ from tagulous.forms import TagField
 
 from dojo.authorization.authorization import user_has_configuration_permission, user_is_superuser_or_global_owner
 from dojo.authorization.models import (
-    Dojo_Group_Member,
     Global_Role,
     Product_Group,
     Product_Member,
@@ -47,7 +46,6 @@ from dojo.github.ui.forms import (  # noqa: F401 -- backward compat
     GITHUBFindingForm,
     GITHUBForm,
 )
-from dojo.group.queries import get_authorized_groups, get_group_member_roles
 from dojo.jira import services as jira_services
 from dojo.jira.forms import (  # noqa: F401 backward compat
     JIRA_TEMPLATE_CHOICES,
@@ -81,7 +79,6 @@ from dojo.models import (
     Cred_Mapping,
     Cred_User,
     Development_Environment,
-    Dojo_Group,
     Dojo_User,
     DojoMeta,
     Endpoint,

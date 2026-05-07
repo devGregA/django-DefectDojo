@@ -28,7 +28,6 @@ from github import Github
 import dojo.finding.helper as finding_helper
 from dojo.authorization.authorization import user_has_permission, user_has_permission_or_403
 from dojo.authorization.models import (
-    Product_Group,
     Product_Member,
 )
 from dojo.authorization.roles_permissions import Permissions
