@@ -21,7 +21,6 @@ from dojo.location.models import Location
 from dojo.models import (
     Cred_Mapping,
     Development_Environment,
-    Dojo_Group,
     Endpoint,
     Engagement,
     Finding,
@@ -173,53 +172,6 @@ class UserHasCredentialPermission(permissions.BasePermission):
             obj.product,
             "view",
             "edit",
-            "delete",
-        )
-
-
-class UserHasDojoGroupPermission(permissions.BasePermission):
-    def has_permission(self, request, view):
-        if request.method == "GET":
-            return user_has_configuration_permission(
-                request.user, "auth.view_group",
-            )
-        if request.method == "POST":
-            return user_has_configuration_permission(
-                request.user, "auth.add_group",
-            )
-        return True
-
-    def has_object_permission(self, request, view, obj):
-        if request.method == "GET":
-            # Users need to be authorized to view groups in general and only the groups they are a member of
-            # because with the group they can see user information that might
-            # be considered as confidential
-            return user_has_configuration_permission(
-                request.user, "auth.view_group",
-            ) and user_has_permission(
-                request.user, obj, "view",
-            )
-        return check_object_permission(
-            request,
-            obj,
-            "view",
-            "edit",
-            "delete",
-        )
-
-
-class UserHasDojoGroupMemberPermission(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return check_post_permission(
-            request, Dojo_Group, "group", "staff_only",
-        )
-
-    def has_object_permission(self, request, view, obj):
-        return check_object_permission(
-            request,
-            obj,
-            "view",
-            "staff_only",
             "delete",
         )
 
@@ -615,22 +567,6 @@ class UserHasAssetMemberPermission(permissions.BasePermission):
         )
 
 
-class UserHasProductGroupPermission(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return check_post_permission(
-            request, Product, "product", "add",
-        )
-
-    def has_object_permission(self, request, view, obj):
-        return check_object_permission(
-            request,
-            obj,
-            "view",
-            "edit",
-            "delete",
-        )
-
-
 class UserHasAssetGroupPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
@@ -717,25 +653,6 @@ class UserHasOrganizationMemberPermission(permissions.BasePermission):
             obj,
             "view",
             "staff_only",
-            "delete",
-        )
-
-
-class UserHasProductTypeGroupPermission(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return check_post_permission(
-            request,
-            Product_Type,
-            "product_type",
-            "add",
-        )
-
-    def has_object_permission(self, request, view, obj):
-        return check_object_permission(
-            request,
-            obj,
-            "view",
-            "edit",
             "delete",
         )
 

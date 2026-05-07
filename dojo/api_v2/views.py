@@ -48,11 +48,7 @@ from dojo.api_v2.prefetch.prefetcher import _Prefetcher
 from dojo.authorization import api_permissions as permissions
 from dojo.authorization.authorization import user_has_permission_or_403
 from dojo.authorization.models import (
-    Dojo_Group_Member,
-    Global_Role,
-    Product_Group,
     Product_Member,
-    Product_Type_Group,
     Product_Type_Member,
     Role,
 )
@@ -90,10 +86,6 @@ from dojo.finding.views import (
     reset_finding_duplicate_status_internal,
     set_finding_as_original_internal,
 )
-from dojo.group.queries import (
-    get_authorized_group_members,
-    get_authorized_groups,
-)
 from dojo.importers.auto_create_context import AutoCreateContextManager
 from dojo.jira import services as jira_services
 from dojo.labels import get_labels
@@ -107,7 +99,6 @@ from dojo.models import (
     Cred_Mapping,
     Cred_User,
     Development_Environment,
-    Dojo_Group,
     Dojo_User,
     DojoMeta,
     Endpoint,
@@ -151,12 +142,10 @@ from dojo.product.queries import (
     get_authorized_engagement_presets,
     get_authorized_languages,
     get_authorized_product_api_scan_configurations,
-    get_authorized_product_groups,
     get_authorized_product_members,
     get_authorized_products,
 )
 from dojo.product_type.queries import (
-    get_authorized_product_type_groups,
     get_authorized_product_type_members,
     get_authorized_product_types,
 )
@@ -258,76 +247,6 @@ class DeprecationNoticeMixin:
 
 
 # Authorization: authenticated users
-class RoleViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = serializers.RoleSerializer
-    queryset = Role.objects.none()
-    filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ["id", "name"]
-    permission_classes = (IsAuthenticated,)
-
-    def get_queryset(self):
-        return Role.objects.all().order_by("id")
-
-
-# Authorization: object-based
-@extend_schema_view(**schema_with_prefetch())
-class DojoGroupViewSet(
-    PrefetchDojoModelViewSet,
-):
-    serializer_class = serializers.DojoGroupSerializer
-    queryset = Dojo_Group.objects.none()
-    filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ["id", "name", "social_provider"]
-    permission_classes = (
-        IsAuthenticated,
-        permissions.UserHasDojoGroupPermission,
-    )
-
-    def get_queryset(self):
-        return get_authorized_groups("view").distinct()
-
-
-# Authorization: object-based
-@extend_schema_view(**schema_with_prefetch())
-class DojoGroupMemberViewSet(
-    PrefetchDojoModelViewSet,
-):
-    serializer_class = serializers.DojoGroupMemberSerializer
-    queryset = Dojo_Group_Member.objects.none()
-    filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ["id", "group_id", "user_id"]
-    permission_classes = (
-        IsAuthenticated,
-        permissions.UserHasDojoGroupMemberPermission,
-    )
-
-    def get_queryset(self):
-        return get_authorized_group_members("view").distinct()
-
-    @extend_schema(
-        exclude=True,
-    )
-    def partial_update(self, request, pk=None):
-        # Object authorization won't work if not all data is provided
-        response = {"message": "Patch function is not offered in this path."}
-        return Response(response, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-
-# Authorization: superuser
-@extend_schema_view(**schema_with_prefetch())
-class GlobalRoleViewSet(
-    PrefetchDojoModelViewSet,
-):
-    serializer_class = serializers.GlobalRoleSerializer
-    queryset = Global_Role.objects.all()
-    filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ["id", "user", "group", "role"]
-    permission_classes = (permissions.IsSuperUser, DjangoModelPermissions)
-
-    def get_queryset(self):
-        return Global_Role.objects.all().order_by("id")
-
-
 # Authorization: object-based
 # @extend_schema_view(**schema_with_prefetch())
 # Nested models with prefetch make the response schema too long for Swagger UI
@@ -2034,32 +1953,6 @@ class ProductMemberViewSet(
 
 # Authorization: object-based
 @extend_schema_view(**schema_with_prefetch())
-class ProductGroupViewSet(
-    PrefetchDojoModelViewSet,
-):
-    serializer_class = serializers.ProductGroupSerializer
-    queryset = Product_Group.objects.none()
-    filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ["id", "product_id", "group_id"]
-    permission_classes = (
-        IsAuthenticated,
-        permissions.UserHasProductGroupPermission,
-    )
-
-    def get_queryset(self):
-        return get_authorized_product_groups(
-            "view",
-        ).distinct()
-
-    @extend_schema(
-        exclude=True,
-    )
-    def partial_update(self, request, pk=None):
-        # Object authorization won't work if not all data is provided
-        response = {"message": "Patch function is not offered in this path."}
-        return Response(response, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-
 # Authorization: object-based
 @extend_schema_view(**schema_with_prefetch())
 class ProductTypeViewSet(
@@ -2193,32 +2086,6 @@ class ProductTypeMemberViewSet(
 
 # Authorization: object-based
 @extend_schema_view(**schema_with_prefetch())
-class ProductTypeGroupViewSet(
-    PrefetchDojoModelViewSet,
-):
-    serializer_class = serializers.ProductTypeGroupSerializer
-    queryset = Product_Type_Group.objects.none()
-    filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ["id", "product_type_id", "group_id"]
-    permission_classes = (
-        IsAuthenticated,
-        permissions.UserHasProductTypeGroupPermission,
-    )
-
-    def get_queryset(self):
-        return get_authorized_product_type_groups(
-            "view",
-        ).distinct()
-
-    @extend_schema(
-        exclude=True,
-    )
-    def partial_update(self, request, pk=None):
-        # Object authorization won't work if not all data is provided
-        response = {"message": "Patch function is not offered in this path."}
-        return Response(response, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-
 # Authorization: object-based
 # @extend_schema_view(**schema_with_prefetch())
 # Nested models with prefetch make the response schema too long for Swagger UI
@@ -2730,18 +2597,12 @@ class UserProfileView(GenericAPIView):
         user_contact_info = (
             user.usercontactinfo if hasattr(user, "usercontactinfo") else None
         )
-        # Global_Role.user uses related_name="+" so user.global_role is
-        # not an attribute (suppressed reverse accessor). Query directly.
-        global_role = Global_Role.objects.filter(user=user).first()
-        dojo_group_member = Dojo_Group_Member.objects.filter(user=user)
         product_type_member = Product_Type_Member.objects.filter(user=user)
         product_member = Product_Member.objects.filter(user=user)
         serializer = serializers.UserProfileSerializer(
             {
                 "user": user,
                 "user_contact_info": user_contact_info,
-                "global_role": global_role,
-                "dojo_group_member": dojo_group_member,
                 "product_type_member": product_type_member,
                 "product_member": product_member,
             },
