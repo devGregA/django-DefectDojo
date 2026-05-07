@@ -1,10 +1,5 @@
 from rest_framework import serializers
-from rest_framework.exceptions import PermissionDenied, ValidationError
 
-from dojo.authorization.authorization import user_has_permission
-from dojo.authorization.models import (
-    Product_Type_Group,
-)
 from dojo.models import Product_Type
 from dojo.product_type.queries import get_authorized_product_types
 
@@ -12,49 +7,6 @@ from dojo.product_type.queries import get_authorized_product_types
 class RelatedOrganizationField(serializers.PrimaryKeyRelatedField):
     def get_queryset(self):
         return get_authorized_product_types("view")
-
-
-class OrganizationGroupSerializer(serializers.ModelSerializer):
-    organization = RelatedOrganizationField(source="product_type")
-
-    class Meta:
-        model = Product_Type_Group
-        exclude = ("product_type",)
-
-    def validate(self, data):
-        if (
-            self.instance is not None
-            and data.get("organization") != self.instance.product_type
-            and not user_has_permission(
-                self.context["request"].user,
-                data.get("organization"),
-                "add",
-            )
-        ):
-            msg = "You are not permitted to add a group to this Organization"
-            raise PermissionDenied(msg)
-
-        if (
-            self.instance is None
-            or data.get("organization") != self.instance.product_type
-            or data.get("group") != self.instance.group
-        ):
-            members = Product_Type_Group.objects.filter(
-                product_type=data.get("organization"), group=data.get("group"),
-            )
-            if members.count() > 0:
-                msg = "Organization Group already exists"
-                raise ValidationError(msg)
-
-        if data.get("role").is_owner and not user_has_permission(
-            self.context["request"].user,
-            data.get("organization"),
-            "staff_only",
-        ):
-            msg = "You are not permitted to add a group as Owner to this Organization"
-            raise PermissionDenied(msg)
-
-        return data
 
 
 class OrganizationSerializer(serializers.ModelSerializer):

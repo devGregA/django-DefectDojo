@@ -1,9 +1,6 @@
-from django_filters import BooleanFilter, NumberFilter
+from django_filters import BooleanFilter
 from django_filters.rest_framework import FilterSet
 
-from dojo.authorization.models import (
-    Product_Type_Group,
-)
 from dojo.labels import get_labels
 from dojo.models import Product_Type
 
@@ -19,9 +16,3 @@ class OrganizationFilterSet(FilterSet):
         fields = ("id", "name", "created", "updated")
 
 
-class OrganizationGroupFilterSet(FilterSet):
-    asset_type_id = NumberFilter(field_name="product_type_id")
-
-    class Meta:
-        model = Product_Type_Group
-        fields = ("id", "group_id")

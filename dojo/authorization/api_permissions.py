@@ -571,25 +571,6 @@ class UserHasOrganizationPermission(permissions.BasePermission):
         )
 
 
-class UserHasOrganizationGroupPermission(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return check_post_permission(
-            request,
-            Product_Type,
-            "organization",
-            "add",
-        )
-
-    def has_object_permission(self, request, view, obj):
-        return check_object_permission(
-            request,
-            obj,
-            "view",
-            "edit",
-            "delete",
-        )
-
-
 class UserHasReimportPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         # permission check takes place before validation, so we don't have access to serializer.validated_data()
