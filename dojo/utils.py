@@ -45,7 +45,6 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from kombu import Connection
 
-from dojo.authorization.models import Dojo_Group_Member
 from dojo.celery import app
 from dojo.finding.queries import get_authorized_findings
 from dojo.github.services import (
@@ -1398,19 +1397,10 @@ def get_site_url():
 @receiver(post_save, sender=User)
 @receiver(post_save, sender=Dojo_User)
 def user_post_save(sender, instance, created, **kwargs):
-    # Default-Notifications row creation for new users now lives in
+    # Default-Notifications row creation for new users lives in
     # dojo.notifications.signals.create_default_notifications.
-    if created:
-        system_settings = System_Settings.objects.get()
-        if system_settings.default_group and system_settings.default_group_role:
-            if (system_settings.default_group_email_pattern and re.fullmatch(system_settings.default_group_email_pattern, instance.email)) or \
-               not system_settings.default_group_email_pattern:
-                logger.info("setting default group for: " + str(instance))
-                dojo_group_member = Dojo_Group_Member(
-                    group=system_settings.default_group,
-                    user=instance,
-                    role=system_settings.default_group_role)
-                dojo_group_member.save()
+    # Default-group Dojo_Group_Member bootstrapping lives in
+    # pro.authorization.signals (RBAC ownership is Pro's responsibility).
 
     # Superusers shall always be staff
     if instance.is_superuser and not instance.is_staff:
