@@ -14,7 +14,6 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 
 from dojo.authorization.authorization import user_has_permission_or_403
-from dojo.authorization.models import Product_Type_Member, Role
 from dojo.authorization.roles_permissions import Permissions
 from dojo.filters import ProductFilter, ProductFilterWithoutObjectLookups, ProductTypeFilter
 from dojo.forms import (
@@ -96,12 +95,7 @@ def add_product_type(request):
     if request.method == "POST":
         form = Product_TypeForm(request.POST)
         if form.is_valid():
-            product_type = form.save()
-            member = Product_Type_Member()
-            member.user = request.user
-            member.product_type = product_type
-            member.role = Role.objects.get(is_owner=True)
-            member.save()
+            form.save()
             messages.add_message(request,
                                  messages.SUCCESS,
                                  str(labels.ORG_CREATE_SUCCESS_MESSAGE),
