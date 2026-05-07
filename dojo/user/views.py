@@ -28,7 +28,6 @@ from rest_framework.exceptions import PermissionDenied as RFPermissionDenied
 from rest_framework.exceptions import ValidationError as RFValidationError
 
 from dojo.authorization.authorization import user_is_superuser_or_global_owner
-from dojo.authorization.models import Global_Role
 from dojo.decorators import dojo_ratelimit
 from dojo.filters import UserFilter
 from dojo.forms import (
@@ -445,13 +444,6 @@ def delete_user(request, uid):
                     messages.add_message(request,
                                         messages.ERROR,
                                         _("Only superusers are allowed to delete superusers. User was not removed."),
-                                        extra_tags="alert-danger")
-                elif (not request.user.is_superuser
-                      and (existing_global_role := Global_Role.objects.filter(user=user).first())
-                      and existing_global_role.role):
-                    messages.add_message(request,
-                                        messages.ERROR,
-                                        _("Only superusers are allowed to delete users with a global role. User was not removed."),
                                         extra_tags="alert-danger")
                 else:
                     try:
