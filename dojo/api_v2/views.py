@@ -47,10 +47,6 @@ from dojo.api_v2 import (
 from dojo.api_v2.prefetch.prefetcher import _Prefetcher
 from dojo.authorization import api_permissions as permissions
 from dojo.authorization.authorization import user_has_permission_or_403
-from dojo.authorization.models import (
-    Product_Type_Member,
-    Role,
-)
 from dojo.celery_dispatch import dojo_dispatch_task
 from dojo.cred.queries import get_authorized_cred_mappings
 from dojo.endpoint.queries import (
@@ -1947,18 +1943,6 @@ class ProductTypeViewSet(
         return get_authorized_product_types(
             "view",
         ).distinct()
-
-    # Overwrite perfom_create of CreateModelMixin to add current user as owner
-    def perform_create(self, serializer):
-        serializer.save()
-        # Reuse the just-saved instance instead of re-constructing one from
-        # serializer.data; the latter passes authorized_users (a M2M) into
-        # __init__ which raises under the legacy authorization model.
-        Product_Type_Member.objects.create(
-            user=self.request.user,
-            product_type=serializer.instance,
-            role=Role.objects.get(is_owner=True),
-        )
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
