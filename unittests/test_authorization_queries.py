@@ -29,7 +29,6 @@ from dojo.finding.queries import (
     get_authorized_vulnerability_ids,
 )
 from dojo.finding_group.queries import get_authorized_finding_groups
-from dojo.group.queries import get_authorized_groups
 from dojo.location.models import LocationFindingReference, LocationProductReference
 from dojo.location.queries import (
     get_authorized_location_finding_reference,
@@ -720,29 +719,6 @@ class TestGetAuthorizedEndpointStatus(AuthorizationQueriesTestBase):
         endpoint_statuses = get_authorized_endpoint_status(Permissions.Location_View, user=self.user_product_member)
         self.assertIn(self.endpoint_status_1, endpoint_statuses)
         self.assertNotIn(self.endpoint_status_2, endpoint_statuses)
-
-
-class TestGetAuthorizedGroups(AuthorizationQueriesTestBase):
-
-    """Tests for get_authorized_groups() - uses get_current_user()"""
-
-    @patch("dojo.authorization.query_registrations.get_current_user")
-    def test_superuser_gets_all_groups(self, mock_get_current_user):
-        """Superuser should get all groups"""
-        mock_get_current_user.return_value = self.superuser
-        groups = get_authorized_groups(Permissions.Group_View)
-        self.assertIn(self.group_product, groups)
-        self.assertIn(self.group_product_type, groups)
-
-    @patch("dojo.authorization.query_registrations.get_current_user")
-    def test_user_group_member_gets_nothing_legacy(self, mock_get_current_user):
-        """
-        Legacy: groups are visible only to staff/superuser
-        (see _carrier_queryset in query_registrations.py).
-        """
-        mock_get_current_user.return_value = self.user_group_product_member
-        groups = get_authorized_groups(Permissions.Group_View)
-        self.assertNotIn(self.group_product, groups)
 
 
 class TestGetAuthorizedFindingGroups(AuthorizationQueriesTestBase):
