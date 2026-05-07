@@ -57,4 +57,32 @@ class Migration(migrations.Migration):
             name="role",
             options={"managed": False, "ordering": ("name",)},
         ),
+        migrations.AlterModelTable(
+            name="dojo_group_member",
+            table="dojo_dojo_group_member",
+        ),
+        migrations.AlterModelTable(
+            name="global_role",
+            table="dojo_global_role",
+        ),
+        migrations.AlterModelTable(
+            name="product_group",
+            table="dojo_product_group",
+        ),
+        migrations.AlterModelTable(
+            name="product_member",
+            table="dojo_product_member",
+        ),
+        migrations.AlterModelTable(
+            name="product_type_group",
+            table="dojo_product_type_group",
+        ),
+        migrations.AlterModelTable(
+            name="product_type_member",
+            table="dojo_product_type_member",
+        ),
+        migrations.AlterModelTable(
+            name="role",
+            table="dojo_role",
+        ),
     ]
