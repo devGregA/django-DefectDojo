@@ -11,7 +11,6 @@ from dojo.authorization import api_permissions as permissions
 from dojo.authorization.models import (
     Product_Type_Group,
     Product_Type_Member,
-    Role,
 )
 from dojo.models import Product_Type
 from dojo.organization.api import serializers
@@ -46,20 +45,6 @@ class OrganizationViewSet(
         return get_authorized_product_types(
             "view",
         ).distinct()
-
-    # Overwrite perfom_create of CreateModelMixin to add current user as owner
-    def perform_create(self, serializer):
-        serializer.save()
-        # Reuse the just-saved instance — re-constructing a new Product_Type
-        # from serializer.data was a leftover from the RBAC era and breaks
-        # under legacy because authorized_users is a M2M that can't be
-        # assigned via __init__ kwargs.
-        product_type = serializer.instance
-        Product_Type_Member.objects.create(
-            user=self.request.user,
-            product_type=product_type,
-            role=Role.objects.get(is_owner=True),
-        )
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
