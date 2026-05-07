@@ -5,7 +5,6 @@ from drf_spectacular.utils import extend_schema_field
 
 from dojo.authorization.models import (
     Product_Group,
-    Product_Member,
 )
 from dojo.filters import (
     CharFieldFilterANDExpression,
@@ -106,14 +105,6 @@ class ApiAssetFilter(DojoFilter):
             ("user_records", "user_records"),
         ),
     )
-
-
-class AssetMemberFilterSet(FilterSet):
-    asset_id = NumberFilter(field_name="product_id")
-
-    class Meta:
-        model = Product_Member
-        fields = ("id", "user_id")
 
 
 class AssetGroupFilterSet(FilterSet):
