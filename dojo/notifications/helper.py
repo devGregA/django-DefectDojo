@@ -17,7 +17,6 @@ from django.urls import get_script_prefix, reverse
 from django.utils.translation import gettext as _
 
 from dojo import __version__ as dd_version
-from dojo.celery_dispatch import dojo_dispatch_task
 from dojo.decorators import we_want_async
 from dojo.labels import get_labels
 from dojo.models import (

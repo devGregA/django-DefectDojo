@@ -6,4 +6,4 @@ consolidation; this shim lets sub-package modules consolidated from
 upstream (``dojo/notifications/api/views.py``, etc.) keep their old import
 path.
 """
-from dojo.authorization.api_permissions import *  # noqa: F401,F403
+from dojo.authorization.api_permissions import *  # noqa: F403
