@@ -2439,23 +2439,6 @@ class Add_Group_Member_UserForm(forms.ModelForm):
         fields = ["groups", "user", "role"]
 
 
-class Add_Product_GroupForm(forms.ModelForm):
-    groups = forms.ModelMultipleChoiceField(queryset=Dojo_Group.objects.none(), required=True, label="Groups")
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["product"].disabled = True
-        self.fields["product"].label = labels.ASSET_LABEL
-        current_groups = Product_Group.objects.filter(product=self.initial["product"]).values_list("group", flat=True)
-        authorized_groups = get_authorized_groups("view")
-        authorized_groups = authorized_groups.exclude(id__in=current_groups)
-        self.fields["groups"].queryset = authorized_groups
-
-    class Meta:
-        model = Product_Group
-        fields = ["product", "groups", "role"]
-
-
 class Add_Product_Group_GroupForm(forms.ModelForm):
     products = forms.ModelMultipleChoiceField(queryset=Product.objects.none(), required=True,
                                               label=labels.ASSET_PLURAL_LABEL)
@@ -2470,25 +2453,6 @@ class Add_Product_Group_GroupForm(forms.ModelForm):
     class Meta:
         model = Product_Group
         fields = ["products", "group", "role"]
-
-
-class Edit_Product_Group_Form(forms.ModelForm):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["product"].disabled = True
-        self.fields["product"].label = labels.ASSET_LABEL
-        self.fields["group"].disabled = True
-
-    class Meta:
-        model = Product_Group
-        fields = ["product", "group", "role"]
-
-
-class Delete_Product_GroupForm(Edit_Product_Group_Form):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["role"].disabled = True
 
 
 class Add_Product_Type_GroupForm(forms.ModelForm):

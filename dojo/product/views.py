@@ -48,18 +48,15 @@ from dojo.filters import (
 )
 from dojo.forms import (
     Add_Product_AuthorizedUsersForm,
-    Add_Product_GroupForm,
     Add_Product_MemberForm,
     AdHocFindingForm,
     AppAnalysisForm,
-    Delete_Product_GroupForm,
     Delete_Product_MemberForm,
     DeleteAppAnalysisForm,
     DeleteEngagementPresetsForm,
     DeleteProduct_API_Scan_ConfigurationForm,
     DeleteProductForm,
     DojoMetaFormSet,
-    Edit_Product_Group_Form,
     Edit_Product_MemberForm,
     EngagementPresetsForm,
     EngForm,
@@ -1952,101 +1949,3 @@ def delete_api_scan_configuration(request, pid, pascid):
                   })
 
 
-def edit_product_group(request, groupid):
-    logger.error(groupid)
-    group = get_object_or_404(Product_Group, pk=groupid)
-    groupform = Edit_Product_Group_Form(instance=group)
-    page_name = str(labels.ASSET_GROUPS_UPDATE_LABEL)
-
-    if request.method == "POST":
-        groupform = Edit_Product_Group_Form(request.POST, instance=group)
-        if groupform.is_valid():
-            if group.role.is_owner and not user_has_permission(request.user, group.product,
-                                                               "staff_only"):
-                messages.add_message(request,
-                                     messages.WARNING,
-                                     _("You are not permitted to make groups owners."),
-                                     extra_tags="alert-warning")
-            else:
-                groupform.save()
-                messages.add_message(request,
-                                     messages.SUCCESS,
-                                     labels.ASSET_GROUPS_UPDATE_SUCCESS_MESSAGE,
-                                     extra_tags="alert-success")
-                if is_title_in_breadcrumbs("View Group"):
-                    return HttpResponseRedirect(reverse("view_group", args=(group.group.id,)))
-                return HttpResponseRedirect(reverse("view_product", args=(group.product.id,)))
-
-    product_tab = Product_Tab(group.product, title=page_name, tab="settings")
-    return render(request, "dojo/edit_product_group.html", {
-        "name": page_name,
-        "groupid": groupid,
-        "form": groupform,
-        "product_tab": product_tab,
-    })
-
-
-def delete_product_group(request, groupid):
-    group = get_object_or_404(Product_Group, pk=groupid)
-    groupform = Delete_Product_GroupForm(instance=group)
-    page_name = str(labels.ASSET_GROUPS_DELETE_LABEL)
-
-    if request.method == "POST":
-        groupform = Delete_Product_GroupForm(request.POST, instance=group)
-        group = groupform.instance
-        group.delete()
-        messages.add_message(request,
-                             messages.SUCCESS,
-                             labels.ASSET_GROUPS_DELETE_SUCCESS_MESSAGE,
-                             extra_tags="alert-success")
-        if is_title_in_breadcrumbs("View Group"):
-            return HttpResponseRedirect(reverse("view_group", args=(group.group.id,)))
-        # TODO: If user was in the group that was deleted and no longer has access, redirect back to product listing
-        #  page
-        return HttpResponseRedirect(reverse("view_product", args=(group.product.id,)))
-
-    product_tab = Product_Tab(group.product, title=page_name, tab="settings")
-    return render(request, "dojo/delete_product_group.html", {
-        "name": page_name,
-        "groupid": groupid,
-        "form": groupform,
-        "product_tab": product_tab,
-    })
-
-
-def add_product_group(request, pid):
-    product = get_object_or_404(Product, pk=pid)
-    group_form = Add_Product_GroupForm(initial={"product": product.id})
-    page_name = str(labels.ASSET_GROUPS_ADD_LABEL)
-
-    if request.method == "POST":
-        group_form = Add_Product_GroupForm(request.POST, initial={"product": product.id})
-        if group_form.is_valid():
-            if group_form.cleaned_data["role"].is_owner and not user_has_permission(request.user, product,
-                                                                                    "staff_only"):
-                messages.add_message(request,
-                                     messages.WARNING,
-                                     _("You are not permitted to add groups as owners."),
-                                     extra_tags="alert-warning")
-            else:
-                if "groups" in group_form.cleaned_data and len(group_form.cleaned_data["groups"]) > 0:
-                    for group in group_form.cleaned_data["groups"]:
-                        groups = Product_Group.objects.filter(product=product, group=group)
-                        if groups.count() == 0:
-                            product_group = Product_Group()
-                            product_group.product = product
-                            product_group.group = group
-                            product_group.role = group_form.cleaned_data["role"]
-                            product_group.save()
-                messages.add_message(request,
-                                     messages.SUCCESS,
-                                     labels.ASSET_GROUPS_ADD_SUCCESS_MESSAGE,
-                                     extra_tags="alert-success")
-                return HttpResponseRedirect(reverse("view_product", args=(pid,)))
-    product_tab = Product_Tab(product, title=page_name, tab="settings")
-    return render(request, "dojo/new_product_group.html", {
-        "name": page_name,
-        "product": product,
-        "form": group_form,
-        "product_tab": product_tab,
-    })

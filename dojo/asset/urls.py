@@ -158,21 +158,6 @@ if settings.ENABLE_V3_ORGANIZATION_ASSET_RELABEL:
             views.delete_api_scan_configuration,
             name="delete_api_scan_configuration",
         ),
-        re_path(
-            r"^asset/(?P<pid>\d+)/add_group$",
-            views.add_product_group,
-            name="add_product_group",
-        ),
-        re_path(
-            r"^asset/group/(?P<groupid>\d+)/edit$",
-            views.edit_product_group,
-            name="edit_product_group",
-        ),
-        re_path(
-            r"^asset/group/(?P<groupid>\d+)/delete$",
-            views.delete_product_group,
-            name="delete_product_group",
-        ),
         # TODO: Backwards compatibility; remove after v3 migration is complete
         re_path(r"^product$", redirect_view("product")),
         re_path(r"^product/(?P<pid>\d+)$", redirect_view("view_product")),
@@ -202,9 +187,6 @@ if settings.ENABLE_V3_ORGANIZATION_ASSET_RELABEL:
         re_path(r"^product/(?P<pid>\d+)/view_api_scan_configurations$", redirect_view("view_api_scan_configurations")),
         re_path(r"^product/(?P<pid>\d+)/edit_api_scan_configuration/(?P<pascid>\d+)$", redirect_view("edit_api_scan_configuration")),
         re_path(r"^product/(?P<pid>\d+)/delete_api_scan_configuration/(?P<pascid>\d+)$", redirect_view("delete_api_scan_configuration")),
-        re_path(r"^product/(?P<pid>\d+)/add_group$", redirect_view("add_product_group")),
-        re_path(r"^product/group/(?P<groupid>\d+)/edit$", redirect_view("edit_product_group")),
-        re_path(r"^product/group/(?P<groupid>\d+)/delete$", redirect_view("delete_product_group")),
     ]
 else:
     urlpatterns = [
@@ -279,12 +261,6 @@ else:
         re_path(r"^product/(?P<pid>\d+)/delete_api_scan_configuration/(?P<pascid>\d+)$",
                 views.delete_api_scan_configuration,
                 name="delete_api_scan_configuration"),
-        re_path(r"^product/(?P<pid>\d+)/add_group$", views.add_product_group,
-                name="add_product_group"),
-        re_path(r"^product/group/(?P<groupid>\d+)/edit$", views.edit_product_group,
-                name="edit_product_group"),
-        re_path(r"^product/group/(?P<groupid>\d+)/delete$", views.delete_product_group,
-                name="delete_product_group"),
         # Forward compatibility
         re_path(r"^asset$", redirect_view("product")),
         re_path(r"^asset/(?P<pid>\d+)$", redirect_view("view_product")),
@@ -317,7 +293,4 @@ else:
                 redirect_view("edit_api_scan_configuration")),
         re_path(r"^asset/(?P<pid>\d+)/delete_api_scan_configuration/(?P<pascid>\d+)$",
                 redirect_view("delete_api_scan_configuration")),
-        re_path(r"^asset/(?P<pid>\d+)/add_group$", redirect_view("add_product_group")),
-        re_path(r"^asset/group/(?P<groupid>\d+)/edit$", redirect_view("edit_product_group")),
-        re_path(r"^asset/group/(?P<groupid>\d+)/delete$", redirect_view("delete_product_group")),
     ]
