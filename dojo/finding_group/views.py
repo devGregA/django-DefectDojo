@@ -13,7 +13,6 @@ from django.views import View
 from django.views.decorators.http import require_POST
 
 from dojo.authorization.authorization import user_has_permission_or_403
-from dojo.authorization.models import Global_Role
 from dojo.filters import (
     FindingFilter,
     FindingFilterWithoutObjectLookups,
@@ -294,9 +293,8 @@ class ListFindingGroups(View):
         return paginator.get_page(page_number)
 
     def get(self, request: HttpRequest) -> HttpResponse:
-        global_role = Global_Role.objects.filter(user=request.user).first()
         products = get_authorized_products("view")
-        if request.user.is_superuser or (global_role and global_role.role):
+        if request.user.is_superuser:
             finding_groups = self.get_finding_groups(request)
         elif products.exists():
             finding_groups = self.get_finding_groups(request, products)
