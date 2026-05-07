@@ -13,16 +13,13 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
 
-from dojo.authorization.authorization import user_has_permission, user_has_permission_or_403
+from dojo.authorization.authorization import user_has_permission_or_403
 from dojo.authorization.models import Product_Type_Member, Role
 from dojo.authorization.roles_permissions import Permissions
 from dojo.filters import ProductFilter, ProductFilterWithoutObjectLookups, ProductTypeFilter
 from dojo.forms import (
     Add_Product_Type_AuthorizedUsersForm,
-    Add_Product_Type_MemberForm,
-    Delete_Product_Type_MemberForm,
     Delete_Product_TypeForm,
-    Edit_Product_Type_MemberForm,
     Product_TypeForm,
 )
 from dojo.labels import get_labels
@@ -196,115 +193,6 @@ def edit_product_type(request, ptid):
         "label_edit_with_name": labels.ORG_UPDATE_WITH_NAME_LABEL % {"name": pt.name},
         "pt_form": pt_form,
         "pt": pt})
-
-
-def add_product_type_member(request, ptid):
-    page_name = str(labels.ORG_USERS_ADD_LABEL)
-    pt = get_object_or_404(Product_Type, pk=ptid)
-    memberform = Add_Product_Type_MemberForm(initial={"product_type": pt.id})
-    if request.method == "POST":
-        memberform = Add_Product_Type_MemberForm(request.POST, initial={"product_type": pt.id})
-        if memberform.is_valid():
-            if memberform.cleaned_data["role"].is_owner and not user_has_permission(request.user, pt, "staff_only"):
-                messages.add_message(request,
-                                    messages.WARNING,
-                                    _("You are not permitted to add users as owners."),
-                                    extra_tags="alert-warning")
-            else:
-                if "users" in memberform.cleaned_data and len(memberform.cleaned_data["users"]) > 0:
-                    for user in memberform.cleaned_data["users"]:
-                        members = Product_Type_Member.objects.filter(product_type=pt, user=user)
-                        if members.count() == 0:
-                            product_type_member = Product_Type_Member()
-                            product_type_member.product_type = pt
-                            product_type_member.user = user
-                            product_type_member.role = memberform.cleaned_data["role"]
-                            product_type_member.save()
-                messages.add_message(request,
-                                    messages.SUCCESS,
-                                    labels.ORG_USERS_ADD_SUCCESS_MESSAGE,
-                                    extra_tags="alert-success")
-                return HttpResponseRedirect(reverse("view_product_type", args=(ptid, )))
-    add_breadcrumb(title=page_name, top_level=False, request=request)
-    return render(request, "dojo/new_product_type_member.html", {
-        "name": page_name,
-        "pt": pt,
-        "form": memberform,
-    })
-
-
-def edit_product_type_member(request, memberid):
-    page_name = str(labels.ORG_USERS_UPDATE_LABEL)
-    member = get_object_or_404(Product_Type_Member, pk=memberid)
-    memberform = Edit_Product_Type_MemberForm(instance=member)
-    if request.method == "POST":
-        memberform = Edit_Product_Type_MemberForm(request.POST, instance=member)
-        if memberform.is_valid():
-            if not member.role.is_owner:
-                owners = Product_Type_Member.objects.filter(product_type=member.product_type, role__is_owner=True).exclude(id=member.id).count()
-                if owners < 1:
-                    messages.add_message(request, messages.SUCCESS,
-                                        labels.ORG_USERS_MINIMUM_NUMBER_WITH_NAME_MESSAGE
-                                            % {"name": member.product_type.name},
-                                        extra_tags="alert-warning")
-                    if is_title_in_breadcrumbs("View User"):
-                        return HttpResponseRedirect(reverse("view_user", args=(member.user.id, )))
-                    return HttpResponseRedirect(reverse("view_product_type", args=(member.product_type.id, )))
-            if member.role.is_owner and not user_has_permission(request.user, member.product_type, "staff_only"):
-                messages.add_message(request,
-                                    messages.WARNING,
-                                    "You are not permitted to make users to owners.",
-                                    extra_tags="alert-warning")
-            else:
-                memberform.save()
-                messages.add_message(request,
-                                    messages.SUCCESS,
-                                    labels.ORG_USERS_UPDATE_SUCCESS_MESSAGE,
-                                    extra_tags="alert-success")
-                if is_title_in_breadcrumbs("View User"):
-                    return HttpResponseRedirect(reverse("view_user", args=(member.user.id, )))
-                return HttpResponseRedirect(reverse("view_product_type", args=(member.product_type.id, )))
-    add_breadcrumb(title=page_name, top_level=False, request=request)
-    return render(request, "dojo/edit_product_type_member.html", {
-        "name": page_name,
-        "memberid": memberid,
-        "form": memberform,
-    })
-
-
-def delete_product_type_member(request, memberid):
-    page_name = str(labels.ORG_USERS_DELETE_LABEL)
-    member = get_object_or_404(Product_Type_Member, pk=memberid)
-    memberform = Delete_Product_Type_MemberForm(instance=member)
-    if request.method == "POST":
-        memberform = Delete_Product_Type_MemberForm(request.POST, instance=member)
-        member = memberform.instance
-        if member.role.is_owner:
-            owners = Product_Type_Member.objects.filter(product_type=member.product_type, role__is_owner=True).count()
-            if owners <= 1:
-                messages.add_message(request,
-                                    messages.SUCCESS,
-                                    _("There must be at least one owner."),
-                                    extra_tags="alert-warning")
-                return HttpResponseRedirect(reverse("view_product_type", args=(member.product_type.id, )))
-
-        user = member.user
-        member.delete()
-        messages.add_message(request,
-                            messages.SUCCESS,
-                            labels.ORG_USERS_DELETE_SUCCESS_MESSAGE,
-                            extra_tags="alert-success")
-        if is_title_in_breadcrumbs("View User"):
-            return HttpResponseRedirect(reverse("view_user", args=(member.user.id, )))
-        if user == request.user:
-            return HttpResponseRedirect(reverse("product_type"))
-        return HttpResponseRedirect(reverse("view_product_type", args=(member.product_type.id, )))
-    add_breadcrumb(title=page_name, top_level=False, request=request)
-    return render(request, "dojo/delete_product_type_member.html", {
-        "name": page_name,
-        "memberid": memberid,
-        "form": memberform,
-    })
 
 
 def add_product_type_authorized_users(request, ptid):
