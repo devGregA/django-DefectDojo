@@ -1,14 +1,6 @@
-from dojo.authorization.models import (
-    Dojo_Group_Member,
-    Product_Group,
-    Product_Member,
-    Product_Type_Group,
-    Product_Type_Member,
-)
 from dojo.models import (
     App_Analysis,
     Cred_Mapping,
-    Dojo_Group,
     Endpoint,
     Engagement,
     Finding,
@@ -40,12 +32,6 @@ URL_PERMISSIONS = {
     "view_product_type": [("object", Product_Type, "view", "ptid")],
     "edit_product_type": [("object", Product_Type, "edit", "ptid")],
     "delete_product_type": [("object", Product_Type, "delete", "ptid")],
-    "add_product_type_member": [("object", Product_Type, "staff_only", "ptid")],
-    "edit_product_type_member": [("object", Product_Type_Member, "staff_only", "memberid")],
-    "delete_product_type_member": [("object", Product_Type_Member, "delete", "memberid")],
-    "add_product_type_group": [("object", Product_Type, "add", "ptid")],
-    "edit_product_type_group": [("object", Product_Type_Group, "edit", "groupid")],
-    "delete_product_type_group": [("object", Product_Type_Group, "delete", "groupid")],
 
     # -----------------------------------------------------------------------
     # Product (dojo/product/views.py  ->  dojo/asset/urls.py)
@@ -69,16 +55,10 @@ URL_PERMISSIONS = {
     "edit_engagement_presets": [("object", Product, "edit", "pid")],
     "add_engagement_presets": [("object", Product, "edit", "pid")],
     "delete_engagement_presets": [("object", Product, "edit", "pid")],
-    "add_product_member": [("object", Product, "staff_only", "pid")],
-    "edit_product_member": [("object", Product_Member, "staff_only", "memberid")],
-    "delete_product_member": [("object", Product_Member, "delete", "memberid")],
     "add_api_scan_configuration": [("object", Product, "add", "pid")],
     "view_api_scan_configurations": [("object", Product, "view", "pid")],
     "edit_api_scan_configuration": [("object", Product_API_Scan_Configuration, "edit", "pascid")],
     "delete_api_scan_configuration": [("object", Product_API_Scan_Configuration, "delete", "pascid")],
-    "add_product_group": [("object", Product, "add", "pid")],
-    "edit_product_group": [("object", Product_Group, "edit", "groupid")],
-    "delete_product_group": [("object", Product_Group, "delete", "groupid")],
 
     # -----------------------------------------------------------------------
     # Engagement (dojo/engagement/views.py  ->  dojo/engagement/urls.py)
@@ -237,14 +217,6 @@ URL_PERMISSIONS = {
         ("object", Finding, "edit", "fid"),
         ("object", Cred_Mapping, "delete", "ttid"),
     ],
-
-    # -----------------------------------------------------------------------
-    # Group (dojo/group/views.py  ->  dojo/group/urls.py)
-    # -----------------------------------------------------------------------
-    "add_group_member": [("object", Dojo_Group, "staff_only", "gid")],
-    "edit_group_member": [("object", Dojo_Group_Member, "staff_only", "mid")],
-    "delete_group_member": [("object", Dojo_Group_Member, "delete", "mid")],
-    "edit_group_permissions": [("config", "auth.change_permission")],
 
     # -----------------------------------------------------------------------
     # Reports (dojo/reports/views.py  ->  dojo/reports/urls.py)
