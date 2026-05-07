@@ -1,11 +1,6 @@
 from rest_framework import serializers
-from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from dojo.api_v2.serializers import ProductMetaSerializer, TagListSerializerField
-from dojo.authorization.authorization import user_has_permission
-from dojo.authorization.models import (
-    Product_Group,
-)
 from dojo.models import (
     Dojo_User,
     Product,
@@ -80,44 +75,3 @@ class AssetSerializer(serializers.ModelSerializer):
         return obj.open_findings_list()
 
 
-class AssetGroupSerializer(serializers.ModelSerializer):
-    asset = RelatedAssetField(source="product")
-
-    class Meta:
-        model = Product_Group
-        exclude = ("product",)
-
-    def validate(self, data):
-        if (
-            self.instance is not None
-            and data.get("asset") != self.instance.product
-            and not user_has_permission(
-                self.context["request"].user,
-                data.get("asset"),
-                "add",
-            )
-        ):
-            msg = "You are not permitted to add a group to this Asset"
-            raise PermissionDenied(msg)
-
-        if (
-            self.instance is None
-            or data.get("asset") != self.instance.product
-            or data.get("group") != self.instance.group
-        ):
-            members = Product_Group.objects.filter(
-                product=data.get("asset"), group=data.get("group"),
-            )
-            if members.count() > 0:
-                msg = "Asset Group already exists"
-                raise ValidationError(msg)
-
-        if data.get("role").is_owner and not user_has_permission(
-            self.context["request"].user,
-            data.get("asset"),
-            "staff_only",
-        ):
-            msg = "You are not permitted to add a group as Owner to this Asset"
-            raise PermissionDenied(msg)
-
-        return data

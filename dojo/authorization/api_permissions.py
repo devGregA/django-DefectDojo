@@ -535,22 +535,6 @@ class UserHasAssetPermission(permissions.BasePermission):
         )
 
 
-class UserHasAssetGroupPermission(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return check_post_permission(
-            request, Product, "asset", "add",
-        )
-
-    def has_object_permission(self, request, view, obj):
-        return check_object_permission(
-            request,
-            obj,
-            "view",
-            "edit",
-            "delete",
-        )
-
-
 class UserHasProductTypePermission(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method == "POST":

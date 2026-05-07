@@ -3,9 +3,6 @@ from django_filters.rest_framework import FilterSet
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 
-from dojo.authorization.models import (
-    Product_Group,
-)
 from dojo.filters import (
     CharFieldFilterANDExpression,
     CharFieldInFilter,
@@ -107,9 +104,3 @@ class ApiAssetFilter(DojoFilter):
     )
 
 
-class AssetGroupFilterSet(FilterSet):
-    asset_id = NumberFilter(field_name="product_id")
-
-    class Meta:
-        model = Product_Group
-        fields = ("id", "group_id")
