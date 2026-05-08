@@ -21,11 +21,11 @@ Mapping (per the legacy authorization design):
                                         -> Product_Type.authorized_users (flattened)
   Global_Role(Owner) for user           -> User.is_superuser = True
   Global_Role(Owner) via group          -> all group members.is_superuser = True
-  Global_Role(Maintainer|API_Importer) for user
+  Global_Role(Writer|Maintainer|API_Importer) for user
                                         -> User.is_staff = True
-  Global_Role(Maintainer|API_Importer) via group
+  Global_Role(Writer|Maintainer|API_Importer) via group
                                         -> all group members.is_staff = True
-  Global_Role(Writer|Reader)            -> no global elevation
+  Global_Role(Reader)                   -> no global elevation
                                           (relies on per-product membership)
 
 Things lost on this transition (acknowledged in the upgrade release notes):
@@ -96,13 +96,13 @@ def backfill_authorized_users(apps, schema_editor):
 
     elevated_user_ids = list(
         Global_Role.objects.filter(
-            role__name__in=("Maintainer", "API_Importer"),
+            role__name__in=("Writer", "Maintainer", "API_Importer"),
             user__isnull=False,
         ).values_list("user_id", flat=True),
     )
     elevated_group_ids = list(
         Global_Role.objects.filter(
-            role__name__in=("Maintainer", "API_Importer"),
+            role__name__in=("Writer", "Maintainer", "API_Importer"),
             group__isnull=False,
         ).values_list("group_id", flat=True),
     )

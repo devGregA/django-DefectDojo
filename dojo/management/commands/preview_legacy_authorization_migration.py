@@ -16,8 +16,8 @@ Reports:
     added (broken down by source: direct member rows vs flattened group
     members).
   * Users that would be flipped to ``is_superuser=True`` (Global_Role.Owner).
-  * Users that would be flipped to ``is_staff=True`` (Global_Role.Maintainer
-    / API_Importer).
+  * Users that would be flipped to ``is_staff=True`` (Global_Role.Writer /
+    Maintainer / API_Importer).
   * Counts of role granularity that the legacy model cannot preserve
     (Reader vs Writer vs Maintainer per product, group membership as a
     permission-bearing entity, configuration permissions per codename).
@@ -109,13 +109,13 @@ class Command(BaseCommand):
 
         elevated_user_ids = set(
             Global_Role.objects.filter(
-                role__name__in=("Maintainer", "API_Importer"),
+                role__name__in=("Writer", "Maintainer", "API_Importer"),
                 user__isnull=False,
             ).values_list("user_id", flat=True),
         )
         elevated_group_ids = list(
             Global_Role.objects.filter(
-                role__name__in=("Maintainer", "API_Importer"),
+                role__name__in=("Writer", "Maintainer", "API_Importer"),
                 group__isnull=False,
             ).values_list("group_id", flat=True),
         )
