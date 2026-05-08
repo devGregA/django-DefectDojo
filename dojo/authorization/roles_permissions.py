@@ -160,11 +160,6 @@ class Permissions(IntEnum):
     Product_Tracking_Files_Edit = 2606
     Product_Tracking_Files_Delete = 2607
 
-    Credential_View = 2702
-    Credential_Add = 2703
-    Credential_Edit = 2706
-    Credential_Delete = 2707
-
     @classmethod
     def has_value(cls, value):
         try:
@@ -288,15 +283,6 @@ class Permissions(IntEnum):
     def get_product_api_scan_configuration_permissions(cls):
         return {
             "view",
-            "edit",
-            "delete",
-        }
-
-    @classmethod
-    def get_credential_permissions(cls):
-        return {
-            "view",
-            "add",
             "edit",
             "delete",
         }

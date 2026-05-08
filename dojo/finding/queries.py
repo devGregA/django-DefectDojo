@@ -16,7 +16,6 @@ from dojo.models import (
     IMPORT_UNTOUCHED_FINDING,
     Endpoint_Status,
     Finding,
-    Stub_Finding,
     Test_Import_Finding_Action,
     Vulnerability_Id,
 )
@@ -39,15 +38,6 @@ def get_authorized_findings_for_queryset(permission, queryset, user=None):
     if impl:
         return impl(permission, queryset, user=user)
     return Finding.objects.all().order_by("id") if queryset is None else queryset
-
-
-# Cached: all parameters are hashable, no dynamic queryset filtering
-@cache_for_request
-def get_authorized_stub_findings(permission):
-    impl = get_auth_filter("finding.get_authorized_stub_findings")
-    if impl:
-        return impl(permission)
-    return Stub_Finding.objects.all().order_by("id")
 
 
 # Cached: all parameters are hashable, no dynamic queryset filtering

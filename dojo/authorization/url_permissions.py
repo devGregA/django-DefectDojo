@@ -1,6 +1,5 @@
 from dojo.models import (
     App_Analysis,
-    Cred_Mapping,
     Endpoint,
     Engagement,
     Finding,
@@ -8,7 +7,6 @@ from dojo.models import (
     Product,
     Product_API_Scan_Configuration,
     Product_Type,
-    Stub_Finding,
     Test,
 )
 
@@ -125,11 +123,6 @@ URL_PERMISSIONS = {
     "edit_template": [("global", "edit")],
     "delete_template": [("global", "delete")],
 
-    # Stub findings
-    "add_stub_finding": [("object", Test, "add", "tid")],
-    "delete_stub_finding": [("object", Stub_Finding, "delete", "fid")],
-    "promote_to_finding": [("object", Stub_Finding, "edit", "fid")],
-
     # -----------------------------------------------------------------------
     # Finding Group (dojo/finding_group/views.py  ->  dojo/finding_group/urls.py)
     # -----------------------------------------------------------------------
@@ -167,56 +160,6 @@ URL_PERMISSIONS = {
     # -----------------------------------------------------------------------
     "add_endpoint_to_product": [("object", Product, "add", "product_id")],
     "add_endpoint_to_finding": [("object", Product, "add", "finding_id")],
-
-    # -----------------------------------------------------------------------
-    # Credential (dojo/cred/views.py  ->  dojo/cred/urls.py)
-    # -----------------------------------------------------------------------
-    "add_cred": [("config", "add")],
-    "view_cred_details": [("config", "view")],
-    "edit_cred": [("config", "edit")],
-    "delete_cred": [("config", "delete")],
-    "cred": [("config", "view")],
-    "all_cred_product": [("object", Product, "edit", "pid")],
-    "new_cred_product": [("object", Product, "edit", "pid")],
-    "view_cred_product": [
-        ("object", Product, "view", "pid"),
-        ("object", Cred_Mapping, "view", "ttid"),
-    ],
-    "edit_cred_product": [
-        ("object", Product, "edit", "pid"),
-        ("object", Cred_Mapping, "edit", "ttid"),
-    ],
-    "delete_cred_product": [
-        ("object", Product, "edit", "pid"),
-        ("object", Cred_Mapping, "delete", "ttid"),
-    ],
-    "new_cred_product_engagement": [("object", Engagement, "edit", "eid")],
-    "view_cred_product_engagement": [
-        ("object", Engagement, "view", "eid"),
-        ("object", Cred_Mapping, "view", "ttid"),
-    ],
-    "delete_cred_engagement": [
-        ("object", Engagement, "edit", "eid"),
-        ("object", Cred_Mapping, "delete", "ttid"),
-    ],
-    "new_cred_engagement_test": [("object", Test, "edit", "tid")],
-    "view_cred_engagement_test": [
-        ("object", Test, "view", "tid"),
-        ("object", Cred_Mapping, "view", "ttid"),
-    ],
-    "delete_cred_test": [
-        ("object", Test, "edit", "tid"),
-        ("object", Cred_Mapping, "delete", "ttid"),
-    ],
-    "new_cred_finding": [("object", Finding, "edit", "fid")],
-    "view_cred_finding": [
-        ("object", Finding, "view", "fid"),
-        ("object", Cred_Mapping, "view", "ttid"),
-    ],
-    "delete_cred_finding": [
-        ("object", Finding, "edit", "fid"),
-        ("object", Cred_Mapping, "delete", "ttid"),
-    ],
 
     # -----------------------------------------------------------------------
     # Reports (dojo/reports/views.py  ->  dojo/reports/urls.py)

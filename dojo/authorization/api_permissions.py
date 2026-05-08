@@ -19,7 +19,6 @@ from dojo.authorization.authorization import (
 from dojo.importers.auto_create_context import AutoCreateContextManager
 from dojo.location.models import Location
 from dojo.models import (
-    Cred_Mapping,
     Development_Environment,
     Endpoint,
     Engagement,
@@ -132,38 +131,6 @@ class UserHasAppAnalysisPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return check_post_permission(
             request, Product, "product", "add",
-        )
-
-    def has_object_permission(self, request, view, obj):
-        return check_object_permission(
-            request,
-            obj.product,
-            "view",
-            "edit",
-            "delete",
-        )
-
-
-class UserHasCredentialPermission(permissions.BasePermission):
-    def has_permission(self, request, view):
-        if request.data.get("product") is not None:
-            return check_post_permission(
-                request, Cred_Mapping, "product", "add",
-            )
-        if request.data.get("engagement") is not None:
-            return check_post_permission(
-                request, Cred_Mapping, "engagement", "add",
-            )
-        if request.data.get("test") is not None:
-            return check_post_permission(
-                request, Cred_Mapping, "test", "add",
-            )
-        if request.data.get("finding") is not None:
-            return check_post_permission(
-                request, Cred_Mapping, "finding", "add",
-            )
-        return check_post_permission(
-            request, Cred_Mapping, "product", "add",
         )
 
     def has_object_permission(self, request, view, obj):

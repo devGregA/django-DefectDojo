@@ -20,7 +20,6 @@ from dojo.authorization.roles_permissions import permission_to_action
 from dojo.location.models import Location, LocationFindingReference, LocationProductReference
 from dojo.models import (
     App_Analysis,
-    Cred_Mapping,
     Dojo_User,
     DojoMeta,
     Endpoint,
@@ -36,7 +35,6 @@ from dojo.models import (
     Product_API_Scan_Configuration,
     Product_Type,
     Risk_Acceptance,
-    Stub_Finding,
     Test,
     Test_Import,
     Tool_Product_Settings,
@@ -262,42 +260,6 @@ def _get_authorized_tool_product_settings(permission):
 register_auth_filter("tool_product.get_authorized_tool_product_settings", _get_authorized_tool_product_settings)
 
 
-def _get_authorized_cred_mappings(permission):
-    user = get_current_user()
-    if user is None or getattr(user, "is_anonymous", False):
-        return Cred_Mapping.objects.none()
-    if _is_unrestricted(user, permission_to_action(permission)):
-        return Cred_Mapping.objects.all()
-    authorized_products = _authorized_product_ids(user)
-    return Cred_Mapping.objects.filter(
-        Q(product__id__in=authorized_products)
-        | Q(engagement__product__id__in=authorized_products)
-        | Q(test__engagement__product__id__in=authorized_products)
-        | Q(finding__test__engagement__product__id__in=authorized_products),
-    )
-
-
-register_auth_filter("cred.get_authorized_cred_mappings", _get_authorized_cred_mappings)
-
-
-def _get_authorized_cred_mappings_for_queryset(permission, queryset):
-    user = get_current_user()
-    if user is None or getattr(user, "is_anonymous", False):
-        return queryset.none()
-    if _is_unrestricted(user, permission_to_action(permission)):
-        return queryset
-    authorized_products = _authorized_product_ids(user)
-    return queryset.filter(
-        Q(product__id__in=authorized_products)
-        | Q(engagement__product__id__in=authorized_products)
-        | Q(test__engagement__product__id__in=authorized_products)
-        | Q(finding__test__engagement__product__id__in=authorized_products),
-    )
-
-
-register_auth_filter("cred.get_authorized_cred_mappings_for_queryset", _get_authorized_cred_mappings_for_queryset)
-
-
 # ---------------------------------------------------------------------------
 # Locations
 # ---------------------------------------------------------------------------
@@ -367,7 +329,7 @@ register_auth_filter("endpoint.get_authorized_endpoint_status", _get_authorized_
 
 
 # ---------------------------------------------------------------------------
-# Findings / Stub_Findings / Vulnerability_Ids
+# Findings / Vulnerability_Ids
 # ---------------------------------------------------------------------------
 
 
@@ -382,15 +344,6 @@ def _get_authorized_findings(permission, queryset=None, user=None):
 
 
 register_auth_filter("finding.get_authorized_findings", _get_authorized_findings)
-
-
-def _get_authorized_stub_findings(permission):
-    return _filter_by_authorized_products(
-        Stub_Finding.objects.all(), "test__engagement__product", permission,
-    )
-
-
-register_auth_filter("finding.get_authorized_stub_findings", _get_authorized_stub_findings)
 
 
 def _get_authorized_vulnerability_ids(permission, queryset=None, user=None):

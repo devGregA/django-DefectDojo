@@ -10,8 +10,8 @@ after the Track B legacy rewrite:
   * authorized_users membership on the closest authorization-bearing
     parent (Product or Product_Type, with Product_Type cascading to its
     products)
-  * carrier objects (Engagement / Test / Finding / Stub_Finding /
-    Finding_Group / Endpoint / etc.) delegate to their wrapping product
+  * carrier objects (Engagement / Test / Finding / Finding_Group /
+    Endpoint / etc.) delegate to their wrapping product
   * Action.SuperuserOnly always denies non-superusers
   * Action.Delete / Action.StaffOnly require is_staff
   * Member rows (Product_Member / Product_Type_Member / Dojo_Group_Member)
@@ -45,16 +45,12 @@ from dojo.authorization.authorization import (
 )
 from dojo.authorization.roles_permissions import Action, Permissions, Roles
 from dojo.models import (
-    Cred_Mapping,
-    Cred_User,
-    Development_Environment,
     Dojo_Group,
     Dojo_User,
     Engagement,
     Finding,
     Product,
     Product_Type,
-    Stub_Finding,
     Test,
     Test_Type,
 )
@@ -169,7 +165,7 @@ class TestUserHasPermissionLegacy(LegacyAuthorizationBaseTestCase):
 
 class TestCarrierObjectsDelegateToProduct(LegacyAuthorizationBaseTestCase):
 
-    """Engagement, Test, Finding, Stub_Finding all resolve via their product."""
+    """Engagement, Test, Finding all resolve via their product."""
 
     @classmethod
     def setUpTestData(cls):
@@ -187,9 +183,6 @@ class TestCarrierObjectsDelegateToProduct(LegacyAuthorizationBaseTestCase):
             test=cls.test, title="auth_finding", reporter=cls.member,
             severity="High", description="x", mitigation="x", impact="x",
         )
-        cls.stub = Stub_Finding.objects.create(
-            test=cls.test, title="auth_stub", reporter=cls.member,
-        )
 
     def test_member_can_view_engagement_under_alpha(self):
         self.assertTrue(user_has_permission(self.member, self.eng, "view"))
@@ -199,9 +192,6 @@ class TestCarrierObjectsDelegateToProduct(LegacyAuthorizationBaseTestCase):
 
     def test_member_can_view_finding_under_alpha(self):
         self.assertTrue(user_has_permission(self.member, self.finding, "view"))
-
-    def test_member_can_view_stub_finding_under_alpha(self):
-        self.assertTrue(user_has_permission(self.member, self.stub, "view"))
 
     def test_outsider_cannot_view_engagement(self):
         self.assertFalse(user_has_permission(self.outsider, self.eng, "view"))
@@ -341,21 +331,6 @@ class TestRoleHelpersAreInertUnderLegacy(DojoTestCase):
     def test_get_roles_for_permission_returns_empty(self):
         self.assertEqual(get_roles_for_permission(Permissions.Product_Edit), set())
         self.assertEqual(get_roles_for_permission(9999), set())  # bogus permission: no exception
-
-
-class TestCredMappingDelegates(LegacyAuthorizationBaseTestCase):
-
-    """
-    Cred_Mapping objects gate through their attached product /
-    engagement / test / finding.
-    """
-
-    def test_cred_mapping_via_product(self):
-        env, _ = Development_Environment.objects.get_or_create(name="auth_test_env")
-        cred = Cred_User.objects.create(name="auth_test_cred", username="x", password="y", environment=env)  # noqa: S106 -- test fixture
-        mapping = Cred_Mapping(cred_id=cred, product=self.alpha)
-        self.assertTrue(user_has_permission(self.member, mapping, "view"))
-        self.assertFalse(user_has_permission(self.outsider, mapping, "view"))
 
 
 class TestDojoGroupAuthorization(LegacyAuthorizationBaseTestCase):

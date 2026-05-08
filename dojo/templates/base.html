@@ -350,9 +350,6 @@
                             {% if "dojo.change_announcement"|has_configuration_permission:request %}
                                 <a href="{% url 'configure_announcement' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "Announcement" %}</a>
                             {% endif %}
-                            {% if system_settings.enable_credentials and "dojo.view_cred_user"|has_configuration_permission:request %}
-                                <a href="{% url 'cred' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "Credential Manager" %}</a>
-                            {% endif %}
                             {% if system_settings.enable_github and "dojo.view_github_conf"|has_configuration_permission:request %}
                                 <a href="{% url 'github' %}" class="block py-1.5 pl-12 pr-4 text-sm text-gray-400 hover:text-white hover:bg-white/10">{% trans "GitHub" %}</a>
                             {% endif %}
@@ -818,21 +815,6 @@
                                                                 <a href="{% url 'view_objects' product_tab.product.id %}">
                                                                     <i class="fa-solid fa-rectangle-list"></i>
                                                                     {% trans "View Tracked Files" %}
-                                                                </a>
-                                                            </li>
-                                                        {% endif %}
-                                                        {% if system_settings.enable_credentials %}
-                                                            <li role="separator" class="divider"></li>
-                                                            <li role="presentation">
-                                                                <a href="{% url 'new_cred_product' product_tab.product.id %}">
-                                                                    <i class="fa-solid fa-plus"></i>
-                                                                    {% trans "Add Credentials" %}
-                                                                </a>
-                                                            </li>
-                                                            <li role="presentation">
-                                                                <a href="{% url 'all_cred_product' product_tab.product.id %}">
-                                                                    <i class="fa-solid fa-rectangle-list"></i>
-                                                                    {% trans "View Credentials" %}
                                                                 </a>
                                                             </li>
                                                         {% endif %}

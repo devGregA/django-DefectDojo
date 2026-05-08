@@ -27,7 +27,8 @@ from dojo.authorization.roles_permissions import (
 from dojo.location.models import AbstractLocation, Location
 from dojo.models import (
     App_Analysis,
-    Cred_Mapping,
+    Dojo_Group,
+    Dojo_Group_Member,
     Dojo_User,
     Endpoint,
     Engagement,
@@ -38,7 +39,6 @@ from dojo.models import (
     Product_API_Scan_Configuration,
     Product_Type,
     Risk_Acceptance,
-    Stub_Finding,
     Test,
 )
 
@@ -91,8 +91,8 @@ def user_has_permission(user: Dojo_User, obj: Model, permission) -> bool:
          dojo/user/helper.py at commit e7805aa14~ for the historical
          reference.
 
-    Cred_Mapping and other carrier objects don't expose authorized_users
-    themselves; they delegate to their wrapped product or product type.
+    Carrier objects don't expose authorized_users themselves; they
+    delegate to their wrapped product or product type.
     """
     if not user or getattr(user, "is_anonymous", False):
         return False
@@ -136,7 +136,7 @@ def _user_authorized_for(user: Dojo_User, obj: Model, action: Action) -> bool:
     if isinstance(obj, Test):
         return _user_authorized_for(user, obj.engagement.product, action) if obj.engagement_id else False
 
-    if isinstance(obj, Finding | Stub_Finding):
+    if isinstance(obj, Finding):
         return _user_authorized_for(user, obj.test.engagement.product, action)
 
     if isinstance(obj, Finding_Group):
@@ -159,17 +159,6 @@ def _user_authorized_for(user: Dojo_User, obj: Model, action: Action) -> bool:
 
     if isinstance(obj, Endpoint | Languages | App_Analysis | Product_API_Scan_Configuration):
         return _user_authorized_for(user, obj.product, action)
-
-    if isinstance(obj, Cred_Mapping):
-        if obj.product_id:
-            return _user_authorized_for(user, obj.product, action)
-        if obj.engagement_id:
-            return _user_authorized_for(user, obj.engagement.product, action)
-        if obj.test_id:
-            return _user_authorized_for(user, obj.test.engagement.product, action)
-        if obj.finding_id:
-            return _user_authorized_for(user, obj.finding.test.engagement.product, action)
-        return False
 
     msg = f"No legacy authorization implemented for class {type(obj).__name__}"
     raise NoAuthorizationImplementedError(msg)

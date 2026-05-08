@@ -17,8 +17,6 @@ from dojo.api_v2.views import (
     BurpRawRequestResponseViewSet,
     CeleryViewSet,
     ConfigurationPermissionViewSet,
-    CredentialsMappingViewSet,
-    CredentialsViewSet,
     DevelopmentEnvironmentViewSet,
     DojoMetaViewSet,
     EndpointMetaImporterView,
@@ -41,18 +39,12 @@ from dojo.api_v2.views import (
     ProductAPIScanConfigurationViewSet,
     ProductTypeViewSet,
     ProductViewSet,
-    QuestionnaireAnsweredSurveyViewSet,
-    QuestionnaireAnswerViewSet,
-    QuestionnaireEngagementSurveyViewSet,
-    QuestionnaireGeneralSurveyViewSet,
-    QuestionnaireQuestionViewSet,
     RegulationsViewSet,
     ReImportScanView,
     RiskAcceptanceViewSet,
     SLAConfigurationViewset,
     SonarqubeIssueTransitionViewSet,
     SonarqubeIssueViewSet,
-    StubFindingsViewSet,
     SystemSettingsViewSet,
     TestImportViewSet,
     TestsViewSet,
@@ -70,7 +62,6 @@ from dojo.asset.urls import urlpatterns as asset_urls
 from dojo.banner.urls import urlpatterns as banner_urls
 from dojo.benchmark.urls import urlpatterns as benchmark_urls
 from dojo.components.urls import urlpatterns as component_urls
-from dojo.cred.urls import urlpatterns as cred_urls
 from dojo.development_environment.urls import urlpatterns as dev_env_urls
 from dojo.endpoint.urls import urlpatterns as endpoint_urls
 from dojo.engagement.urls import urlpatterns as eng_urls
@@ -118,8 +109,6 @@ handler400 = "dojo.views.custom_bad_request_view"
 v2_api = DefaultRouter()
 v2_api.register(r"announcements", AnnouncementViewSet, basename="announcement")
 v2_api.register(r"configuration_permissions", ConfigurationPermissionViewSet, basename="permission")
-v2_api.register(r"credential_mappings", CredentialsMappingViewSet, basename="cred_mapping")
-v2_api.register(r"credentials", CredentialsViewSet, basename="cred_user")
 v2_api.register(r"development_environments", DevelopmentEnvironmentViewSet, basename="development_environment")
 # RBAC endpoints moved to Pro under legacy authorization:
 #   dojo_groups, dojo_group_members → pro/groups, pro/group_members
@@ -158,7 +147,6 @@ v2_api.register(r"risk_acceptance", RiskAcceptanceViewSet, basename="risk_accept
 v2_api.register(r"sla_configurations", SLAConfigurationViewset, basename="sla_configurations")
 v2_api.register(r"sonarqube_issues", SonarqubeIssueViewSet, basename="sonarqube_issue")
 v2_api.register(r"sonarqube_transitions", SonarqubeIssueTransitionViewSet, basename="sonarqube_issue_transition")
-v2_api.register(r"stub_findings", StubFindingsViewSet, basename="stub_finding")
 v2_api.register(r"system_settings", SystemSettingsViewSet, basename="system_settings")
 v2_api.register(r"technologies", AppAnalysisViewSet, basename="app_analysis")
 v2_api.register(r"tests", TestsViewSet, basename="test")
@@ -169,11 +157,6 @@ v2_api.register(r"tool_product_settings", ToolProductSettingsViewSet, basename="
 v2_api.register(r"tool_types", ToolTypesViewSet, basename="tool_type")
 v2_api.register(r"users", UsersViewSet, basename="user")
 v2_api.register(r"user_contact_infos", UserContactInfoViewSet, basename="usercontactinfo")
-v2_api.register(r"questionnaire_answers", QuestionnaireAnswerViewSet, basename="answer")
-v2_api.register(r"questionnaire_answered_questionnaires", QuestionnaireAnsweredSurveyViewSet, basename="answered_survey")
-v2_api.register(r"questionnaire_engagement_questionnaires", QuestionnaireEngagementSurveyViewSet, basename="engagement_survey")
-v2_api.register(r"questionnaire_general_questionnaires", QuestionnaireGeneralSurveyViewSet, basename="general_survey")
-v2_api.register(r"questionnaire_questions", QuestionnaireQuestionViewSet, basename="question")
 # Add the location routes
 if settings.V3_FEATURE_LOCATIONS:
     # Endpoints -> Locations
@@ -208,7 +191,6 @@ ur += github_urls
 ur += tool_type_urls
 ur += tool_config_urls
 ur += tool_product_urls
-ur += cred_urls
 ur += sla_urls
 ur += system_settings_urls
 ur += notifications_urls
