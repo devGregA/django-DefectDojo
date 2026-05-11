@@ -17,6 +17,33 @@ For Open Source release notes, please see the [Releases page on GitHub](https://
 * **(Authorization)** Pro deployments are **not impacted** by the OS legacy authorization rewrite. Pro retains full RBAC: the Members / Groups panels on Product and Product Type detail, the Groups panel + Global Role fieldset on the user view / profile / add user pages, the Group Members panel on the user view, the Groups link in the left-nav, and the System Settings default-group fields all continue to render unchanged, driven by Pro RBAC via template overrides at `pro/templates/dojo/`. The eight RBAC v2 API endpoints (`/api/v2/dojo_groups/`, `/api/v2/dojo_group_members/`, `/api/v2/global_roles/`, `/api/v2/product_groups/`, `/api/v2/product_members/`, `/api/v2/product_type_groups/`, `/api/v2/product_type_members/`, `/api/v2/roles/`) are re-registered by Pro's `add_*_urls` hooks. Pro's runtime authorization shadowing in `pro/apps.py:DojoProConfig.ready()` continues to govern object, global, and configuration permissions, so the OS-side `is_staff` bypass for configuration permissions does not affect Pro semantics.
 * **(SSO)** SSO providers (SAML, OIDC, Google, Okta, Azure AD, GitLab, Auth0, Keycloak, GitHub Enterprise, and remote-user header auth) are **Pro-only** as of 2.59. The implementation that previously shipped in open source (`dojo/sso/`) was consolidated into Pro at `pro/sso/`, and the social-auth and djangosaml2 dependencies moved to Pro's package. Pro deployments continue to expose the full SSO surface — login buttons, the tuner-driven runtime configuration, and the `remove_sso` management command — unchanged. Open source customers using SSO need to migrate to Pro to retain SSO sign-in.
 
+## May 2026: v2.58
+
+### May 6, 2026: v2.58.1
+
+* **(Pro UI)** You can now activate or deactivate Test Types and Users directly from their list menus, so retiring or restoring entries no longer requires opening the edit form.
+* **(Pro UI)** Anchor links now open in a new tab as expected, so following a reference no longer pulls you away from the page you were working on.
+* **(Pro UI)** Adding findings to an existing Risk Acceptance works reliably again. A recent performance improvement caused the form to fail for some users; you can now resume managing accepted findings without errors.
+* **(Pro UI)** Your customized table column order is now preserved across page refreshes. Previously only column visibility carried over, so any rearranging you did would silently revert to the default — forcing you to reorder columns every session.
+* **(API)** Fixed a 500 error when fetching vulnerable endpoints (`GET /api/vue/endpoints/{id}/vulnerable/`), restoring reliable access to vulnerability data for an endpoint.
+
+### May 4, 2026: v2.58.0
+
+* **(Pro UI)** Added shared table preferences so saved column/filter configurations on list views can be shared across users.
+* **(Pro UI)** Markdown content now wraps text correctly, preventing horizontal overflow on long lines.
+* **(Performance)** Pro UI List Virtualization
+* **(Performance)** Improved import performance by optimizing import queries and bulk-applying parser-supplied per-finding tags.
+* **(Performance)** Locations endpoints optimized for faster retrieval on large datasets.
+* **(SBOM)** SBOM imports now support replace mode for re-importing the full inventory of a component set.
+* **(Reports)** Beat Reporting feature is now available for Cloud subscribers
+* **(API)** Added `created` and `updated` date filters to the Risk Acceptance API.
+* **(Jira)** Webhook handler no longer mis-mitigates findings on non-"done" Jira issue transitions.
+* **(Deployment)** Default Celery task serializer is now JSON, removing pickle from the task dispatch path.
+* **(Tools)** Added Qualys VMDR CSV parser.
+* **(Tools)** Coverity API parser now supports `RESOURCE_LEAK` quality findings.
+* **(Tools)** SonarQube parser now falls back to `mdDesc` when populating finding descriptions.
+* **(Settings)** `MAX_ZIP_*` limits are now configurable via settings.
+
 ## Apr 2026: v2.57
 
 ### Apr 27, 2026: v2.57.3
@@ -28,7 +55,7 @@ For Open Source release notes, please see the [Releases page on GitHub](https://
 * **(Pro UI)** Corrected the Product column label on the Group page under the V3 relabeling.
 * **(Pro UI)** Removed the duplicate greeting message shown after login.
 * **(Performance)** Create-path notifications are now dispatched asynchronously, removing a source of slow POST latency.
-* **(Deployment)** On premise deployments now include the Orchestrator services.
+* **(Deployment)** On premise deployments now include the Orchestrator services. Please see [additional instructions](/releases/pro/ddorch-database) for more details
 * **(Notifications)** Improved the format and display of SLA breach notifications.
 * **(Engineer Metrics)** Fixed a KeyError that could be raised when loading the Engineer Metrics page.
 * **(Tools)** Contrast parser no longer collapses distinct findings that share a rule name.
@@ -188,7 +215,7 @@ No significant UX changes.
 
 #### Dec 8, 2025: v2.53.1
 
-* **(Assets/Organizations)** Introduced overhaul to Products/Product Types, added the ability to create and diagram relationships between Assets.  See [Assets/Organizations documentation](/asset_modelling/hierarchy/pro__assets_organizations/) for details, and information on opting in to the Beta.
+* **(Assets/Organizations)** Introduced overhaul to Products/Product Types, added the ability to create and diagram relationships between Assets.  See [Assets/Organizations documentation](/asset_modelling/pro_hierarchy/assets_organizations/) for details, and information on opting in to the Beta.
 * **(Findings)** Added new KEV fields for ransomware, exploits, and date handling.
 * **(Pro UI)** Added Table Preferences menu, allowing you to store preset lists of columns for each table.
 
@@ -469,7 +496,7 @@ Hotfix release - no significant feature changes.
 ![image](images/risk_table.png)
 
 - **(Pro UI)** Added a link to Universal Importer to the sidebar, which provides access to the [Universal Importer and DefectDojo CLI](/import_data/pro/specialized_import/external_tools/) tools.
-- **(Pro UI)** Added smart Prioritization and Risk fields to DefectDojo Pro, which can be used to more easily triage Findings based on the impact of the Product they affect.  See [Priority](/asset_modelling/hierarchy/pro__priority_sla/) documentation for more information.
+- **(Pro UI)** Added smart Prioritization and Risk fields to DefectDojo Pro, which can be used to more easily triage Findings based on the impact of the Product they affect.  See [Priority](/asset_modelling/pro_hierarchy/priority_sla/) documentation for more information.
 - **(Tools)** Updated Fortify Webinspect parser to handle Fortify's new XML report format.
 
 #### Apr 14, 2025: v2.45.1
