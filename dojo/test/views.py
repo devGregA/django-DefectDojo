@@ -331,7 +331,7 @@ def copy_test(request, tid):
             messages.add_message(
                 request,
                 messages.SUCCESS,
-                "Test Copied successfully.",
+                _("Test Copied successfully."),
                 extra_tags="alert-success")
             create_notification(event="test_copied",  # TODO: - if 'copy' functionality will be supported by API as well, 'create_notification' needs to be migrated to place where it will be able to cover actions from both interfaces
                                 title=f"Copying of {test.title}",
@@ -344,7 +344,7 @@ def copy_test(request, tid):
         messages.add_message(
             request,
             messages.ERROR,
-            "Unable to copy test, please try again.",
+            _("Unable to copy test, please try again."),
             extra_tags="alert-danger")
 
     product_tab = Product_Tab(product, title="Copy Test", tab="engagements")
