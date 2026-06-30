@@ -96,8 +96,9 @@ class TestI18nConfiguration(SimpleTestCase):
     def test_offered_languages(self):
         self.assertEqual(
             {code for code, _name in settings.LANGUAGES},
-            {"ar", "en", "de", "es", "fr", "hi", "id", "it", "ja", "ko", "nl",
-             "pl", "pt-br", "ru", "tr", "vi", "zh-hans", "zh-hant"},
+            {"ar", "bn", "de", "en", "es", "fa", "fr", "he", "hi", "id", "it", "ja",
+             "ko", "mr", "nl", "pl", "pt-br", "ru", "ta", "te", "th", "tl", "tr",
+             "uk", "ur", "vi", "zh-hans", "zh-hant"},
         )
 
     def test_locale_paths_point_at_dojo_locale(self):

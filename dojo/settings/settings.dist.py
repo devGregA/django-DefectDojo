@@ -336,25 +336,36 @@ USE_I18N = env("DD_USE_I18N")
 LANGUAGES = [
     ("en", "English"),
     ("ar", "العربية"),
+    ("bn", "বাংলা"),
     ("de", "Deutsch"),
     ("es", "Español"),
+    ("fa", "فارسی"),
     ("fr", "Français"),
+    ("he", "עברית"),
     ("hi", "हिन्दी"),
     ("id", "Bahasa Indonesia"),
     ("it", "Italiano"),
     ("ja", "日本語"),
     ("ko", "한국어"),
+    ("mr", "मराठी"),
     ("nl", "Nederlands"),
     ("pl", "Polski"),
     ("pt-br", "Português (Brasil)"),
     ("ru", "Русский"),
+    ("ta", "தமிழ்"),
+    ("te", "తెలుగు"),
+    ("th", "ไทย"),
+    ("tl", "Filipino"),
     ("tr", "Türkçe"),
+    ("uk", "Українська"),
+    ("ur", "اردو"),
     ("vi", "Tiếng Việt"),
     ("zh-hans", "简体中文"),
     ("zh-hant", "繁體中文"),
 ]
-# Arabic (ar) is right-to-left; the v3 UI flips layout via dir="rtl" (set in base.html
-# from LANGUAGE_BIDI) plus logical CSS utilities. The classic UI is not RTL-aware.
+# Arabic (ar), Hebrew (he), Persian (fa) and Urdu (ur) are right-to-left; the v3 UI flips
+# layout via dir="rtl" (set in base.html from LANGUAGE_BIDI) plus logical CSS utilities.
+# The classic UI is not RTL-aware.
 
 # If you set this to False, Django will not use timezone-aware datetimes.
 USE_TZ = env("DD_USE_TZ")
