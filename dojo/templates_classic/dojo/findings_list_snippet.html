@@ -18,7 +18,7 @@
                                     id="downloadMenu"
                                     data-toggle="dropdown"
                                     aria-expanded="true"
-                                    aria-label="dropdown-menu">
+                                    aria-label="{% trans 'dropdown-menu' %}">
                                 <span class="fa-solid fa-download"></span>
                                 <span class="caret"></span>
                             </button>
@@ -43,7 +43,7 @@
                                     data-toggle="collapse"
                                     data-target="#the-filters"
                                     class="btn btn-primary toggle-filters"
-                                    aria-label="show-filters">
+                                    aria-label="{% trans 'show-filters' %}">
                                 <i class="fa-solid fa-filter"></i> <i class="caret"></i>
                             </button>
                         </div>
@@ -70,16 +70,16 @@
                                 <span class="caret"></span>
                             </button>
                         {% endif %}
-                        <div class="btn-group mr-2" role="group" aria-label="Bulk Actions">
+                        <div class="btn-group mr-2" role="group" aria-label="{% trans 'Bulk Actions' %}">
                             {% if product_tab and not 'DISABLE_FINDING_MERGE'|setting_enabled %}
                                 <button type="button"
                                         id="merge_findings"
-                                        aria-label="Merge selected findings"
+                                        aria-label="{% trans 'Merge selected findings' %}"
                                         class="btn btn-sm  btn-primary"
                                         data-toggle="tooltip"
                                         data-placement="bottom"
-                                        title="Merge Findings">
-                                    <a class="white-color merge" href="#" alt="Merge Findings">
+                                        title="{% trans 'Merge Findings' %}">
+                                    <a class="white-color merge" href="#" alt="{% trans 'Merge Findings' %}">
                                         <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
                                     </a>
                                 </button>
@@ -89,9 +89,9 @@
                                         class="btn btn-sm  btn-primary"
                                         data-toggle="tooltip"
                                         data-placement="bottom"
-                                        title="Delete Findings"
-                                        aria-label="Delete selected findings">
-                                    <a class="white-color delete-bulk" href="#" alt="Delete Findings">
+                                        title="{% trans 'Delete Findings' %}"
+                                        aria-label="{% trans 'Delete selected findings' %}">
+                                    <a class="white-color delete-bulk" href="#" alt="{% trans 'Delete Findings' %}">
                                         <i class="fa-solid fa-trash"></i>
                                     </a>
                                 </button>
@@ -134,13 +134,13 @@
                                         <input id="id_bulk_date"
                                             name="date"
                                             type="date"
-                                            alt="Select the date the Findings were discovered"/>
+                                            alt="{% trans 'Select the date the Findings were discovered' %}"/>
                                         <br />
                                         <label style="display: block" for="id_bulk_planned_remediation_date">{% trans "Planned Remediation Date" %}</label>
                                         <input id="id_bulk_planned_remediation_date"
                                             name="planned_remediation_date"
                                             type="date"
-                                            alt="Select the date the Finding will be remediated"/>
+                                            alt="{% trans 'Select the date the Finding will be remediated' %}"/>
                                         <br />
                                         <label style="display: block" for="id_bulk_planned_remediation_version">{% trans "Planned remediation version" %}</label>
                                         <input id="id_bulk_planned_remediation_version"
@@ -152,7 +152,7 @@
                                             <input id="id_bulk_status"
                                                 name="status"
                                                 type="checkbox"
-                                                alt="Select to enable"/>
+                                                alt="{% trans 'Select to enable' %}"/>
                                         </label>
                                         <br />
                                         <label style="font-size: 80%; font-weight: normal; display: block">
@@ -194,7 +194,7 @@
                                             <input id="id_bulk_risk_acceptance"
                                                 name="risk_acceptance"
                                                 type="checkbox"
-                                                alt="Select to enable"/>
+                                                alt="{% trans 'Select to enable' %}"/>
                                         </label>
                                         <br />
                                         <label style="font-size: 80%; font-weight: normal; display: block">
@@ -227,10 +227,10 @@
                                                 <input id="id_push_tojira"
                                                     name="push_to_jira"
                                                     type="checkbox"
-                                                    alt="Select to push to JIRA"/>
+                                                    alt="{% trans 'Select to push to JIRA' %}"/>
                                             </label>
                                             {% comment %} <label style="font-size: 80%; font-weight: bold; display: block">Unlink JIRA issues
-                                            <input id="unlink_from_jira" name="unlink_from_jira" type="checkbox" alt="Select to unlink JIRA issues from Defect Dojo findings"/>
+                                            <input id="unlink_from_jira" name="unlink_from_jira" type="checkbox" alt="{% trans 'Select to unlink JIRA issues from Defect Dojo findings' %}"/>
                                             </label> {% endcomment %}
                                         {% endif %}
                                         {% if system_settings.enable_github %}
@@ -239,7 +239,7 @@
                                                 <input id="id_push_togithub"
                                                     name="push_to_github"
                                                     type="checkbox"
-                                                    alt="Select to push to GitHub"/>
+                                                    alt="{% trans 'Select to push to GitHub' %}"/>
                                             </label>
                                             <br />
                                         {% endif %}
@@ -265,7 +265,7 @@
                             <tr>
                                 {% block header %}
                                     {% if not product_tab or product_tab and product_tab.product|has_object_permission:"Finding_Edit" %}
-                                        <th class="centered" title="Select all visible findings." scope="col" aria-label="Select all visible findings">
+                                        <th class="centered" title="{% trans 'Select all visible findings.' %}" scope="col" aria-label="{% trans 'Select all visible findings' %}">
                                             <div class="dropdown">
                                                 <button class="btn btn-primary dropdown-toggle"
                                                         type="button"
@@ -273,9 +273,9 @@
                                                         data-toggle="dropdown"
                                                         aria-haspopup="true"
                                                         aria-expanded="true"
-                                                        aria-label="Select findings by severity dropdown">
+                                                        aria-label="{% trans 'Select findings by severity dropdown' %}">
                                                     <form class="inline-form" action="#">
-                                                        <input type="checkbox" name="select_all" id="select_all" aria-label="select all findings checkbox"/>
+                                                        <input type="checkbox" name="select_all" id="select_all" aria-label="{% trans 'select all findings checkbox' %}"/>
                                                     </form>
                                                     <span class="caret"></span>
                                                 </button>
@@ -408,7 +408,7 @@
                                         {% if not product_tab or product_tab and product_tab.product|has_object_permission:"Finding_Edit" %}
                                             <td class="centered">
                                                 <form action="#">
-                                                    <input type="checkbox" name="select_{{ finding.id }}" id="{{ finding.id }}" class="select_one {{ finding.severity }}" aria-label="select-finding"/>
+                                                    <input type="checkbox" name="select_{{ finding.id }}" id="{{ finding.id }}" class="select_one {{ finding.severity }}" aria-label="{% trans 'select-finding' %}"/>
                                                 </form>
                                             </td>
                                         {% endif %}
@@ -524,8 +524,8 @@
                                                             <li role="presentation">
                                                                 <form method="post" action="{% url 'delete_finding' finding.id %}" style="display: inline" class="form-inline form" id="delete-finding-menu-{{ finding.id }}-form">
                                                                     {% csrf_token %}
-                                                                    <input type="hidden" label="return_url" aria-label="return_url" name="return_url" value="{{ request.get_full_path }}"/>
-                                                                    <input type="hidden" label="id" aria-label="id" name="id" value="{{ finding.id }}"/>
+                                                                    <input type="hidden" label="return_url" aria-label="{% trans 'return_url' %}" name="return_url" value="{{ request.get_full_path }}"/>
+                                                                    <input type="hidden" label="id" aria-label="{% trans 'id' %}" name="id" value="{{ finding.id }}"/>
                                                                 </form>
                                                                 <a class="text-danger delete-finding" id="delete-finding-menu-{{ finding.id }}" href="#" role="button" aria-label="Delete finding {{ finding.id }}">
                                                                     <i class="fa-solid fa-trash"></i> {% trans "Delete" %}
@@ -553,7 +553,7 @@
                                                 data-content="{{ finding.file_path }}{% if finding.line %}:{{finding.line}}{% endif %}"
                                                 data-placement="right"
                                                 data-container="body"
-                                                data-original-title="Files"
+                                                data-original-title="{% trans 'Files' %}"
                                                 title=""></i>
                                             {% endif %}
                                             {% if V3_FEATURE_LOCATIONS %}
@@ -590,7 +590,7 @@
                                                 data-placement="right"
                                                 data-content="{{ finding.component_name }} - {{ finding.component_version }}"
                                                 data-container="body"
-                                                data-original-title="Component"
+                                                data-original-title="{% trans 'Component' %}"
                                                 title=""></i>
                                             {% endif %}
                                             {% if finding.notes.all %}

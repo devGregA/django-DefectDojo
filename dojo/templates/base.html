@@ -144,14 +144,14 @@
                 <div class="flex items-center h-[var(--dd-topbar-height)] px-4 bg-dd-primary-900 flex-shrink-0">
                     {% block header_logo %}
                         <a href="{% url 'home' %}" class="flex items-center gap-2 min-w-0">
-                            <img src="{% static "dojo/img/favicon.png" %}" alt="DefectDojo" class="w-8 h-8 flex-shrink-0">
+                            <img src="{% static "dojo/img/favicon.png" %}" alt="{% trans 'DefectDojo' %}" class="w-8 h-8 flex-shrink-0">
                             <span class="text-lg font-semibold text-white truncate">DefectDojo</span>
                         </a>
                     {% endblock %}
                 </div>
 
                 <!-- Nav items -->
-                <nav class="flex-1 py-3 space-y-0.5" aria-label="Main navigation">
+                <nav class="flex-1 py-3 space-y-0.5" aria-label="{% trans 'Main navigation' %}">
                     {% block sidebar-items %}
                     <!-- Dashboard -->
                     <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-4 py-2 text-gray-300 hover:text-white hover:bg-white/10 transition-colors">
@@ -401,8 +401,8 @@
                     <div class="flex">
                         <input id="simple_search" type="text" name="query" value="{{ clean_query }}"
                                class="flex-1 rounded-l-md border border-r-0 border-gray-300 px-3 py-1.5 text-sm focus:border-dd-primary-400 focus:ring-dd-primary-400"
-                               placeholder="{% trans "Search" %}..." aria-label="Search">
-                        <button type="submit" class="btn btn-primary rounded-l-none" aria-label="Search">
+                               placeholder="{% trans "Search" %}..." aria-label="{% trans 'Search' %}">
+                        <button type="submit" class="btn btn-primary rounded-l-none" aria-label="{% trans 'Search' %}">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </button>
                     </div>
@@ -444,7 +444,7 @@
                         <button @click="userOpen = !userOpen"
                                 :aria-expanded="userOpen" aria-controls="user-dropdown"
                                 class="flex items-center gap-1 p-2 text-gray-500 hover:text-gray-700 transition-colors"
-                                aria-label="User Menu">
+                                aria-label="{% trans 'User Menu' %}">
                             <i class="fa-solid fa-user"></i>
                             <i class="fa-solid fa-caret-down text-xs"></i>
                         </button>
@@ -493,7 +493,7 @@
                 {% if request.user.is_authenticated and announcement %}
                     <div role="alert" class="announcement-banner alert alert-{{ announcement.style }} {% if announcement.dismissable %}alert-dismissible{% endif %} show">
                     {% if announcement.dismissable %}
-                        <a href="{% url 'dismiss_announcement' %}" class="close" aria-label="Close">
+                        <a href="{% url 'dismiss_announcement' %}" class="close" aria-label="{% trans 'Close' %}">
                             <span aria-hidden="true">&times;</span>
                         </a>
                     {% endif %}
@@ -507,7 +507,7 @@
                             <form method="post" action="{% url 'dismiss_os_message' %}" class="os-message-dismiss-form">
                                 {% csrf_token %}
                                 <input type="hidden" name="token" value="{{ banner.dismiss_token }}">
-                                <button type="submit" class="os-message-dismiss" aria-label="Dismiss" title="Dismiss this message">&times;</button>
+                                <button type="submit" class="os-message-dismiss" aria-label="{% trans 'Dismiss' %}" title="{% trans 'Dismiss this message' %}">&times;</button>
                             </form>
                         {% endif %}
                         {{ banner.message|safe }}{% if banner.url %} <a href="{{ banner.url }}">{{ banner.link_text }}</a>{% endif %}
@@ -886,7 +886,7 @@
                                 {% for message in messages %}
                                     <div class="alert {{ message.tags }} alert-dismissible" role="alert"
                                          x-data="{ show: true }" x-show="show" x-transition>
-                                        <button type="button" class="close" @click="show = false" aria-label="Close">
+                                        <button type="button" class="close" @click="show = false" aria-label="{% trans 'Close' %}">
                                             <span aria-hidden="true">&times;</span>
                                         </button>
                                         {{ message }}

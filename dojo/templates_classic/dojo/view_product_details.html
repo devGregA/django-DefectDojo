@@ -18,7 +18,7 @@
           <h3 class="pull-left">{% trans "Description" %}</h3>
           <div class="dropdown pull-right">
             <div class="btn-group">
-              <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-expanded="true" aria-label="Options">
+              <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-expanded="true" aria-label="{% trans 'Options' %}">
                 <span class="fa-solid fa-bars"></span>
                 <span class="caret"></span>
               </button>
@@ -36,7 +36,7 @@
                     </a>
                   </li>
                   <li role="presentation">
-                    <a title="Edit Custom Fields"
+                    <a title="{% trans 'Edit Custom Fields' %}"
                       href="{% url 'edit_meta_data' prod.id %}">
                         <i class="fa-solid fa-pen-to-square"></i>{% trans "Edit Custom Fields" %}
                     </a>
@@ -51,7 +51,7 @@
                   </li>
                 {% endif %}
                 <li role="presentation">
-                    <a title="View API Scan Configurations"
+                    <a title="{% trans 'View API Scan Configurations' %}"
                         href="{% url 'view_api_scan_configurations' prod.id %}">
                         <i class="fa-solid fa-rectangle-list"></i>{% trans "View API Scan Configurations" %}
                     </a>
@@ -281,7 +281,7 @@
                 {% if prod|has_object_permission:"Product_Manage_Members" %}
                 <div class="dropdown pull-right">
                     <button class="btn btn-primary dropdown-toggle" label="Actions" type="button" id="dropdownMenuAddAuthorizedUsers"
-                            data-toggle="dropdown" aria-expanded="true" aria-label="Add Authorized Users">
+                            data-toggle="dropdown" aria-expanded="true" aria-label="{% trans 'Add Authorized Users' %}">
                         <span class="fa-solid fa-bars"></span>
                         <span class="caret"></span>
                     </button>

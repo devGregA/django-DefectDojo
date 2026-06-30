@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load display_tags %}
 {% load authorization_tags %}
 {% load humanize %}
@@ -59,7 +60,7 @@
 
                     <div class="dropdown pull-right">
                         <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenu1"
-                                data-toggle="dropdown" aria-expanded="true" aria-label="Risk acceptance options">
+                                data-toggle="dropdown" aria-expanded="true" aria-label="{% trans 'Risk acceptance options' %}">
                             <span class="fa-solid fa-bars"></span>
                             <span class="caret"></span>
                         </button>

@@ -117,7 +117,7 @@
                         <a class="navbar-brand" href="{% url 'home' %}">
                         {% block header_logo %}
                             <div style="padding: 10px;">
-                                <img src="{% static "dojo/img/logo.png" %}" alt="DefectDojo Logo" width="240"/>
+                                <img src="{% static "dojo/img/logo.png" %}" alt="{% trans 'DefectDojo Logo' %}" width="240"/>
                             </div>
                         {% endblock %}
                         </a>
@@ -131,10 +131,10 @@
                                 <div class="custom-search-form">
                                     <form id="custom_search_form" role="search" method="get" action="{% url 'simple_search' %}">
                                         <div class="input-group">
-                                            <input id="simple_search" label="simple_search" aria-label="simple_search" type="text" name="query" class="form-control"
+                                            <input id="simple_search" label="simple_search" aria-label="{% trans 'simple_search' %}" type="text" name="query" class="form-control"
                                                 placeholder="{% trans "Search" %}..." value="{{clean_query}}">
                                             <span class="input-group-btn">
-                                                <button id="simple_search_submit" class="btn btn-primary" type="submit" aria-label="Search">
+                                                <button id="simple_search_submit" class="btn btn-primary" type="submit" aria-label="{% trans 'Search' %}">
                                                     <i class="fa-solid fa-magnifying-glass"></i>
                                                 </button>
                                             </span>
@@ -155,7 +155,7 @@
                             </li>
                         {% endif %}
                         <li class="dropdown">
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#" aria-expanded="false" aria-label="User Menu">
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#" aria-expanded="false" aria-label="{% trans 'User Menu' %}">
                                 <i class="fa-solid fa-user fa-fw"></i>
                                 <i class="fa-solid fa-caret-down"></i>
                             </a>
@@ -179,7 +179,7 @@
                                     {% endif %}
                                     <li>
                                         <a href="{% url 'swagger-ui_oa3' %}" target="_blank">
-                                            <i class="fa-solid fa-book fa-fw" title="OpenAPI v3 Docs"></i>
+                                            <i class="fa-solid fa-book fa-fw" title="{% trans 'OpenAPI v3 Docs' %}"></i>
                                             {% trans "API v2 OpenAPI3 Docs" %}
                                         </a>
                                     </li>
@@ -219,7 +219,7 @@
                                 <ul class="nav" id="side-menu">
                                     {% block sidebar-items %}
                                         <li>
-                                            <a href="{% url 'dashboard' %}" aria-disabled="true" aria-expanded="false" aria-label="Dashboard">
+                                            <a href="{% url 'dashboard' %}" aria-disabled="true" aria-expanded="false" aria-label="{% trans 'Dashboard' %}">
                                                 <i class="fa-solid fa-gauge fa-fw"></i>
                                                 <span>{% trans "Dashboard" %}</span>
                                             </a>
@@ -259,7 +259,7 @@
                                             <!-- /.nav-second-level -->
                                         </li>
                                         <li>
-                                            <a href="{% url 'engagement' %}" aria-expanded="false" aria-label="Engagements">
+                                            <a href="{% url 'engagement' %}" aria-expanded="false" aria-label="{% trans 'Engagements' %}">
                                                 <i class="fa-solid fa-inbox fa-fw"></i>
                                                 <span>{% trans "Engagements" %}</span>
                                                 <span class="glyphicon arrow"></span>
@@ -294,7 +294,7 @@
                                             <!-- /.nav-second-level -->
                                         </li>
                                         <li>
-                                            <a href="{% url 'open_findings' %}" aria-expanded="false" aria-label="Findings">
+                                            <a href="{% url 'open_findings' %}" aria-expanded="false" aria-label="{% trans 'Findings' %}">
                                                 <i class="fa-solid fa-bug fa-fw"></i>
                                                 <span>{% trans "Findings" %}</span>
                                                 <span class="glyphicon arrow"></span>
@@ -331,7 +331,7 @@
                                             <!-- /.nav-second-level -->
                                         </li>
                                         <li>
-                                            <a href="{% url 'all_finding_groups' %}" aria-expanded="false" aria-label="Problems">
+                                            <a href="{% url 'all_finding_groups' %}" aria-expanded="false" aria-label="{% trans 'Problems' %}">
                                                 <i class="fa-solid fa-triangle-exclamation fa-fw"></i>
                                                 <span>{% trans "Finding Groups" %}</span>
                                                 <span class="glyphicon arrow"></span>
@@ -356,7 +356,7 @@
                                             <!-- /.nav-second-level -->
                                         </li>
                                         <li>
-                                            <a href="{% url 'components' %}" id="product_component_view" aria-expanded="false"  aria-label="Components">
+                                            <a href="{% url 'components' %}" id="product_component_view" aria-expanded="false"  aria-label="{% trans 'Components' %}">
                                                 <i class="fa-solid fa-table-cells-large fa-fw"></i>
                                                 <span>{% trans "Components" %}</span>
                                             </a>
@@ -369,7 +369,7 @@
                                             </ul>
                                         </li>
                                         <li>
-                                            <a href="{% url 'endpoint' %}" aria-expanded="false" aria-label="Endpoints">
+                                            <a href="{% url 'endpoint' %}" aria-expanded="false" aria-label="{% trans 'Endpoints' %}">
                                                 <i class="fa-solid fa-sitemap fa-fw"></i>
                                                 <span>{% trans "Endpoints" %}</span>
                                                 <span class="glyphicon arrow"></span>
@@ -406,7 +406,7 @@
                                         </li>
                                         {% block reports_tab %}
                                         <li>
-                                            <a href="{% url 'report_builder' %}" aria-expanded="false" aria-label="Reports">
+                                            <a href="{% url 'report_builder' %}" aria-expanded="false" aria-label="{% trans 'Reports' %}">
                                                 <i class="fa-solid fa-file-lines fa-fw"></i>
                                                 <span>{% trans "Reports" %}</span>
                                                 <span class="glyphicon arrow"></span>
@@ -422,7 +422,7 @@
                                         </li>
                                         {% endblock %}
                                         <li>
-                                            <a href="{% url 'metrics' %}?date=5&view=dashboard" aria-expanded="false" aria-label="Metrics">
+                                            <a href="{% url 'metrics' %}?date=5&view=dashboard" aria-expanded="false" aria-label="{% trans 'Metrics' %}">
                                                 <i class="fa-solid fa-chart-column fa-fw"></i>
                                                 <span>{% trans "Metrics" %}</span>
                                                 <span class="glyphicon arrow"></span>
@@ -468,7 +468,7 @@
                                         </li>
                                         {% if "auth.view_user"|has_configuration_permission:request %}
                                             <li>
-                                                <a href="{% url 'users' %}" aria-disabled="true" aria-expanded="false" aria-label="Users" id="id_user_menu">
+                                                <a href="{% url 'users' %}" aria-disabled="true" aria-expanded="false" aria-label="{% trans 'Users' %}" id="id_user_menu">
                                                     <i class="fa-solid fa-user fa-fw"></i>
                                                     <span>{% trans "Users" %}</span>
                                                     <span class="glyphicon arrow"></span>
@@ -488,7 +488,7 @@
                                         {% endif %}
                                         {% if system_settings.enable_calendar %}
                                         <li>
-                                            <a href="{% url 'engagement_calendar' %}" aria-disabled="true" aria-expanded="false" aria-label="Calendar">
+                                            <a href="{% url 'engagement_calendar' %}" aria-disabled="true" aria-expanded="false" aria-label="{% trans 'Calendar' %}">
                                                 <i class="fa-solid fa-calendar-days fa-fw"></i>
                                                 <span>{% trans "Calendar" %}</span>
                                             </a>
@@ -523,7 +523,7 @@
                                             {% endif %}
                                         {% endif %}
                                         <li id="menu_configuration">
-                                            <a href="#" aria-expanded="false" aria-label="Configuration">
+                                            <a href="#" aria-expanded="false" aria-label="{% trans 'Configuration' %}">
                                                 <i class="fa-solid fa-gear fa-fw"></i>
                                                 <span>{% trans "Configuration" %}</span>
                                             </a>
@@ -618,14 +618,14 @@
                                     {% endblock %}
                                     {% block support-tab %}
                                         <li>
-                                            <a href="{% url 'support' %}" aria-disabled="true" aria-expanded="false" aria-label="Support">
+                                            <a href="{% url 'support' %}" aria-disabled="true" aria-expanded="false" aria-label="{% trans 'Support' %}">
                                                 <i class="fa-solid fa-level-up fa-fw"></i>
                                                 <span>{% trans "Upgrade" %}</span>
                                             </a>
                                         </li>
                                     {% endblock %}
                                     <li id="min-menu">
-                                        <a href="#" id="minimize-menu" title="Expand/Collapse Menu" aria-label="Expand/Collapse Menu">
+                                        <a href="#" id="minimize-menu" title="{% trans 'Expand/Collapse Menu' %}" aria-label="{% trans 'Expand/Collapse Menu' %}">
                                             <i id="nav-minimize-menu-li" class="fa-solid fa-circle-right fa-fw"></i>
                                             <span>{% trans "Collapse Menu" %}</span>
                                         </a>
@@ -643,7 +643,7 @@
                 {% if request.user.is_authenticated and announcement %}
                     <div role="alert" class="announcement-banner alert alert-{{ announcement.style }} {% if announcement.dismissable %}alert-dismissible{% endif %} show">
                     {% if announcement.dismissable %}
-                        <a href="{% url 'dismiss_announcement' %}" class="close" aria-label="Close">
+                        <a href="{% url 'dismiss_announcement' %}" class="close" aria-label="{% trans 'Close' %}">
                             <span aria-hidden="true">×</span>
                         </a>
                     {% endif %}
@@ -657,7 +657,7 @@
                             <form method="post" action="{% url 'dismiss_os_message' %}" class="os-message-dismiss-form">
                                 {% csrf_token %}
                                 <input type="hidden" name="token" value="{{ banner.dismiss_token }}">
-                                <button type="submit" class="os-message-dismiss" aria-label="Dismiss" title="Dismiss this message">&times;</button>
+                                <button type="submit" class="os-message-dismiss" aria-label="{% trans 'Dismiss' %}" title="{% trans 'Dismiss this message' %}">&times;</button>
                             </form>
                         {% endif %}
                         {{ banner.message|safe }}{% if banner.url %} <a href="{{ banner.url }}">{{ banner.link_text }}</a>{% endif %}
@@ -932,7 +932,7 @@
                                                             </a>
                                                         </li>
                                                         <li role="presentation">
-                                                            <a title="Edit Custom Fields" href="{% url 'edit_meta_data' product_tab.product.id %}">
+                                                            <a title="{% trans 'Edit Custom Fields' %}" href="{% url 'edit_meta_data' product_tab.product.id %}">
                                                                 <i class="fa-solid fa-pen-to-square"></i>
                                                                 {% trans "Edit Custom Fields" %}
                                                             </a>
@@ -945,7 +945,7 @@
                                                             </a>
                                                         </li>
                                                         <li role="presentation">
-                                                            <a title="View API Scan Configurations" href="{% url 'view_api_scan_configurations' product_tab.product.id %}">
+                                                            <a title="{% trans 'View API Scan Configurations' %}" href="{% url 'view_api_scan_configurations' product_tab.product.id %}">
                                                                 <i class="fa-solid fa-rectangle-list"></i>
                                                                 {% trans "View API Scan Configurations" %}
                                                             </a>
@@ -1036,7 +1036,7 @@
                         <div class="col-lg-12">
                                 {% for message in messages %}
                                     <div class="alert {{ message.tags }} alert-dismissible" role="alert">
-                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <button type="button" class="close" data-dismiss="alert" aria-label="{% trans 'Close' %}">
                                             <span aria-hidden="true">&times;</span>
                                         </button>
                                         {{ message }}
@@ -1076,7 +1076,7 @@
                 <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="{% trans 'Close' %}">
                         <span aria-hidden="true">&times;</span>
                     </button>
                     <h4 class="modal-title" id="sessionModalLabel">Session Expiring Soon</h4>

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load display_tags %}
 {% block content %}
     {{ block.super }}
@@ -10,7 +11,7 @@
                         <h4>
                             PostgreSQL History (pghistory)
                             <div class="dropdown pull-right">
-                                <button id="show-pghistory-filters" data-toggle="collapse" data-target="#pghistory-filters" class="btn btn-primary toggle-filters" aria-label="Filters"> <i class="fa-solid fa-filter"></i> <i class="caret"></i> </button>
+                                <button id="show-pghistory-filters" data-toggle="collapse" data-target="#pghistory-filters" class="btn btn-primary toggle-filters" aria-label="{% trans 'Filters' %}"> <i class="fa-solid fa-filter"></i> <i class="caret"></i> </button>
                             </div>
                         </h4>
                     </div>
@@ -131,7 +132,7 @@
                         <h4>
                             Audit Log History (django-auditlog)
                             <div class="dropdown pull-right">
-                                <button id="show-filters" data-toggle="collapse" data-target="#the-filters" class="btn btn-primary toggle-filters" aria-label="Filters"> <i class="fa-solid fa-filter"></i> <i class="caret"></i> </button>
+                                <button id="show-filters" data-toggle="collapse" data-target="#the-filters" class="btn btn-primary toggle-filters" aria-label="{% trans 'Filters' %}"> <i class="fa-solid fa-filter"></i> <i class="caret"></i> </button>
                             </div>
                         </h4>
                     </div>

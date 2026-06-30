@@ -22,7 +22,7 @@
                     <label for="notification-scope">
                         {% trans "Scope" %} <span class="fa-solid fa-circle-question has-popover" data-trigger="hover" data-content="{% trans "Destinations for system notifications are configured in System Settings. Destinations for personal notifications are taken from your personal contact details (personal Slack notifications will be sent to you as a direct message)." %}"/>
                     </label>
-                    <select data-placeholder="Scope"
+                    <select data-placeholder="{% trans 'Scope' %}"
                             id="notification-scope"
                             class="chosen-select form-control"/>
                         <option value="system">
