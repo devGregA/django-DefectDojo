@@ -70,7 +70,7 @@
                                 <span class="caret"></span>
                             </button>
                         {% endif %}
-                        <div class="btn-group mr-2" role="group" aria-label="{% trans 'Bulk Actions' %}">
+                        <div class="btn-group me-2" role="group" aria-label="{% trans 'Bulk Actions' %}">
                             {% if product_tab and not 'DISABLE_FINDING_MERGE'|setting_enabled %}
                                 <button type="button"
                                         id="merge_findings"
@@ -617,19 +617,19 @@
                                                 {% endif %}
                                             {% endwith %}
                                         </td>
-                                        <td class="nowrap text-right">
+                                        <td class="nowrap text-end">
                                             {{ finding.epss_score|format_epss }}
                                         </td>
-                                        <td class="nowrap text-right">
+                                        <td class="nowrap text-end">
                                             {{ finding.epss_percentile|format_epss }}
                                         </td>
-                                        <td class="nowrap text-right">
+                                        <td class="nowrap text-end">
                                             {{ finding.known_exploited|yesno|capfirst }}
                                         </td>
-                                        <td class="nowrap text-right">
+                                        <td class="nowrap text-end">
                                             {{ finding.ransomware_used|yesno|capfirst }}
                                         </td>
-                                        <td class="nowrap text-right">
+                                        <td class="nowrap text-end">
                                             {{ finding.kev_date|date }}
                                         </td>
                                         {% if filter_name == 'Closed' %}
@@ -640,11 +640,11 @@
                                             {{ finding.date }}
                                         {% endif %}
                                         </td>
-                                        <td class="text-right">
+                                        <td class="text-end">
                                             {{ finding.age }}
                                         </td>
                                         {% if system_settings.enable_finding_sla %}
-                                            <td class="text-right">
+                                            <td class="text-end">
                                                 {{ finding|finding_sla }}
                                             </td>
                                         {% endif %}

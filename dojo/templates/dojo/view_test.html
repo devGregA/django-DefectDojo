@@ -157,7 +157,7 @@
                     <td>{{ fix_available_count }}</td>
                     <td>{{ test.version }}</td>
                     {% if 'TRACK_IMPORT_HISTORY'|setting_enabled and test.total_reimport_count %}
-                        <td class="text-right">{{ test.total_reimport_count }}</td>
+                        <td class="text-end">{{ test.total_reimport_count }}</td>
                     {% endif %}
                     {% if test.api_scan_configuration %}
                         <td>
@@ -621,7 +621,7 @@
                             <span class="caret"></span>
                         </button>
                     {% endif %}
-                    <div class="btn-group mr-2" role="group" aria-label="{% trans 'Bulk Actions' %}">
+                    <div class="btn-group me-2" role="group" aria-label="{% trans 'Bulk Actions' %}">
                         {% if product_tab and not 'DISABLE_FINDING_MERGE'|setting_enabled %}
                             <button type="button"
                                     id="merge_findings"

@@ -47,7 +47,7 @@
                         </td>
 
                         <td>{{result.component_version}} </td>
-                        <td class="text-right">
+                        <td class="text-end">
                             {% if result.active and result.component_name == none %}
                             <a href="{% url 'open_findings' %}?has_component=false"><b>{{ result.active }}</b></a>
                             {% elif result.active%}
@@ -56,7 +56,7 @@
                             0
                             {% endif %}
                         </td>
-                        <td class="text-right">
+                        <td class="text-end">
                             {% if result.duplicate and result.component_name == none %}
                             <a href="{% url 'all_findings' %}?has_component=false&duplicate=1"><b>{{ result.duplicate }}</b></a>
                             {% elif result.duplicate %}
@@ -65,7 +65,7 @@
                             0
                             {% endif %}
                         </td>
-                        <td class="text-right">
+                        <td class="text-end">
                             {% if result.total and result.component_name == none %}
                             <a href="{% url 'all_findings' %}?has_component=false"><b>{{ result.total }}</b></a>
                             {% elif result.total %}

@@ -12,7 +12,7 @@
                 <div class="panel-heading">
                     <h4>Celery Status</h4>
                 </div>
-                <div class="panel-body text-left">
+                <div class="panel-body text-start">
                     <table class="table table-condensed" style="margin-bottom: 0">
                         <tbody>
                             <tr>
@@ -32,7 +32,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="panel-body text-left">
+                <div class="panel-body text-start">
                     <span id="celery-queue-msg"><i class="fa-solid fa-spinner fa-spin text-muted"></i></span>
                     <div style="margin-top: 8px;">
                         <button id="purge-queue-btn" class="btn btn-danger btn-xs" disabled title="{% trans 'Loading...' %}">
@@ -55,7 +55,7 @@
                         <code>python manage.py dedupe --dedupe_only</code>
                     </p>
                 </div>
-                <div class="panel-body text-left">
+                <div class="panel-body text-start">
                     <div id="queue-details-container" style="display: none;">
                         <table class="table table-condensed table-bordered table-hover" style="margin-bottom: 0; font-size: 0.9em;">
                             <thead>
@@ -86,7 +86,7 @@
                 <div class="panel-heading">
                     <h4>Celery Settings</h4>
                 </div>
-                <div class="panel-body text-left">
+                <div class="panel-body text-start">
                     <table class="table table-condensed" style="margin-bottom: 0">
                         <thead><tr><th>Setting</th><th>Value</th></tr></thead>
                         <tbody id="celery-config-tbody"></tbody>

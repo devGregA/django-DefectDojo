@@ -242,7 +242,7 @@
                                 </td>
                                 {% endif %}
 
-                                <td class="text-right">
+                                <td class="text-end">
                                     {% if prod.findings_count %}
                                         <a href="{% url 'product_open_findings' prod.id %}?test__engagement__product={{ prod.id }}"><b>{{ prod.findings_count }}</b></a>
                                         &nbsp;(<a href="{% url 'product_verified_findings' prod.id %}?test__engagement__product={{ prod.id }}">{{ prod.findings_active_verified_count }}</a>)
@@ -250,7 +250,7 @@
                                         0
                                     {% endif %}
                                 </td>
-                                <td class="text-right">
+                                <td class="text-end">
                                     {% if V3_FEATURE_LOCATIONS %}
                                         <a href="{% url 'vulnerable_endpoint_hosts' %}?product={{ prod.id }}"><b>{{ prod.location_host_count }}</b></a> /
                                         <a href="{% url 'vulnerable_endpoints' %}?product={{ prod.id }}"><b>{{ prod.location_count }}</b></a>

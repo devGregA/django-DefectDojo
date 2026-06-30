@@ -335,6 +335,7 @@ USE_I18N = env("DD_USE_I18N")
 # remain English regardless of the selected language; only displayed text changes.
 LANGUAGES = [
     ("en", "English"),
+    ("ar", "العربية"),
     ("de", "Deutsch"),
     ("es", "Español"),
     ("fr", "Français"),
@@ -352,8 +353,8 @@ LANGUAGES = [
     ("zh-hans", "简体中文"),
     ("zh-hant", "繁體中文"),
 ]
-# Arabic (ar) ships a translated catalog but is intentionally not offered here yet:
-# the UI needs right-to-left (bidi) layout work before it renders correctly.
+# Arabic (ar) is right-to-left; the v3 UI flips layout via dir="rtl" (set in base.html
+# from LANGUAGE_BIDI) plus logical CSS utilities. The classic UI is not RTL-aware.
 
 # If you set this to False, Django will not use timezone-aware datetimes.
 USE_TZ = env("DD_USE_TZ")
