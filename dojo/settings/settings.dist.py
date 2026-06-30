@@ -338,10 +338,22 @@ LANGUAGES = [
     ("de", "Deutsch"),
     ("es", "Español"),
     ("fr", "Français"),
+    ("hi", "हिन्दी"),
+    ("id", "Bahasa Indonesia"),
+    ("it", "Italiano"),
     ("ja", "日本語"),
+    ("ko", "한국어"),
+    ("nl", "Nederlands"),
+    ("pl", "Polski"),
     ("pt-br", "Português (Brasil)"),
     ("ru", "Русский"),
+    ("tr", "Türkçe"),
+    ("vi", "Tiếng Việt"),
+    ("zh-hans", "简体中文"),
+    ("zh-hant", "繁體中文"),
 ]
+# Arabic (ar) ships a translated catalog but is intentionally not offered here yet:
+# the UI needs right-to-left (bidi) layout work before it renders correctly.
 
 # If you set this to False, Django will not use timezone-aware datetimes.
 USE_TZ = env("DD_USE_TZ")

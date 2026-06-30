@@ -94,9 +94,11 @@ class TestI18nConfiguration(SimpleTestCase):
         )
 
     def test_offered_languages(self):
+        # Arabic (ar) has a catalog but is gated out of the selector pending RTL layout work.
         self.assertEqual(
             {code for code, _name in settings.LANGUAGES},
-            {"en", "de", "es", "fr", "ja", "pt-br", "ru"},
+            {"en", "de", "es", "fr", "hi", "id", "it", "ja", "ko", "nl",
+             "pl", "pt-br", "ru", "tr", "vi", "zh-hans", "zh-hant"},
         )
 
     def test_locale_paths_point_at_dojo_locale(self):
