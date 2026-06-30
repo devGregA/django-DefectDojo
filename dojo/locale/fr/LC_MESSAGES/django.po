@@ -1,3 +1,8 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
 #: dojo/forms.py
 #, fuzzy
 msgid ""
@@ -12,8 +17,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 #: dojo/announcement/views.py
 msgid "Announcement removed for everyone."
 msgstr ""
@@ -5539,10 +5543,8 @@ msgid "Regulation Successfully Updated."
 msgstr ""
 
 #: dojo/search/views.py
-#, fuzzy
-#| msgid "Search"
 msgid "Simple Search"
-msgstr "Поиск"
+msgstr ""
 
 #: dojo/sla_config/views.py
 msgid "SLA configuration Successfully Created."
@@ -5921,7 +5923,7 @@ msgstr ""
 #: dojo/templates_classic/base.html
 #: dojo/templates_classic/dojo/simple_search.html
 msgid "Search"
-msgstr "Поиск"
+msgstr ""
 
 #: dojo/templates/base.html
 msgid "Alerts"
@@ -8957,10 +8959,8 @@ msgid ""
 msgstr ""
 
 #: dojo/templates_classic/base.html
-#, fuzzy
-#| msgid "Search"
 msgid "simple_search"
-msgstr "Поиск"
+msgstr ""
 
 #: dojo/templates_classic/base.html
 msgid "OpenAPI v3 Docs"
