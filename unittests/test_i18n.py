@@ -93,8 +93,11 @@ class TestI18nConfiguration(SimpleTestCase):
             mw.index("django.contrib.auth.middleware.AuthenticationMiddleware"),
         )
 
-    def test_only_audited_languages_are_offered(self):
-        self.assertEqual({code for code, _name in settings.LANGUAGES}, {"en", "pt-br", "ru"})
+    def test_offered_languages(self):
+        self.assertEqual(
+            {code for code, _name in settings.LANGUAGES},
+            {"en", "de", "es", "fr", "ja", "pt-br", "ru"},
+        )
 
     def test_locale_paths_point_at_dojo_locale(self):
         self.assertTrue(any(str(path).endswith("dojo/locale") for path in settings.LOCALE_PATHS))

@@ -331,12 +331,14 @@ SITE_ID = env("DD_SITE_ID")
 # to load the internationalization machinery.
 USE_I18N = env("DD_USE_I18N")
 
-# Languages offered in the UI. Only languages with an audited catalog are listed;
-# es/ja/de/fr are added once their translations land (their .po files are generated
-# for translators). Stored DB values and serialized API values always remain English
-# regardless of the selected language; only displayed text changes.
+# Languages offered in the UI. Stored DB values and serialized API values always
+# remain English regardless of the selected language; only displayed text changes.
 LANGUAGES = [
     ("en", "English"),
+    ("de", "Deutsch"),
+    ("es", "Español"),
+    ("fr", "Français"),
+    ("ja", "日本語"),
     ("pt-br", "Português (Brasil)"),
     ("ru", "Русский"),
 ]
