@@ -196,6 +196,21 @@ DefectDojo maps each Artifactory **repository** as a separate Record. On first S
 
 See the [JFrog Xray REST API documentation](https://jfrog.com/help/r/jfrog-rest-apis/xray-rest-apis) for more information.
 
+## Mayhem
+
+The Mayhem connector uses the Mayhem (ForAllSecure) REST API to fetch findings from your workspace. It ingests defects from both binary/code fuzzing and API fuzzing runs. Each Mayhem project is mapped to a DefectDojo product.
+
+#### Prerequisites
+
+- A Mayhem **API token** (top\-right → **Settings → API Tokens**).
+
+#### Connector Mappings
+
+1. Enter your Mayhem API token in the **Secret** field. It is sent as the `X-Mayhem-Token` header and is never logged.
+2. Leave the **Location** field blank to use the default host (`https://app.mayhem.security`).
+
+The token's default workspace is used to discover projects. See the [Mayhem documentation](https://docs.mayhem.security/) for more info.
+
 ## Probely
 
 This connector uses the Probely REST API to fetch data.
