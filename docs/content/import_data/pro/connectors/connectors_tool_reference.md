@@ -208,6 +208,23 @@ This connector uses the Probely REST API to fetch data.
 You can find an API key under the User \> API Keys menu in Probely.  
 See [Probely documentation](https://help.probely.com/en/articles/8592281-how-to-generate-an-api-key) for more info.
 
+## ReversingLabs Spectra Assure
+
+The ReversingLabs Spectra Assure connector uses the Spectra Assure Portal API to fetch software supply\-chain analysis findings (malware, tampering, secrets, hardening, and known vulnerabilities detected in build artifacts). It enumerates every project across your organization's groups and maps each project to a DefectDojo product.
+
+#### Prerequisites
+
+- A Spectra Assure **Personal Access Token** (Portal account settings).
+- Your Spectra Assure Portal **organization** name.
+
+#### Connector Mappings
+
+1. Enter your Portal organization name in the **Organization** field.
+2. Enter your Personal Access Token in the **Access Token** field. It is sent as a Bearer token and is never logged.
+3. Enter your Portal base URL in the **Location** field, including the server subdirectory \- for example `https://my.secure.software/<your-server>`.
+
+See the [Spectra Assure API documentation](https://docs.secure.software/api-reference/) for more info.
+
 ## **Semgrep**
 
 This connector uses the Semgrep REST API to fetch data.
