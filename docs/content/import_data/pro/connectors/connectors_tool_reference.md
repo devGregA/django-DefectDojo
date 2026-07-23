@@ -129,6 +129,21 @@ DefectDojo's Checkmarx ONE connector calls the Checkmarx API to fetch data.
 3. Enter your tenant location in the **Location** field. This URL is formatted as follows:  
 ​`https://<your-region>.ast.checkmarx.net/` . Your Region can be found at the beginning of your Checkmarx URL when using the Checkmarx app. **<https://ast.checkmarx.net>** is the primary US server (which has no region prefix).
 
+## Data Theorem
+
+The Data Theorem connector uses the Data Theorem Portal Results APIs to fetch findings for your whole account. It ingests both **mobile security findings** (Mobile Security Results API) and **API security findings** (API Security Results API). Each mobile app and each API\-security asset is mapped to a DefectDojo product.
+
+#### Prerequisites
+
+- A Data Theorem **Standard API key** granted access to the Results APIs. A Manager\-role user grants this at **Portal → API Access**.
+
+#### Connector Mappings
+
+1. Enter your Data Theorem API key in the **Secret** field. It is sent as `Authorization: APIKey <key>` and is never logged.
+2. Leave the **Location** field blank to use the default endpoint (`https://api.securetheorem.com`).
+
+See the [Data Theorem Portal API documentation](https://datatheorem.github.io/PortalApi/) for more info.
+
 ## Dependency\-Track
 
 This connector fetches data from a on\-premise Dependency\-Track instance, via REST API.
