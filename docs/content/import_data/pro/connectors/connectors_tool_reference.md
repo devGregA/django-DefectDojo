@@ -264,6 +264,23 @@ On\-premise Tenable Connectors are not available at this time.
 
 See [Tenable's API Documentation](https://docs.tenable.com/vulnerability-management/Content/Settings/my-account/GenerateAPIKey.htm) for more info.
 
+## Trivy Operator
+
+The Trivy Operator connector reads [Trivy\-Operator](https://github.com/aquasecurity/trivy-operator) report resources directly from a target Kubernetes cluster's API \- there is no SaaS API. It ingests vulnerability, exposed\-secret, configuration\-audit, infrastructure\-assessment, and RBAC\-assessment reports. Each cluster namespace that has reports is mapped to a DefectDojo product.
+
+On\-premise access is provided through a kubeconfig you supply; the connector never writes to the cluster.
+
+#### Prerequisites
+
+- [Trivy\-Operator](https://aquasecurity.github.io/trivy-operator/latest/getting-started/installation/) is installed and running in the target cluster.
+- A kubeconfig granting read access to the Trivy\-Operator report resources (API group `aquasecurity.github.io`).
+
+#### Connector Mappings
+
+1. Paste the kubeconfig into the **Kubeconfig** field.
+2. (Optional) Set **Kube Context** to select a context within the kubeconfig. Defaults to its current\-context.
+3. (Optional) Set **Cluster Name** to label discovered products. Defaults to the kubeconfig context name.
+
 ## Wiz
 
 Using the Wiz connector requires you to create a service account: see the [Wiz documentation](https://docs.wiz.io/wiz-docs/docs/service-accounts-settings#add-a-service-account) for more info.  You will need a Wiz account to access the documentation.
