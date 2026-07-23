@@ -21,6 +21,21 @@ Whenever possible, we recommend creating a new 'DefectDojo Bot' account within y
 
 # **Supported Connectors**
 
+## 42Crunch
+
+The 42Crunch connector uses the 42Crunch API Security Platform REST API to fetch findings for your whole account. It enumerates every API across your collections and, for each API, ingests both the **Security Audit** report (static analysis of the OpenAPI definition) and the **Conformance Scan** report (dynamic runtime conformance). Each API is mapped to a DefectDojo product.
+
+#### Prerequisites
+
+- A 42Crunch platform **API token** (**Settings → API tokens**).
+
+#### Connector Mappings
+
+1. Enter your 42Crunch API token in the **Secret** field. It is sent as the `X-Api-Key` header and is never logged.
+2. Leave the **Location** field blank to use the default platform host (`https://platform.42crunch.com`).
+
+See the [42Crunch documentation](https://docs.42crunch.com/) for more info.
+
 ## **Akamai API Security**
 
 The Akamai API Security connector uses an API key to pull security findings from the Akamai API. DefectDojo will discover your Akamai environment and create separate Records for each **Application** and **Host** configured in your account.
