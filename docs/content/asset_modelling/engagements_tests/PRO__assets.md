@@ -120,6 +120,32 @@ Alongside the identifying fields, the export carries the metadata that drives pr
 
 Values are written so a spreadsheet displays them rather than evaluating them. A cell that begins with `=`, `+`, `-` or `@` is treated as a formula by Excel, LibreOffice and Google Sheets, so DefectDojo prefixes such a value with an apostrophe when it writes the file. Numbers are left alone, so a revenue column still adds up.
 
+#### What the exported columns mean
+
+Most columns are self-explanatory, but the ones that feed prioritization have specific accepted values, which matters if you are editing the sheet:
+
+| Column | Accepted values |
+| --- | --- |
+| Business Criticality | `very high`, `high`, `medium`, `low`, `very low`, `none` |
+| Platform | `web`, `mobile`, `desktop`, `iot`, `web service` |
+| Lifecycle | `construction`, `production`, `retirement` |
+| Origin | `internal`, `open source`, `purchased`, `contractor`, `outsourced`, `third party library` |
+| External Audience, Internet Accessible | `true`, `false` |
+| User Records | a whole number |
+| Revenue | a decimal number, with no currency symbol or thousands separator |
+| Tags | a JSON array, for example `["api","pci"]` |
+| Parent Asset | the name of another Asset in the same Organization |
+
+`User Records` and `Revenue` are scored relative to the totals for the Asset's Organization rather than in absolute terms, so they are most useful when filled in consistently across an Organization rather than for one Asset in isolation.
+
+An Asset can only be the parent of another Asset in the same Organization. A hierarchy is a tree: each Asset has at most one parent, and no cycles.
+
+#### Reviewing an inventory in a spreadsheet
+
+The common use of the export is to see the whole inventory at once and work out what is missing. Connectors fill in what a source system knows — a repository name, a namespace, an owner — but they cannot know how critical an application is to your business, how much revenue depends on it, or how many user records it holds. That context has to come from your own team, and a spreadsheet is usually the easiest place to collect it.
+
+A practical approach is to export the Assets list with the prioritization columns, circulate the file to the people who own each area, and use the completed sheet as the source for updating DefectDojo through the [API](/automation/api/api-v2-docs/). Priority and Risk scores recalculate automatically once the values are stored.
+
 ### Delete Assets
 
 Deleting an Asset can be performed by selecting **Delete Asset** from the Asset’s settings. This action can’t be undone. Assets can’t be closed and reopened later. 
