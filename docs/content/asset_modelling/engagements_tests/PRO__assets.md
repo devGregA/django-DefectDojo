@@ -120,6 +120,136 @@ Alongside the identifying fields, the export carries the metadata that drives pr
 
 Values are written so a spreadsheet displays them rather than evaluating them. A cell that begins with `=`, `+`, `-` or `@` is treated as a formula by Excel, LibreOffice and Google Sheets, so DefectDojo prefixes such a value with an apostrophe when it writes the file. Numbers are left alone, so a revenue column still adds up.
 
+### Import an Edited Inventory
+
+An exported sheet can be edited and sent back with [DefectDojo-CLI](/import_data/pro/specialized_import/external_tools/), which reads and writes the whole inventory — Organizations, the Assets inside them, the hierarchy between them, and their Engagements:
+
+```
+defectdojo-cli assets template   # an empty sheet with the correct header
+defectdojo-cli assets export     # the current inventory, as a sheet
+defectdojo-cli assets import     # an edited sheet, back into DefectDojo
+```
+
+The usual round trip is to export, open the file in a spreadsheet, change what you know, and import it back. Setting up a new instance from scratch is the same shape, starting from `assets template` instead.
+
+#### Importing reports before it writes
+
+`assets import` is a **dry run by default**. It reads your sheet, works out what each row would do against the live instance, and prints the result — then stops. Nothing is written until you add `--apply`.
+
+```
+defectdojo-cli assets import --defectdojo-url https://YOUR_INSTANCE.cloud.defectdojo.com/ --file inventory.csv
+```
+
+```
+Target: DefectDojo Pro
+
+  line 2    no-op   organization Payments
+  line 2    update  asset        Payments API (setting business_criticality)
+  line 2    no-op   engagement   Weekly scan
+  line 3    no-op   asset        Payments Batch
+  line 5    create  organization Acquisitions
+  line 5    create  asset        Acquired Portal (setting parent)
+
+2 create, 1 update, 0 move, 3 no-op, 0 error
+
+This is a dry run. Nothing has been written -- re-run with --apply to make these changes.
+```
+
+Every object on every row gets a line, including the ones that change nothing — that is how you confirm the sheet you edited touches only what you meant it to. The outcomes are:
+
+| Outcome | Meaning |
+| --- | --- |
+| `create` | The object does not exist yet and would be created. |
+| `update` | The object exists and one or more of its values would change. The fields are named. |
+| `no-op` | The row matches what is already stored. Nothing would be sent. |
+| `MOVE` | The row lists an Asset under a different Organization, which re-homes it. See below. |
+| `error` | The row cannot be applied, and says why. |
+
+If any row is an error, **nothing** is written — the whole sheet is refused rather than leaving half an inventory behind. Fix the file and run it again.
+
+Re-running an import is safe. Anything already applied matches the sheet by then, so it comes back as `no-op`.
+
+#### What the columns mean
+
+The sheet is one row per Engagement, with the Organization and Asset columns repeated on each — so an Asset with three Engagements is three rows, and an Asset with none is a row of its own. Columns are read by position after the header is checked, so keep the header row as it was written.
+
+| # | Column | Applies to |
+| --- | --- | --- |
+| 1 | Organization / Product Type Name | Required on every row |
+| 2 | Organization / Product Type Description | Organization |
+| 3 | Organization / Product Type Critical | `true` / `false` |
+| 4 | Organization / Product Type Key | `true` / `false` |
+| 5 | Asset / Product Name | Required if the row carries anything else about an Asset |
+| 6 | Asset / Product Description | Asset |
+| 7 | Asset / Product SLA | Numeric SLA configuration id |
+| 8 | Asset / Product Business Criticality | `very high`, `high`, `medium`, `low`, `very low`, `none` |
+| 9 | Asset / Product User Records | Whole number |
+| 10 | Asset / Product Revenue | Decimal |
+| 11 | Asset / Product External Audience | `true` / `false` |
+| 12 | Asset / Product Internet Accessible | `true` / `false` |
+| 13 | Asset / Product Tags | JSON array, e.g. `["tier-1","payments"]` |
+| 14 | Engagement Name | Required if the row carries anything else about an Engagement |
+| 15 | Engagement Description | Engagement |
+| 16 | Engagement Type | `Interactive` or `CI/CD` |
+| 17 | Engagement Target Start | `YYYY-MM-DD` |
+| 18 | Engagement Target End | `YYYY-MM-DD` |
+| 19 | Engagement Status | `Not Started`, `In Progress`, `Completed`, `Blocked`, `Cancelled`, `On Hold`, `Scheduled`, `Waiting for Resource` |
+| 20 | Engagement Tags | JSON array |
+| 21 | Asset / Product Platform | `web`, `mobile`, `desktop`, `iot`, `web service` |
+| 22 | Asset / Product Lifecycle | `construction`, `production`, `retirement` |
+| 23 | Asset / Product Origin | `internal`, `open source`, `purchased`, `contractor`, `outsourced`, `third party library` |
+| 24 | Parent Asset / Product Name | The parent Asset, by name |
+| 25 | Asset / Product SLA Name | The SLA configuration, by name |
+
+Sheets from earlier revisions, with 20 or 24 columns, are still read. Only the columns they predate are unavailable.
+
+#### A blank cell means "leave this alone"
+
+This is the rule the whole format rests on. **An empty cell never clears a value** — it means the row has nothing to say about that field, so whatever is stored stays. Deleting a column you do not care about is safe, and so is leaving one you never filled in.
+
+The one exception is the two tag columns, where an empty JSON array — `[]` — means "no tags" and does clear them. There is deliberately no equivalent for free text: a description you can no longer see in your spreadsheet must not be erased across your estate by the next import.
+
+Because of this, exporting a sheet and importing it straight back changes nothing at all. Every value is compared with what is stored before anything is sent, so an unchanged sheet reports `no-op` throughout and writes nothing.
+
+#### Nesting, and rows in any order
+
+Column 24 names an Asset's parent. The parent may be defined on a later row than the child that names it — Assets are created first and the hierarchy is applied afterwards, so you can keep the sheet in whatever order reads well.
+
+An Asset already under the parent the sheet names is left alone; only a parent that really differs is written, and it is listed in the report when it is.
+
+#### Moving an Asset between Organizations
+
+Asset names are unique across an instance, so the Organization column is what says where an Asset lives. Listing an existing Asset under a different Organization therefore **moves** it.
+
+That is rarely what someone editing a spreadsheet intended, and it is not a small change: access to an Asset is granted through its Organization, and the values that drive Priority are measured against the Organization's totals. So a move re-scopes who can see the Asset and re-scores Priority in both Organizations.
+
+A row that would move an Asset is an error unless you pass `--allow-moves`, in which case it is reported as `MOVE`, naming the Organization being left and the one being joined.
+
+#### SLA configurations
+
+An Asset's SLA configuration can be given either way. Column 7 takes the numeric id, column 25 takes the name; when a sheet carries both — as every export does — the id wins. A name that matches no SLA configuration on the instance is a row error, never a silent fall back to the default, so an Asset cannot quietly end up on the wrong SLA.
+
+#### Engagements
+
+The Engagement columns are processed by default; pass `--no-engagements` to work on Organizations and Assets only. Creating an Engagement needs both target dates, since DefectDojo requires them. Its type and status default to `Interactive` and `Not Started` on creation only — an Engagement whose status someone later changed is not reset by importing the same sheet again.
+
+#### Formulas in a sheet
+
+Values a spreadsheet would evaluate are escaped on the way out, as described above, and unescaped on the way back in — so a name that begins with `=` survives a full round trip as itself, and the apostrophe neither accumulates nor ends up stored.
+
+#### Options
+
+| Flag | Effect |
+| --- | --- |
+| `--file` | The sheet to read, or where to write an export. Defaults to standard output. |
+| `--apply` | Write the changes. Without it, import only reports. |
+| `--allow-moves` | Permit rows that move an Asset to a different Organization. |
+| `--no-engagements` | Ignore the Engagement columns. |
+| `--edition` | `auto`, `pro` or `oss`. Decides whether the Pro-only columns can be applied; detected automatically by default. |
+| `--insecure-tls` | Skip TLS verification. Verification is on by default. |
+
+On open-source DefectDojo, which has no Asset hierarchy and none of the Pro-only Asset metadata, a sheet that fills in columns 21–24 is reported as an error rather than having those columns quietly dropped.
+
 ### Delete Assets
 
 Deleting an Asset can be performed by selecting **Delete Asset** from the Asset’s settings. This action can’t be undone. Assets can’t be closed and reopened later. 
