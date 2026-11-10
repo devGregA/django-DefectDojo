@@ -31,7 +31,7 @@ The hooks are deployed through each agent's managed configuration, which develop
 
 ## Start With the Baseline Policy
 
-Open **Settings > AI Guardrails** and select **Create Starter Policy**. This creates **Claude Code Baseline** in monitor mode, with four rules:
+Open **Settings > AI Guardrails** and select **Create Starter Policy**. This creates **Claude Code Baseline** in monitor mode, with eight rules:
 
 | Rule | Looks at | Action |
 |---|---|---|
@@ -39,8 +39,14 @@ Open **Settings > AI Guardrails** and select **Create Starter Policy**. This cre
 | Secrets in prompts | Prompts: provider keys, tokens, private keys and passwords | Block |
 | Secrets in files and output | File contents and tool output: the same secret detectors | Redact |
 | Force push | Shell commands: `git push --force`, `-f`, `--force-with-lease` and `+refspec` | Block |
+| Agent permission checks switched off | Commands: flags that turn off an agent's own approvals or sandbox, such as `--dangerously-skip-permissions`, `--yolo` and `--allow-all-tools` | Log only |
+| An agent starting another agent | Commands: `claude`, `codex`, `copilot`, `cursor-agent`, `gemini` and other agent command lines, and the `npx` packages that start them | Log only |
+| Sensitive file access | Paths: the built-in sensitive files (see [Rules on the Call Itself](#rules-on-the-call-itself-tools-paths-and-commands)) | Log only |
+| Download piped into a shell | Shell commands: `curl` or `wget` piped into a shell, and PowerShell running a download (`iwr ... \| iex`) | Log only |
 
-In **Monitor** mode, every prompt and tool call goes through, and Prompt Activity shows what the rules would have done. When the activity looks right, edit the policy and set it to **Enforce**.
+In **Monitor** mode, every prompt and tool call goes through, and Prompt Activity shows what the rules would have done. When the activity looks right, edit the policy and set it to **Enforce**. The four log-only rules stay log-only in either mode: change a rule's action to block or ask once you know what it catches.
+
+A policy can also **Block Settings Changes**: Claude Code then keeps a change to a user, project or local settings file (new permissions, hooks or MCP servers, for example) from taking effect in the running session. The file itself has already changed, so the next session loads it; to lock a setting for good, put it in the managed settings, which always apply. Every settings change is recorded in Prompt Activity either way. In monitor mode the change takes effect and is recorded as **Flagged**.
 
 ## Rules
 
@@ -73,6 +79,32 @@ Claude Code can stop a prompt but can't rewrite it, so prompts can only be block
 
 A rule can carry its own **message**, shown to the developer (for a blocked prompt or an ask) or to Claude (for a blocked tool call). Use **Try It** in the rule form to test a rule against sample text before you save it.
 
+A rule applies to every agent unless you choose its **Agents**: a rule for OpenAI Codex only, for example, never matches a Claude Code call.
+
+### Rules on the Call Itself: Tools, Paths and Commands
+
+Three more kinds of rule read the tool call rather than a text. They check a call before it runs, have no target, and can block, ask or log.
+
+| Kind | Matches | Example |
+|---|---|---|
+| **Tool or MCP server** | The tool's name, and for an MCP tool its server and tool name. Every list you fill in must match. | Tool names `mcp__github__*`, or MCP server `github` with MCP tool `delete_*` |
+| **File path** | The files the call reads, writes or edits, and file paths in a shell command (including redirections such as `> ~/.ssh/authorized_keys`). Turn on **Match Sensitive Files** to add the built-in set. | `.env*`, `~/.ssh/**`, `secrets/*.key` |
+| **Command list** | Each command a shell command line runs. **Match These Commands** is a deny list; **Match Any Other Command** is an allow list, which matches every command not listed. | Deny `rm -rf *`, `git push`, `terraform destroy`; or allow `git status`, `ls`, `npm test` |
+
+Patterns use `*` for any characters. In a path, `*` stays within one folder and `**` crosses folders, `~` is the developer's home directory on every operating system, a relative pattern is matched from the agent's working directory, and Windows paths match regardless of case. A command pattern without `*` matches as leading words: `git push` matches `git push origin main`, but `git` does not match `gitk`.
+
+A command line is split into every command it runs before a command list checks it, so an allowed command cannot carry a denied one past the rule. The split follows `;`, `&&`, `||`, pipes, background `&` and new lines; `$( )`, backticks and `<( )`; the script of `sh -c`, `bash -c`, `eval`, `cmd /c`, `pwsh -Command` and `pwsh -EncodedCommand`; and wrappers such as `sudo`, `env`, `nohup`, `timeout`, `xargs` and `busybox`, with leading `NAME=value` assignments. A command that builds its name at run time (a variable holding `rm`, or a script file the agent writes first and then runs) can't be seen this way. Pair a command list with a file path rule, or an allow list, where that matters.
+
+The built-in **sensitive files** are:
+
+- Keys: `~/.ssh/**`, `id_rsa*`, `id_ed25519*`, `id_ecdsa*`, `*.pem`, `*.key`, `*.p12`, `*.pfx` and `~/.gnupg/**`.
+- Cloud, cluster and tool credentials: `~/.aws/credentials`, `~/.aws/config`, `~/.config/gcloud/**`, `~/.azure/**`, `~/.kube/config`, `~/.docker/config.json`, `~/.vault-token`, `~/.terraform.d/credentials.tfrc.json`, `~/.git-credentials` and `~/.config/gh/hosts.yml`.
+- Package registry tokens: `.npmrc`, `.pypirc`, `~/.cargo/credentials*`, `~/.gem/credentials` and `~/.netrc`.
+- Environment files: `.env*`.
+- Browser profiles (cookies and saved passwords) of Chrome, Chromium, Edge, Firefox and Safari, on macOS, Linux and Windows.
+
+Use **Try It** with a tool name, a file path or a command line. For a command list it shows every command the line runs and which of them the rule caught.
+
 ## Deploy a Collector
 
 1. In **Settings > AI Guardrails > Collectors**, select **New Collector**, name it (for example, *Engineering laptops*), choose its policy, and choose its **Agents**. One collector, and one token, can serve every agent on the same machines.
@@ -90,7 +122,18 @@ A rule can carry its own **message**, shown to the developer (for a blocked prom
 
 You can also deliver the same settings through an MDM profile, the Windows registry, or Claude Code's server-managed settings. See [Claude Code settings](https://code.claude.com/docs/en/settings) for the options and their precedence.
 
-The file defines three HTTP hooks (`UserPromptSubmit`, `PreToolUse` and `PostToolUse`) that post to `/api/v2/ai_guardrails/claude_code/hook/` on your DefectDojo instance. Developer machines need to reach that URL. Each hook sends the developer's account name (from `USER` or `USERNAME`) and machine name (from `HOSTNAME` or `COMPUTERNAME`), which Prompt Activity shows.
+The file defines six HTTP hooks that post to `/api/v2/ai_guardrails/claude_code/hook/` on your DefectDojo instance. Developer machines need to reach that URL. Each hook sends the developer's account name (from `USER` or `USERNAME`) and machine name (from `HOSTNAME` or `COMPUTERNAME`), which Prompt Activity shows.
+
+| Hook | What DefectDojo does |
+|---|---|
+| `UserPromptSubmit` | Checks the prompt. |
+| `PreToolUse` | Checks the tool call: its input, and the tool, path and command rules. |
+| `PermissionRequest` | Checks a call Claude Code is about to ask the developer about, with the same rules. |
+| `PostToolUse` | Checks what the tool returned. |
+| `ConfigChange` | Records a settings change, and blocks it when the policy blocks settings changes. |
+| `InstructionsLoaded` | Records each instruction file (`CLAUDE.md` and its imports) a session loads, and runs the file path rules over its path. It can't stop the load, so a match is recorded as **Flagged**. |
+
+A seventh hook, `SessionStart`, records each session with the model in use. Claude Code runs `SessionStart` hooks only as commands, so it runs the same forwarder the other agents use (see [Other Agents](#other-agents-openai-codex-cursor-and-github-copilot-cli)): deploy the forwarder and the token file from the Claude Code tab with `managed-settings.json`. On Windows the hook needs Git Bash, which Claude Code itself requires. Without the forwarder, every other hook still works, and sessions are simply not recorded.
 
 The token can only submit hook calls for its collector: it can't read or change anything else in DefectDojo. Developers can read it in the settings file, so treat it as an identifier, not a secret. **Revoke** a collector to stop its token working, or **Rotate** it to issue a new token and file. Rotating stops the old token at once, so deploy the new file at the same time.
 
@@ -118,6 +161,7 @@ Each agent supports a different set of hooks, so a rule does what the agent allo
 | Ask the developer | No: an ask blocks the call, with a message saying a person must confirm it. When Codex itself is about to ask for approval, the developer is asked | Shell commands and MCP tools | Yes (denied in autopilot mode, where nobody can answer) |
 | Redact tool output | Yes: the output is replaced with the masked copy | No: a read with a secret is denied | Yes |
 | File edits and MCP results | Checked with tool input and output | Recorded when a rule matches; they already happened | Checked with tool input and output |
+| Tool, path and command rules | Shell commands, MCP tools, and the files an `apply_patch` edit touches | Shell commands, MCP tools and file reads (an ask on a file read denies it) | Every tool call, with the file path it names |
 
 Prompt Activity shows what the agent actually did with a call. A Copilot prompt that a blocking rule matched is **Flagged**, not **Blocked**, and a Codex call a rule asked about is **Blocked**.
 
@@ -133,7 +177,7 @@ Open **Prompt Activity** to see every prompt and tool call the collectors checke
 | Asked | The developer was asked to confirm the tool call. |
 | Flagged | A log-only rule matched, the policy is in monitor mode, or the agent could not carry out what the rule asked. Monitored rows carry a **Monitor** tag. |
 
-Tool output is recorded only when a rule matched it, so a tool call usually appears once.
+Tool output is recorded only when a rule matched it, so a tool call usually appears once. For Claude Code, every session start, settings change and instructions load is recorded too, so you can see which model each session used, which settings changed mid-session, and which instruction files were loaded. An event's detail shows the model and the agent version when the agent reported them.
 
 ### What Is Stored
 
@@ -158,3 +202,12 @@ GET  /api/v2/ai_guardrails/events/?status=blocked&agent=codex,cursor&actor=jdoe
 ```
 
 Creating a collector, or rotating its token, returns `token`, `hook_url`, `managed_settings` (Claude Code's file) and `agent_configs`, which holds every file for each of the collector's agents. This is the only time the token is returned. A collector's agents are set with `agents`, for example `["claude_code", "codex"]`.
+
+A rule's `kind` is `detectors`, `pattern`, `tool`, `path` or `command`, and its `agents` limits it to some agents (empty is every agent). A tool rule sets `tool_names`, `mcp_servers` and `mcp_tools`; a path rule sets `paths` and `sensitive_paths`; a command rule sets `commands` and `command_mode` (`deny` or `allow`). A policy's `block_settings_changes` turns on **Block Settings Changes**. To try a rule without saving it:
+
+```http
+POST /api/v2/ai_guardrails/rules/test/
+{"kind": "command", "commands": ["rm -rf *"], "command_mode": "deny", "text": "grep -r token src; rm -rf ~"}
+```
+
+The answer says whether the rule `matched`, lists the commands it caught in `matches`, and lists every command the line runs in `commands`. A tool rule takes `tool_name` and a path rule takes `path` in place of `text`.
