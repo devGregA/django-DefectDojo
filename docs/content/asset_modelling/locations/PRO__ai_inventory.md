@@ -7,7 +7,7 @@ audience: pro
 
 **AI Inventory** lists the AI found in every repository DefectDojo scans. It covers coding assistants and their rules files, MCP servers, models, AI SDKs and agent frameworks, AI service endpoints, agent skills, and the AI provider keys that secret scanning finds. Each component is a [Dependency Location](../pro__working_with_sboms/) identified by a Package URL, so it shows up in component search and in SBOM exports, and it can be governed with [AI Governance Policies](/triage_findings/findings_workflows/pro__ai_governance_policies/).
 
-> AI Inventory requires the Locations feature. Turn it on with the **AI Inventory and Governance** flag (beta) on the [Feature Flags page](/admin/feature_flags/pro__feature_flags/). Inventories that arrive while the flag is off are still stored and appear once it is on.
+> AI Inventory requires the Locations feature. Turn it on with the **AI Inventory and Governance** flag (beta) on the [Feature Flags page](/admin/feature_flags/pro__feature_flags/). Inventories that arrive while the flag is off are still stored and appear once it is on. With [Agent Shield](/triage_findings/findings_workflows/pro__agent_shield/) turned on, AI Inventory is in the sidebar's **Agent Shield** section instead.
 
 ## Where Inventories Come From
 

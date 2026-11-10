@@ -7,7 +7,7 @@ weight: 4
 
 An **AI Governance Policy** says whether an AI component is allowed: **authorized**, **unauthorized**, or **needs review**. A policy can apply to every Asset, to one Organization, or to one Asset. DefectDojo evaluates every component in the [AI Inventory](/asset_modelling/locations/pro__ai_inventory/) against the policies that apply to it. An unauthorized component becomes an ordinary Finding, so priority, SLAs, the [Triage Engine](/automation/triage_engine/about/), tickets, notifications, dashboards and reports all apply to it.
 
-> AI Governance Policies are part of the **AI Inventory and Governance** feature (beta). Turn it on from the [Feature Flags page](/admin/feature_flags/pro__feature_flags/).
+> AI Governance Policies are part of the **AI Inventory and Governance** feature (beta). Turn it on from the [Feature Flags page](/admin/feature_flags/pro__feature_flags/). With [Agent Shield](/triage_findings/findings_workflows/pro__agent_shield/) turned on, AI Governance Policies is in the sidebar's **Agent Shield** section instead.
 
 ## Creating a Policy
 

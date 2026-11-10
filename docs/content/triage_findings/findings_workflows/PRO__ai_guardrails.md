@@ -16,7 +16,7 @@ A policy can:
 
 The hooks are deployed through Claude Code's managed settings file, which developers can't override from their own settings.
 
-> AI Guardrails is part of the **AI Inventory and Governance** feature (beta). Turn it on from the [Feature Flags page](/admin/feature_flags/pro__feature_flags/). Only superusers can see or change guardrails and Prompt Activity.
+> AI Guardrails is part of the **AI Inventory and Governance** feature (beta). Turn it on from the [Feature Flags page](/admin/feature_flags/pro__feature_flags/). Only superusers can see or change guardrails and Prompt Activity. With [Agent Shield](/triage_findings/findings_workflows/pro__agent_shield/) turned on, AI Guardrails and Prompt Activity are in the sidebar's **Agent Shield** section instead.
 
 ## How It Fits Together
 
