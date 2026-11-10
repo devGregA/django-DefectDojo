@@ -1,6 +1,6 @@
 ---
 title: "AI Inventory"
-description: "See the AI in every scanned repository: coding assistants, MCP servers, models, AI packages, AI services, agent skills and AI provider keys"
+description: "See the AI in every scanned repository and developer machine: coding assistants, MCP servers, models, AI packages, AI services, agent skills, agent extensions and AI provider keys"
 weight: 9
 audience: pro
 ---
@@ -19,6 +19,8 @@ A pull request scan does not change the Asset's inventory. It reports which AI c
 
 Other SBOMs count as well. When you [import an SBOM](../pro__working_with_sboms/) from another tool, DefectDojo marks the AI packages in it (OpenAI, Anthropic, LangChain and so on) using the same package list.
 
+Developer machines count too. The [agent scanner](../pro__agent_scans/) reports the agents, MCP servers, plugins, extensions and skills configured on a laptop, and they join the inventory of the Asset its token belongs to, under the same Package URLs.
+
 ## What Is Detected
 
 | Kind | Found through | Recorded as |
@@ -29,6 +31,7 @@ Other SBOMs count as well. When you [import an SBOM](../pro__working_with_sboms/
 | **AI Packages** | Manifests and lockfiles for npm, PyPI, Go, Maven, NuGet, Cargo and RubyGems | The package's own Package URL and version, marked as an SDK, agent framework, MCP SDK, ML framework or inference server |
 | **AI Services** | Provider API hosts in code and config (OpenAI, Anthropic, Google, Azure OpenAI, AWS Bedrock, Mistral, Groq, Cohere) and self-hosted Ollama or vLLM | A service with its endpoint (scheme, host and port only) |
 | **Agent Skills** | Every directory with a `SKILL.md` | One component per skill |
+| **Agent Extensions** | Claude Code plugins and Claude Desktop or Gemini CLI extensions, from [laptop agent scans](../pro__agent_scans/) | One component per plugin or extension |
 | **AI Provider Keys** | Secret scanning (Gitleaks) findings for OpenAI, Anthropic, Hugging Face, Groq, Cohere and Perplexity keys | Not a component: the Findings are tagged `ai-secret` and counted on the page |
 
 ### What Is Never Recorded
@@ -42,7 +45,7 @@ A default-branch scan clones one commit, so AI-assisted commits can be missed on
 - **Locations > AI Inventory** lists every AI component on the Assets you can see.
 - On an Asset, open **Locations > View AI Inventory** to see that Asset's components.
 
-Across the top, seven tiles count coding assistants, MCP servers, models, AI packages, AI services, agent skills and AI provider keys. Click a tile to filter the table to that kind. The AI provider keys tile opens the Findings list filtered to `ai-secret`. Below the tiles, the authorization counts (authorized, unauthorized, needs review) and the **Shadow AI Only** toggle filter the table to what no policy has allowed.
+Across the top, eight tiles count coding assistants, MCP servers, models, AI packages, AI services, agent skills, agent extensions and AI provider keys. Click a tile to filter the table to that kind. The AI provider keys tile opens the Findings list filtered to `ai-secret`. Below the tiles, the authorization counts (authorized, unauthorized, needs review) and the **Shadow AI Only** toggle filter the table to what no policy has allowed.
 
 Each row shows the component's kind, category, provider, authorization decision and evidence. Expand a row to see why it has that decision: the policy that decided it, the policy's scope and justification, or that no policy matched. If the decision raised a Finding, the row links to it. On an Asset, the page also shows whether AI-assisted commits were seen, and the branch and commit of the last inventory.
 
@@ -63,3 +66,4 @@ Filters include `ai_kind`, `ai_category`, `authorization`, `shadow`, `provider_e
 
 - [AI Governance Policies](/triage_findings/findings_workflows/pro__ai_governance_policies/): decide which AI components are allowed.
 - [Exporting an AIBOM](../pro__exporting_an_aibom/): export the inventory as a CycloneDX AI bill of materials.
+- [Laptop Agent Scans and Agent Posture](../pro__agent_scans/): inventory developer machines and check how their agents are configured.
