@@ -27,7 +27,7 @@ The response contains the token (it starts with `ddas_`), the upload URL and the
 - `POST /api/v2/agent_scan/tokens/{id}/rotate/` replaces the token. The old one stops working at once.
 - `POST /api/v2/agent_scan/tokens/{id}/revoke/` stops the token working. Scans posted with it are refused.
 
-A token stays bound to the Asset it was created for.
+A token stays bound to the Asset it was created for. It belongs to the Asset, not to one machine: anyone who holds it can post a scan under any host name in that Asset, the same way a Shogun enrollment token can enroll any host. Give each fleet its own token and Asset, so one leaked token can write only to its own, and rotate or revoke it when it leaks.
 
 ## Run the Scanner
 
@@ -39,7 +39,9 @@ shogun-agentscan --url https://defectdojo.example.com/api/v2/agent_scan/scans/ -
 
 Run it as an administrator with `--all-users` to scan every home directory on the machine. Schedule it with your MDM tool, cron or Task Scheduler to keep the inventory and posture current. The scanner only reads configuration and changes nothing.
 
-Each run has its own scan id. Sending the same scan twice changes nothing, and a scan older than the host's latest one is recorded but not applied, so a retried upload never rolls a host back.
+Each run has its own scan id. Sending the same scan twice changes nothing, and a scan older than the host's latest one is recorded but not applied, so a retried upload never rolls a host back. A scan dated in the future counts as taken when it arrived, so a machine with a fast clock can't make later scans look old.
+
+The upload answers `201` for a new scan, `200` for a repeat or an older scan, `400` for a document that isn't `agentscan/v1` (naming the field and rule, never its value), `401` for a bad or revoked token, `409` while the Asset is archived, and `413` for a document over 4 MB.
 
 ## What the Scanner Sends
 
@@ -59,7 +61,7 @@ DefectDojo keeps names, file paths and setting keys from the scan. It never stor
 | A Claude Code plugin | Agent Extensions | `pkg:generic/ai-plugin/<id>` |
 | A Claude Desktop or Gemini CLI extension | Agent Extensions | `pkg:generic/ai-extension/<id>` |
 
-These are the same Package URLs the repository scanner uses, so a policy such as "unauthorized: `pkg:npm/@modelcontextprotocol/server-filesystem*`" applies to repositories and laptops alike. A component stays in the Asset's inventory while any of its hosts reports it, and the inventory shows which hosts those are. Disabled MCP servers, extensions and plugins are left out.
+These are the same Package URLs the repository scanner uses, so a policy such as "unauthorized: `pkg:npm/@modelcontextprotocol/server-filesystem*`" applies to repositories and laptops alike. A component stays in the Asset's inventory while any of its hosts reports it, and the inventory shows which hosts those are. Its last-seen time is when that changed; each host's latest scan time is on the host. Disabled MCP servers, extensions and plugins are left out.
 
 ## Agent Posture Checks
 
