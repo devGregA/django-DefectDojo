@@ -114,6 +114,16 @@ The excerpt is masked before it is stored. Anything a built-in detector matched 
 
 A blocked prompt never reaches the model, but Claude Code still keeps it in the developer's local prompt history and transcript.
 
+### Daily Activity and Retention
+
+The **Daily Activity** chart above the list counts prompts and tool calls per day, stacked by status. Pick 30, 90, 180 or 365 days. Days are UTC days.
+
+Prompt Activity keeps each event for 90 days by default. To change that, open **AI Guardrails**, select the **Settings** tab and set **Event Retention Days** to any value from 7 to 3650. Every night, DefectDojo deletes the events older than that, in small batches so hook calls keep being recorded while it runs.
+
+Before it deletes a day's events, DefectDojo saves that day's counts: by agent, policy, status and the rules that matched. The chart reads those counts for the days whose events are gone, so its history reaches further back than the list. Excerpts, users, hosts and sessions are not kept in the counts, so an event past retention can no longer be opened.
+
+Shortening the retention takes effect at the next nightly run. Lengthening it does not bring back events that were already deleted.
+
 ## Using the API
 
 Everything in this page is available to a superuser's API token under `/api/v2/ai_guardrails/`:
@@ -126,6 +136,11 @@ POST /api/v2/ai_guardrails/rules/test/
 POST /api/v2/ai_guardrails/collectors/
 POST /api/v2/ai_guardrails/collectors/7/rotate/
 GET  /api/v2/ai_guardrails/events/?status=blocked&actor=jdoe
+GET  /api/v2/ai_guardrails/events/daily/?days=90&agent=claude_code
+GET  /api/v2/ai_guardrails/settings/
+PATCH /api/v2/ai_guardrails/settings/update/
 ```
+
+`events/daily/` returns one entry per UTC day, oldest first, with a count for each status. It takes `days` (1 to 1095, default 30), and optionally `agent` (repeatable), `policy` and `rule` (a rule's ID: only the events that rule matched). `settings/update/` takes `{"event_retention_days": 30}`.
 
 Creating a collector, or rotating its token, returns `token`, `hook_url` and `managed_settings`. This is the only time the token is returned.
